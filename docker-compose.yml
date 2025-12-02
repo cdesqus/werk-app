@@ -1,0 +1,29 @@
+version: '3.8'
+
+services:
+  server:
+    build: ./server
+    container_name: werk-server
+    restart: always
+    ports:
+      - "5000:5000"
+    volumes:
+      - ./server/uploads:/app/uploads
+      - ./server/database.sqlite:/app/database.sqlite
+    environment:
+      - PORT=5000
+      - SECRET_KEY=${SECRET_KEY:-werk-secret-key-gen-z}
+      - SMTP_HOST=${SMTP_HOST}
+      - SMTP_PORT=${SMTP_PORT}
+      - SMTP_USER=${SMTP_USER}
+      - SMTP_PASS=${SMTP_PASS}
+      - SMTP_SECURE=${SMTP_SECURE}
+
+  client:
+    build: ./client
+    container_name: werk-client
+    restart: always
+    ports:
+      - "81:80"
+    depends_on:
+      - server
