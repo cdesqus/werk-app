@@ -1,9 +1,11 @@
 import { useState, useEffect } from 'react';
+import { useToast } from '../context/ToastContext';
 import api from '../utils/api';
 import { Check, X, Clock, Calendar, Search, Filter, AlertCircle } from 'lucide-react';
 import clsx from 'clsx';
 
 const AdminOvertimes = () => {
+    const toast = useToast();
     const [overtimes, setOvertimes] = useState([]);
     const [filterStatus, setFilterStatus] = useState('All');
     const [searchTerm, setSearchTerm] = useState('');
@@ -24,9 +26,10 @@ const AdminOvertimes = () => {
     const handleAction = async (id, status) => {
         try {
             await api.put(`/overtimes/${id}`, { status });
+            toast.success(`Request ${status}`);
             fetchOvertimes();
         } catch (error) {
-            alert('Action failed');
+            toast.error('Action failed');
         }
     };
 

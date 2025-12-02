@@ -1,9 +1,11 @@
 import { useState, useEffect } from 'react';
+import { useToast } from '../context/ToastContext';
 import api from '../utils/api';
 import { Check, X, Palmtree, Calendar, Search, Filter } from 'lucide-react';
 import clsx from 'clsx';
 
 const AdminLeaves = () => {
+    const toast = useToast();
     const [leaves, setLeaves] = useState([]);
     const [filterStatus, setFilterStatus] = useState('All');
     const [searchTerm, setSearchTerm] = useState('');
@@ -24,9 +26,10 @@ const AdminLeaves = () => {
     const handleAction = async (id, status) => {
         try {
             await api.put(`/leaves/${id}`, { status });
+            toast.success(`Request ${status}`);
             fetchLeaves();
         } catch (error) {
-            alert('Action failed');
+            toast.error('Action failed');
         }
     };
 

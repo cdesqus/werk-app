@@ -1,9 +1,11 @@
 import { useState, useEffect } from 'react';
+import { useToast } from '../context/ToastContext';
 import api from '../utils/api';
 import { Zap, Search, Plus, Trash2, CheckCircle } from 'lucide-react';
 import clsx from 'clsx';
 
 const AdminQuests = () => {
+    const toast = useToast();
     const [quests, setQuests] = useState([]);
     const [showModal, setShowModal] = useState(false);
     const [form, setForm] = useState({ title: '', reward: '', difficulty: 'Medium' });
@@ -28,17 +30,19 @@ const AdminQuests = () => {
             fetchQuests();
             setShowModal(false);
             setForm({ title: '', reward: '', difficulty: 'Medium' });
+            toast.success('Quest created successfully');
         } catch (error) {
-            alert('Failed to create quest');
+            toast.error('Failed to create quest');
         }
     };
 
     const handleComplete = async (id) => {
         try {
             await api.put(`/quests/${id}/complete`);
+            toast.success('Quest marked as complete');
             fetchQuests();
         } catch (error) {
-            alert('Action failed');
+            toast.error('Action failed');
         }
     };
 

@@ -1,13 +1,17 @@
 import { useState, useEffect } from 'react';
+import { useToast } from '../context/ToastContext';
 import api from '../utils/api';
+import ConfirmModal from '../components/ui/ConfirmModal';
 import { Edit2, X, Shield, User, Phone, Calendar, Search, Plus, Trash2, Mail, Lock } from 'lucide-react';
 
 const AdminUsers = () => {
+    const toast = useToast();
     const [users, setUsers] = useState([]);
     const [editingUser, setEditingUser] = useState(null);
     const [showAddModal, setShowAddModal] = useState(false);
     const [formData, setFormData] = useState({ name: '', email: '', phone: '', birthDate: '', password: '', role: 'staff' });
     const [searchTerm, setSearchTerm] = useState('');
+    const [confirmModal, setConfirmModal] = useState({ isOpen: false, id: null });
 
     useEffect(() => {
         fetchUsers();
@@ -43,9 +47,11 @@ const AdminUsers = () => {
             });
             setEditingUser(null);
             fetchUsers();
-            alert('User updated successfully');
+            setEditingUser(null);
+            fetchUsers();
+            toast.success('User updated successfully');
         } catch (error) {
-            alert('Update failed');
+            toast.error('Update failed');
         }
     };
 
@@ -55,20 +61,27 @@ const AdminUsers = () => {
             await api.post('/admin/users', formData);
             setShowAddModal(false);
             fetchUsers();
-            alert('User created successfully');
+            setShowAddModal(false);
+            fetchUsers();
+            toast.success('User created successfully');
         } catch (error) {
-            alert('Creation failed: ' + (error.response?.data?.error || error.message));
+            toast.error('Creation failed: ' + (error.response?.data?.error || error.message));
         }
     };
 
-    const handleDelete = async (id) => {
-        if (!window.confirm('Are you sure you want to delete this user? This action cannot be undone.')) return;
+    const handleDelete = (id) => {
+        setConfirmModal({ isOpen: true, id });
+    };
+
+    const confirmDelete = async () => {
         try {
-            await api.delete(`/admin/users/${id}`);
+            await api.delete(`/admin/users/${confirmModal.id}`);
             fetchUsers();
-            alert('User deleted successfully');
+            toast.success('User deleted successfully');
         } catch (error) {
-            alert('Delete failed: ' + (error.response?.data?.error || error.message));
+            toast.error('Delete failed: ' + (error.response?.data?.error || error.message));
+        } finally {
+            setConfirmModal({ isOpen: false, id: null });
         }
     };
 
@@ -228,6 +241,16 @@ const AdminUsers = () => {
                     </div>
                 </div>
             )}
+            {/* Confirm Modal */}
+            <ConfirmModal
+                isOpen={confirmModal.isOpen}
+                onClose={() => setConfirmModal({ isOpen: false, id: null })}
+                onConfirm={confirmDelete}
+                title="Delete User?"
+                message="Are you sure you want to delete this user? This action cannot be undone."
+                confirmText="Delete User"
+                isDanger={true}
+            />
         </div>
     );
 };

@@ -1,10 +1,12 @@
 import { useState, useEffect } from 'react';
+import { useToast } from '../context/ToastContext';
 import api from '../utils/api';
 import { DollarSign, Check, X, ChevronLeft, ChevronRight, Megaphone, BarChart2, Plus, Trash2, Sparkles, Zap, Users, Shield } from 'lucide-react';
 import { format, subMonths, addMonths } from 'date-fns';
 import clsx from 'clsx';
 
 const AdminDashboard = () => {
+    const toast = useToast();
     const [currentDate, setCurrentDate] = useState(new Date());
     const [summary, setSummary] = useState([]);
     const [pendingItems, setPendingItems] = useState([]);
@@ -45,8 +47,9 @@ const AdminDashboard = () => {
         try {
             const endpoint = dataType === 'overtime' ? 'overtimes' : dataType === 'claim' ? 'claims' : 'leaves';
             await api.put(`/${endpoint}/${id}`, { status });
+            toast.success('Action successful');
             fetchData();
-        } catch (err) { alert('Action failed'); }
+        } catch (err) { toast.error('Action failed'); }
     };
 
     const handlePostVibe = async (e) => {
@@ -57,20 +60,20 @@ const AdminDashboard = () => {
             else payload.options = payload.options.filter(o => o.trim() !== '');
 
             await api.post('/vibes', payload);
-            alert('Vibe posted!');
+            toast.success('Vibe posted!');
             setShowVibeModal(false);
             setVibeForm({ type: 'announcement', title: '', content: '', options: ['', ''] });
-        } catch (err) { alert('Failed to post'); }
+        } catch (err) { toast.error('Failed to post'); }
     };
 
     const handleCreateQuest = async (e) => {
         e.preventDefault();
         try {
             await api.post('/quests', questForm);
-            alert('Quest created!');
+            toast.success('Quest created!');
             setShowQuestModal(false);
             setQuestForm({ title: '', reward: '', difficulty: 'Medium' });
-        } catch (err) { alert('Failed to create quest'); }
+        } catch (err) { toast.error('Failed to create quest'); }
     };
 
     const addOption = () => setVibeForm({ ...vibeForm, options: [...vibeForm.options, ''] });

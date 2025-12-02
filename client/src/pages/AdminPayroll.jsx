@@ -1,15 +1,19 @@
 import { useState, useEffect } from 'react';
+import { useToast } from '../context/ToastContext';
 import api from '../utils/api';
+import ConfirmModal from '../components/ui/ConfirmModal';
 import { DollarSign, Calendar, ChevronLeft, ChevronRight, Download, CheckCircle, Loader, CheckCircle2 } from 'lucide-react';
 import { format, subMonths, addMonths } from 'date-fns';
 import * as XLSX from 'xlsx';
 import clsx from 'clsx';
 
 const AdminPayroll = () => {
+    const toast = useToast();
     const [currentDate, setCurrentDate] = useState(new Date());
     const [summary, setSummary] = useState([]);
     const [selectedUserIds, setSelectedUserIds] = useState([]);
     const [isProcessing, setIsProcessing] = useState(false);
+    const [confirmModal, setConfirmModal] = useState({ isOpen: false });
 
     // New state for month and year to align with the provided snippet's month navigation
     const [month, setMonth] = useState(currentDate.getMonth() + 1);
@@ -58,22 +62,25 @@ const AdminPayroll = () => {
     };
 
     // Actions
-    const handleMarkAsPaid = async () => {
+    const handleMarkAsPaid = () => {
         if (selectedUserIds.length === 0) return;
-        if (!confirm(`Mark ${selectedUserIds.length} staff members as PAID? This cannot be undone.`)) return;
+        setConfirmModal({ isOpen: true });
+    };
 
+    const confirmPayout = async () => {
         setIsProcessing(true);
         try {
             const currentMonth = currentDate.getMonth() + 1;
             const currentYear = currentDate.getFullYear();
             await api.post('/admin/payout', { userIds: selectedUserIds, month: currentMonth, year: currentYear });
-            alert('Payout processed successfully!');
+            toast.success('Payout processed successfully!');
             fetchPayroll(); // Refresh data
         } catch (error) {
-            alert('Failed to process payout');
+            toast.error('Failed to process payout');
             console.error(error);
         } finally {
             setIsProcessing(false);
+            setConfirmModal({ isOpen: false });
         }
     };
 
@@ -213,8 +220,11 @@ const AdminPayroll = () => {
                                         {user.status !== 'Paid' && user.totalPayable > 0 && (
                                             <button
                                                 onClick={() => {
+                                                    // We need to set state first, then open modal. 
+                                                    // But handleMarkAsPaid uses selectedUserIds state.
+                                                    // So we set selectedUserIds then open modal.
                                                     setSelectedUserIds([user.userId]);
-                                                    handleMarkAsPaid();
+                                                    setConfirmModal({ isOpen: true });
                                                 }}
                                                 className="text-xs font-bold text-lime-400 hover:text-lime-300 hover:underline"
                                             >
@@ -235,7 +245,19 @@ const AdminPayroll = () => {
                     </table>
                 </div>
             </div>
-        </div>
+
+
+            {/* Confirm Modal */}
+            <ConfirmModal
+                isOpen={confirmModal.isOpen}
+                onClose={() => setConfirmModal({ isOpen: false })}
+                onConfirm={confirmPayout}
+                title="Confirm Payout"
+                message={`Are you sure you want to mark ${selectedUserIds.length} staff members as PAID? This action cannot be undone.`}
+                confirmText="Process Payout"
+                isDanger={false}
+            />
+        </div >
     );
 };
 

@@ -1,9 +1,11 @@
 import { useState, useEffect } from 'react';
+import { useToast } from '../context/ToastContext';
 import api from '../utils/api';
 import { Sparkles, Plus, Trash2, BarChart2, Megaphone } from 'lucide-react';
 import clsx from 'clsx';
 
 const AdminVibeCheck = () => {
+    const toast = useToast();
     const [feeds, setFeeds] = useState([]);
     const [showModal, setShowModal] = useState(false);
     const [form, setForm] = useState({ type: 'announcement', title: '', content: '', options: ['', ''] });
@@ -32,7 +34,8 @@ const AdminVibeCheck = () => {
             fetchFeeds();
             setShowModal(false);
             setForm({ type: 'announcement', title: '', content: '', options: ['', ''] });
-        } catch (err) { alert('Failed to post'); }
+            toast.success('Vibe posted successfully');
+        } catch (err) { toast.error('Failed to post'); }
     };
 
     const addOption = () => setForm({ ...form, options: [...form.options, ''] });

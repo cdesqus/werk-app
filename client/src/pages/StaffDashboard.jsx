@@ -1,18 +1,22 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
+import { useToast } from '../context/ToastContext';
 import api from '../utils/api';
+import ConfirmModal from '../components/ui/ConfirmModal';
 import { Clock, FileText, History, Palmtree, Sparkles, Upload, Megaphone, BarChart2, Zap, CheckCircle, Circle, Plus, X, Calendar, Pencil, Trash2 } from 'lucide-react';
 import { format, differenceInMinutes, parse, isSunday } from 'date-fns';
 import clsx from 'clsx';
 
 const StaffDashboard = () => {
     const { user } = useAuth();
+    const toast = useToast();
     const [activeTab, setActiveTab] = useState('overtime');
 
     // Modals
     const [showOtModal, setShowOtModal] = useState(false);
     const [showClaimModal, setShowClaimModal] = useState(false);
     const [showLeaveModal, setShowLeaveModal] = useState(false);
+    const [confirmModal, setConfirmModal] = useState({ isOpen: false, type: null, id: null });
 
     // Editing State
     const [editingId, setEditingId] = useState(null);
@@ -115,13 +119,22 @@ const StaffDashboard = () => {
         } catch (err) { console.error("Failed to fetch quests", err); }
     };
 
-    const handleDelete = async (type, id) => {
-        if (!confirm('Are you sure you want to delete this item?')) return;
+    const handleDelete = (type, id) => {
+        setConfirmModal({ isOpen: true, type, id });
+    };
+
+    const confirmDelete = async () => {
+        const { type, id } = confirmModal;
         try {
             const endpoint = type === 'overtime' ? 'overtimes' : type === 'claim' ? 'claims' : 'leaves';
             await api.delete(`/${endpoint}/${id}`);
+            toast.success('Item deleted successfully');
             fetchHistory();
-        } catch (err) { alert(err.response?.data?.error || 'Delete failed'); }
+        } catch (err) {
+            toast.error(err.response?.data?.error || 'Delete failed');
+        } finally {
+            setConfirmModal({ isOpen: false, type: null, id: null });
+        }
     };
 
     const handleEdit = (item) => {
@@ -166,22 +179,22 @@ const StaffDashboard = () => {
     const handleOtSubmit = async (e) => {
         e.preventDefault();
         if (otDuration <= 0) {
-            alert('End time must be after start time.');
+            toast.error('End time must be after start time.');
             return;
         }
         setLoading(true);
         try {
             if (editingId) {
                 await api.put(`/overtimes/${editingId}`, { ...otForm, hours: otDuration });
-                alert('Overtime updated!');
+                toast.success('Overtime updated!');
             } else {
                 await api.post('/overtimes', { ...otForm, hours: otDuration });
-                alert('Overtime submitted!');
+                toast.success('Overtime submitted!');
             }
             resetForms();
             setShowOtModal(false);
             fetchHistory();
-        } catch (err) { alert(err.response?.data?.error || 'Error'); }
+        } catch (err) { toast.error(err.response?.data?.error || 'Error'); }
         setLoading(false);
     };
 
@@ -200,15 +213,15 @@ const StaffDashboard = () => {
                 // But our backend PUT claims doesn't support file update in this simple version easily
                 // Let's stick to simple update for text fields for now in PUT
                 await api.put(`/claims/${editingId}`, claimForm);
-                alert('Claim updated!');
+                toast.success('Claim updated!');
             } else {
                 await api.post('/claims', formData, { headers: { 'Content-Type': 'multipart/form-data' } });
-                alert('Claim submitted!');
+                toast.success('Claim submitted!');
             }
             resetForms();
             setShowClaimModal(false);
             fetchHistory();
-        } catch (err) { alert(err.response?.data?.error || 'Error'); }
+        } catch (err) { toast.error(err.response?.data?.error || 'Error'); }
         setLoading(false);
     };
 
@@ -218,15 +231,15 @@ const StaffDashboard = () => {
         try {
             if (editingId) {
                 await api.put(`/leaves/${editingId}`, leaveForm);
-                alert('Leave updated!');
+                toast.success('Leave updated!');
             } else {
                 await api.post('/leaves', leaveForm);
-                alert('Leave requested!');
+                toast.success('Leave requested!');
             }
             resetForms();
             setShowLeaveModal(false);
             fetchHistory();
-        } catch (err) { alert(err.response?.data?.error || 'Error'); }
+        } catch (err) { toast.error(err.response?.data?.error || 'Error'); }
         setLoading(false);
     };
 
@@ -234,15 +247,15 @@ const StaffDashboard = () => {
         try {
             await api.post(`/vibes/${feedId}/vote`, { optionId });
             fetchFeeds();
-        } catch (err) { alert(err.response?.data?.error || 'Error'); }
+        } catch (err) { toast.error(err.response?.data?.error || 'Error'); }
     };
 
     const handleAcceptQuest = async (id) => {
         try {
             await api.put(`/quests/${id}/accept`);
             fetchQuests();
-            alert('Quest Accepted! Good luck.');
-        } catch (err) { alert(err.response?.data?.error || 'Error'); }
+            toast.success('Quest Accepted! Good luck.');
+        } catch (err) { toast.error(err.response?.data?.error || 'Error'); }
     };
 
     const tabs = [
@@ -647,6 +660,17 @@ const StaffDashboard = () => {
                     </div>
                 </div>
             )}
+
+            {/* Confirm Modal */}
+            <ConfirmModal
+                isOpen={confirmModal.isOpen}
+                onClose={() => setConfirmModal({ isOpen: false, type: null, id: null })}
+                onConfirm={confirmDelete}
+                title="Delete Item?"
+                message="This action cannot be undone. Are you sure you want to proceed?"
+                confirmText="Delete"
+                isDanger={true}
+            />
         </div>
     );
 };
