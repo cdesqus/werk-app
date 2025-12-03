@@ -607,11 +607,24 @@ const StaffDashboard = () => {
                             </div>
                             <div className="space-y-2">
                                 <label className="text-xs font-bold text-zinc-500 uppercase tracking-wider">Proof</label>
-                                <div className="border-2 border-dashed border-zinc-800 rounded-xl p-6 text-center hover:border-lime-400 transition-colors cursor-pointer relative bg-zinc-900/50">
-                                    <input type="file" accept="image/*" capture="environment" className="absolute inset-0 opacity-0 cursor-pointer" onChange={e => setClaimForm({ ...claimForm, proof: e.target.files[0] })} />
-                                    <Upload className="mx-auto text-zinc-500 mb-2" />
-                                    <p className="text-zinc-400 text-sm">{claimForm.proof ? claimForm.proof.name : 'Click to upload receipt'}</p>
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div className="border-2 border-dashed border-zinc-800 rounded-xl p-4 text-center hover:border-lime-400 transition-colors cursor-pointer relative bg-zinc-900/50 flex flex-col items-center justify-center gap-2">
+                                        <input type="file" accept="image/*" capture="environment" className="absolute inset-0 opacity-0 cursor-pointer" onChange={e => setClaimForm({ ...claimForm, proof: e.target.files[0] })} />
+                                        <Camera className="text-zinc-400" />
+                                        <span className="text-xs font-bold text-zinc-400">Take Photo</span>
+                                    </div>
+                                    <div className="border-2 border-dashed border-zinc-800 rounded-xl p-4 text-center hover:border-lime-400 transition-colors cursor-pointer relative bg-zinc-900/50 flex flex-col items-center justify-center gap-2">
+                                        <input type="file" accept="image/*" className="absolute inset-0 opacity-0 cursor-pointer" onChange={e => setClaimForm({ ...claimForm, proof: e.target.files[0] })} />
+                                        <Upload className="text-zinc-400" />
+                                        <span className="text-xs font-bold text-zinc-400">Upload File</span>
+                                    </div>
                                 </div>
+                                {claimForm.proof && (
+                                    <div className="flex items-center gap-2 text-sm text-lime-400 bg-lime-400/10 p-2 rounded-lg">
+                                        <CheckCircle2 size={16} />
+                                        <span className="truncate">{claimForm.proof.name}</span>
+                                    </div>
+                                )}
                             </div>
                             <button type="submit" disabled={loading} className="btn-secondary w-full mt-4">
                                 {loading ? (editingId ? 'Updating...' : 'Submitting...') : (editingId ? 'Update Claim' : 'Submit Claim')}
