@@ -608,7 +608,7 @@ const StaffDashboard = () => {
                             <div className="space-y-2">
                                 <label className="text-xs font-bold text-zinc-500 uppercase tracking-wider">Proof</label>
                                 <div className="border-2 border-dashed border-zinc-800 rounded-xl p-6 text-center hover:border-lime-400 transition-colors cursor-pointer relative bg-zinc-900/50">
-                                    <input type="file" className="absolute inset-0 opacity-0 cursor-pointer" onChange={e => setClaimForm({ ...claimForm, proof: e.target.files[0] })} />
+                                    <input type="file" accept="image/*" capture="environment" className="absolute inset-0 opacity-0 cursor-pointer" onChange={e => setClaimForm({ ...claimForm, proof: e.target.files[0] })} />
                                     <Upload className="mx-auto text-zinc-500 mb-2" />
                                     <p className="text-zinc-400 text-sm">{claimForm.proof ? claimForm.proof.name : 'Click to upload receipt'}</p>
                                 </div>
