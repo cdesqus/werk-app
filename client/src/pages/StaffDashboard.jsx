@@ -3,7 +3,7 @@ import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import api from '../utils/api';
 import ConfirmModal from '../components/ui/ConfirmModal';
-import { Clock, FileText, History, Palmtree, Sparkles, Upload, Megaphone, BarChart2, Zap, CheckCircle, Circle, Plus, X, Calendar, Pencil, Trash2 } from 'lucide-react';
+import { Clock, FileText, History, Palmtree, Sparkles, Upload, Megaphone, BarChart2, Zap, CheckCircle, Circle, Plus, X, Calendar, Pencil, Trash2, Camera, CheckCircle2 } from 'lucide-react';
 import { format, differenceInMinutes, parse, isSunday } from 'date-fns';
 import clsx from 'clsx';
 
