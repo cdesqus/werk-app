@@ -758,63 +758,17 @@ app.get('/api/admin/summary', authenticateToken, isAdmin, async (req, res) => {
         const endTs = new Date(year, month, 0);
         endTs.setHours(23, 59, 59, 999);
         const timestampFilter = { [Op.between]: [startTs, endTs] };
-
-        const users = await User.findAll({ where: { role: 'staff' } });
-        const summary = [];
-
-        for (const user of users) {
-            const overtimes = await Overtime.findAll({
-                where: { UserId: user.id, date: dateFilter, status: ['Approved', 'Paid'] }
-            });
-            const claims = await Claim.findAll({
-                where: { UserId: user.id, date: dateFilter, status: ['Approved', 'Paid'] }
-            });
-
-            const quests = await Quest.findAll({
-                where: {
-                    assignedTo: user.id,
-                    status: 'Completed',
-                    createdAt: timestampFilter
-                }
-            });
-
-            const overtimeHours = overtimes.reduce((sum, o) => sum + o.hours, 0);
-            const overtimeTotal = overtimes.reduce((sum, o) => sum + o.payableAmount, 0);
-            const claimTotal = claims.reduce((sum, c) => sum + c.amount, 0);
-
-            const questTotal = quests.reduce((sum, q) => {
-                const val = parseInt(q.reward.replace(/\D/g, ''));
-                return sum + (isNaN(val) ? 0 : val);
-            }, 0);
-
-            const totalPayable = overtimeTotal + claimTotal + questTotal;
-
-            // Determine Status
-            let status = 'No Data';
-            const hasPaidItems = overtimes.some(o => o.status === 'Paid') || claims.some(c => c.status === 'Paid');
-            // Check for any pending items in the period (though we only fetched Approved/Paid above, let's check broadly if needed or just assume based on what we have)
-            // Actually, the summary logic above only fetches Approved/Paid. If we want to show "Pending", we should probably fetch all and filter.
-            // But for now, let's just define hasPendingItems to avoid the crash.
-            const hasPendingItems = false; // Placeholder as we are only fetching Approved/Paid for payroll calculation
-
-            if (overtimes.length > 0 || claims.length > 0) {
-                summary.push({
-                    userId: user.staffId || user.id,
-                    name: user.name,
-                    email: user.email,
-                    overtimeHours,
-                    overtimeTotal,
-                    claimTotal,
-                    totalPayable,
-                    status
-                });
+        claimTotal,
+            totalPayable,
+            status
+    });
             }
         }
 
-        res.json(summary);
+res.json(summary);
     } catch (error) {
-        res.status(500).json({ error: error.message });
-    }
+    res.status(500).json({ error: error.message });
+}
 });
 
 // Admin Payout (Mark as Paid)
