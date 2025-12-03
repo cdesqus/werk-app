@@ -49,9 +49,15 @@ const transporter = nodemailer.createTransport({
 });
 
 // Database Setup
+// Database Setup
+const dataDir = './data';
+if (!fs.existsSync(dataDir)) {
+    fs.mkdirSync(dataDir);
+}
+
 const sequelize = new Sequelize({
     dialect: 'sqlite',
-    storage: './database.sqlite',
+    storage: './data/database.sqlite',
     logging: false
 });
 
