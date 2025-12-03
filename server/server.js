@@ -50,14 +50,17 @@ const transporter = nodemailer.createTransport({
 
 // Database Setup
 // Database Setup
-const dataDir = './data';
+const dataDir = path.join(__dirname, 'data');
 if (!fs.existsSync(dataDir)) {
     fs.mkdirSync(dataDir);
 }
 
+const dbPath = path.join(dataDir, 'database.sqlite');
+console.log(`[DB] Using database file at: ${dbPath}`);
+
 const sequelize = new Sequelize({
     dialect: 'sqlite',
-    storage: './data/database.sqlite',
+    storage: dbPath,
     logging: false
 });
 
@@ -758,17 +761,73 @@ app.get('/api/admin/summary', authenticateToken, isAdmin, async (req, res) => {
         const endTs = new Date(year, month, 0);
         endTs.setHours(23, 59, 59, 999);
         const timestampFilter = { [Op.between]: [startTs, endTs] };
-        claimTotal,
-            totalPayable,
-            status
-    });
+
+        const users = await User.findAll({ where: { role: 'staff' } });
+        const summary = [];
+
+        for (const user of users) {
+            // Fetch ALL items for the period to determine status correctly
+            const overtimes = await Overtime.findAll({
+                where: { UserId: user.id, date: dateFilter }
+            });
+            const claims = await Claim.findAll({
+                where: { UserId: user.id, date: dateFilter }
+            });
+
+            const quests = await Quest.findAll({
+                where: {
+                    assignedTo: user.id,
+                    status: 'Completed',
+                    createdAt: timestampFilter
+                }
+            });
+
+            // Calculate Totals (Only Approved or Paid)
+            const payableOvertimes = overtimes.filter(o => ['Approved', 'Paid'].includes(o.status));
+            const payableClaims = claims.filter(c => ['Approved', 'Paid'].includes(c.status));
+
+            const overtimeHours = payableOvertimes.reduce((sum, o) => sum + o.hours, 0);
+            const overtimeTotal = payableOvertimes.reduce((sum, o) => sum + o.payableAmount, 0);
+            const claimTotal = payableClaims.reduce((sum, c) => sum + c.amount, 0);
+
+            const questTotal = quests.reduce((sum, q) => {
+                const val = parseInt(q.reward.replace(/\D/g, ''));
+                return sum + (isNaN(val) ? 0 : val);
+            }, 0);
+
+            const totalPayable = overtimeTotal + claimTotal + questTotal;
+
+            // Determine Status
+            let status = 'No Data';
+            const hasPaidItems = overtimes.some(o => o.status === 'Paid') || claims.some(c => c.status === 'Paid');
+            const hasPendingItems = overtimes.some(o => o.status === 'Pending') || claims.some(c => c.status === 'Pending');
+
+            if (totalPayable > 0) {
+                status = 'Processing';
+            } else if (hasPendingItems) {
+                status = 'Pending';
+            } else if (hasPaidItems) {
+                status = 'Paid';
+            }
+
+            if (overtimes.length > 0 || claims.length > 0 || quests.length > 0) {
+                summary.push({
+                    userId: user.staffId || user.id,
+                    name: user.name,
+                    email: user.email,
+                    overtimeHours,
+                    overtimeTotal,
+                    claimTotal,
+                    totalPayable,
+                    status
+                });
             }
         }
 
-res.json(summary);
+        res.json(summary);
     } catch (error) {
-    res.status(500).json({ error: error.message });
-}
+        res.status(500).json({ error: error.message });
+    }
 });
 
 // Admin Payout (Mark as Paid)
