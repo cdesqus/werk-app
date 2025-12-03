@@ -841,14 +841,14 @@ app.post('/api/admin/payout', authenticateToken, isAdmin, async (req, res) => {
 
         let dateFilter = {};
         if (month && year) {
-            const startDate = new Date(year, month - 1, 1);
-            const endDate = new Date(year, month, 0);
+            const startDate = new Date(year, month - 1, 1).toISOString().split('T')[0];
+            const endDate = new Date(year, month, 0).toISOString().split('T')[0];
             dateFilter = { [Op.between]: [startDate, endDate] };
         } else {
-            // Default to current month if not specified (though frontend should send it)
+            // Default to current month if not specified
             const now = new Date();
-            const startDate = new Date(now.getFullYear(), now.getMonth(), 1);
-            const endDate = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+            const startDate = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0];
+            const endDate = new Date(now.getFullYear(), now.getMonth() + 1, 0).toISOString().split('T')[0];
             dateFilter = { [Op.between]: [startDate, endDate] };
         }
 
