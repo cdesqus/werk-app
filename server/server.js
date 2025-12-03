@@ -234,15 +234,16 @@ app.get('/api/overtimes', authenticateToken, async (req, res) => {
             whereClause.UserId = req.user.id;
             // Staff Restriction: Max 3 months back
             const today = new Date();
-            const threeMonthsAgo = new Date(today.getFullYear(), today.getMonth() - 3, 1);
+            const threeMonthsAgoDate = new Date(today.getFullYear(), today.getMonth() - 3, 1);
+            const threeMonthsAgo = threeMonthsAgoDate.toISOString().split('T')[0];
 
             if (month && year) {
                 const requestedDate = new Date(year, month - 1, 1); // month is 1-indexed
-                if (requestedDate < threeMonthsAgo) {
+                if (requestedDate < threeMonthsAgoDate) {
                     return res.status(403).json({ error: 'Cannot access data older than 3 months' });
                 }
-                const startDate = new Date(year, month - 1, 1);
-                const endDate = new Date(year, month, 0);
+                const startDate = new Date(year, month - 1, 1).toISOString().split('T')[0];
+                const endDate = new Date(year, month, 0).toISOString().split('T')[0];
                 whereClause.date = { [Op.between]: [startDate, endDate] };
             } else {
                 // Default to last 3 months if no specific month requested, or just return all allowed
@@ -385,15 +386,16 @@ app.get('/api/claims', authenticateToken, async (req, res) => {
             whereClause.UserId = req.user.id;
             // Staff: Max 3 months back
             const today = new Date();
-            const threeMonthsAgo = new Date(today.getFullYear(), today.getMonth() - 3, 1);
+            const threeMonthsAgoDate = new Date(today.getFullYear(), today.getMonth() - 3, 1);
+            const threeMonthsAgo = threeMonthsAgoDate.toISOString().split('T')[0];
 
             if (month && year) {
                 const requestedDate = new Date(year, month - 1, 1);
-                if (requestedDate < threeMonthsAgo) {
+                if (requestedDate < threeMonthsAgoDate) {
                     return res.status(403).json({ error: 'Cannot access data older than 3 months' });
                 }
-                const startDate = new Date(year, month - 1, 1);
-                const endDate = new Date(year, month, 0);
+                const startDate = new Date(year, month - 1, 1).toISOString().split('T')[0];
+                const endDate = new Date(year, month, 0).toISOString().split('T')[0];
                 whereClause.date = { [Op.between]: [startDate, endDate] };
             } else {
                 whereClause.date = { [Op.gte]: threeMonthsAgo };
@@ -512,15 +514,16 @@ app.get('/api/leaves', authenticateToken, async (req, res) => {
         if (req.user.role !== 'admin') {
             whereClause.UserId = req.user.id;
             const today = new Date();
-            const threeMonthsAgo = new Date(today.getFullYear(), today.getMonth() - 3, 1);
+            const threeMonthsAgoDate = new Date(today.getFullYear(), today.getMonth() - 3, 1);
+            const threeMonthsAgo = threeMonthsAgoDate.toISOString().split('T')[0];
 
             if (month && year) {
                 const requestedDate = new Date(year, month - 1, 1);
-                if (requestedDate < threeMonthsAgo) {
+                if (requestedDate < threeMonthsAgoDate) {
                     return res.status(403).json({ error: 'Cannot access data older than 3 months' });
                 }
-                const startDate = new Date(year, month - 1, 1);
-                const endDate = new Date(year, month, 0);
+                const startDate = new Date(year, month - 1, 1).toISOString().split('T')[0];
+                const endDate = new Date(year, month, 0).toISOString().split('T')[0];
                 whereClause.startDate = { [Op.between]: [startDate, endDate] };
             } else {
                 whereClause.startDate = { [Op.gte]: threeMonthsAgo };
