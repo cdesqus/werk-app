@@ -201,28 +201,36 @@ const StaffDashboard = () => {
     const handleClaimSubmit = async (e) => {
         e.preventDefault();
         setLoading(true);
-        const formData = new FormData();
-        Object.keys(claimForm).forEach(key => {
-            if (claimForm[key] !== null) formData.append(key, claimForm[key]);
-        });
 
         try {
             if (editingId) {
-                // For PUT, we might need to handle file upload differently or backend support
-                // Assuming backend handles it or we just send JSON if no file
-                // But our backend PUT claims doesn't support file update in this simple version easily
-                // Let's stick to simple update for text fields for now in PUT
-                await api.put(`/claims/${editingId}`, claimForm);
+                // Edit Mode: Send JSON as backend PUT doesn't support file update in this version easily
+                // Filter out File object if present, only send other fields
+                const { proof, ...rest } = claimForm;
+                await api.put(`/claims/${editingId}`, rest);
                 toast.success('Claim updated!');
             } else {
-                await api.post('/claims', formData, { headers: { 'Content-Type': 'multipart/form-data' } });
+                // Create Mode: Send FormData
+                const formData = new FormData();
+                Object.keys(claimForm).forEach(key => {
+                    if (claimForm[key] !== null) formData.append(key, claimForm[key]);
+                });
+
+                await api.post('/claims', formData, {
+                    headers: { 'Content-Type': 'multipart/form-data' },
+                    timeout: 30000 // 30s timeout for large uploads
+                });
                 toast.success('Claim submitted!');
             }
             resetForms();
             setShowClaimModal(false);
             fetchHistory();
-        } catch (err) { toast.error(err.response?.data?.error || 'Error'); }
-        setLoading(false);
+        } catch (err) {
+            console.error(err);
+            toast.error(err.response?.data?.error || 'Failed to submit claim. Potentially file too large.');
+        } finally {
+            setLoading(false);
+        }
     };
 
     const handleLeaveSubmit = async (e) => {
@@ -617,6 +625,11 @@ const StaffDashboard = () => {
                                                     e.target.value = null;
                                                     return;
                                                 }
+                                                if (file.size > 5 * 1024 * 1024) { // 5MB limit
+                                                    toast.error('File size too large. Max 5MB.');
+                                                    e.target.value = null;
+                                                    return;
+                                                }
                                                 setClaimForm({ ...claimForm, proof: file });
                                             }
                                         }} />
@@ -629,6 +642,11 @@ const StaffDashboard = () => {
                                             if (file) {
                                                 if (!['image/jpeg', 'image/png', 'image/jpg'].includes(file.type)) {
                                                     toast.error('Only JPG and PNG files are allowed.');
+                                                    e.target.value = null;
+                                                    return;
+                                                }
+                                                if (file.size > 5 * 1024 * 1024) { // 5MB limit
+                                                    toast.error('File size too large. Max 5MB.');
                                                     e.target.value = null;
                                                     return;
                                                 }

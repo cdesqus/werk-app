@@ -11,15 +11,63 @@ const fs = require('fs');
 const nodemailer = require('nodemailer');
 require('dotenv').config();
 
+const helmet = require('helmet');
+const rateLimit = require('express-rate-limit');
+const { body, validationResult } = require('express-validator');
+
 const app = express();
 const PORT = process.env.PORT || 5000;
 const SECRET_KEY = process.env.SECRET_KEY || 'werk-secret-key-gen-z';
 
+// Security: Helmet (Secure Headers)
+app.use(helmet({
+    crossOriginResourcePolicy: { policy: "cross-origin" } // Allow loading images from uploads
+}));
+
+// Security: Rate Limiters
+const generalLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    max: 300, // Limit each IP to 300 requests per windowMs
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: 'Too many requests, please try again later.'
+});
+
+const authLimiter = rateLimit({
+    windowMs: 60 * 60 * 1000, // 1 hour
+    max: 10, // Limit each IP to 10 login/register attempts per hour
+    message: 'Too many login attempts, please try again later.'
+});
+
 // Middleware
+app.use(generalLimiter);
 app.use(cors());
-app.use(express.json());
+app.use(express.json({ limit: '10kb' })); // Security: Limit body size
 app.use('/uploads', express.static('uploads'));
 app.use('/api/uploads', express.static('uploads')); // Alias for proxy compatibility
+
+// Validation Chains
+const registerValidation = [
+    body('name').trim().notEmpty().withMessage('Name is required').escape(),
+    body('email').isEmail().withMessage('Invalid email format').normalizeEmail(),
+    body('password').isLength({ min: 6 }).withMessage('Password must be at least 6 characters'),
+    body('phone').optional().trim().escape(),
+    body('birthDate').optional().isISO8601().withMessage('Invalid date format').toDate()
+];
+
+const loginValidation = [
+    body('email').isEmail().withMessage('Invalid email format').normalizeEmail(),
+    body('password').notEmpty().withMessage('Password is required')
+];
+
+// Helper for Validation Errors
+const validate = (req, res, next) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+        return res.status(400).json({ error: errors.array().map(e => e.msg).join(', ') });
+    }
+    next();
+};
 
 // Ensure uploads directory exists
 if (!fs.existsSync('uploads')) {
@@ -174,7 +222,8 @@ const isAdmin = (req, res, next) => {
 
 // Routes
 // Auth
-app.post('/api/register', async (req, res) => {
+// Auth
+app.post('/api/register', authLimiter, registerValidation, validate, async (req, res, next) => {
     try {
         const { name, email, phone, password, birthDate } = req.body;
         const hashedPassword = await bcrypt.hash(password, 10);
@@ -204,14 +253,12 @@ app.post('/api/register', async (req, res) => {
         const user = await User.create({ name, email, phone, password: hashedPassword, birthDate, staffId });
         res.status(201).json({ message: 'User registered' });
     } catch (error) {
-        if (error.name === 'SequelizeValidationError' || error.name === 'SequelizeUniqueConstraintError') {
-            return res.status(400).json({ error: error.errors.map(e => e.message).join(', ') });
-        }
-        res.status(400).json({ error: error.message });
+        // Pass to global error handler to sanitize output
+        next(error);
     }
 });
 
-app.post('/api/login', async (req, res) => {
+app.post('/api/login', authLimiter, loginValidation, validate, async (req, res, next) => {
     try {
         const { email, password } = req.body;
         const user = await User.findOne({ where: { email } });
@@ -221,9 +268,10 @@ app.post('/api/login', async (req, res) => {
         if (!validPassword) return res.status(400).json({ error: 'Invalid password' });
 
         const token = jwt.sign({ id: user.id, role: user.role, name: user.name }, SECRET_KEY, { expiresIn: '24h' });
+        // Security: Explicitly define returned fields, excluding password hash
         res.json({ token, user: { id: user.id, name: user.name, email: user.email, role: user.role, leaveQuota: user.leaveQuota } });
     } catch (error) {
-        res.status(500).json({ error: error.message });
+        next(error);
     }
 });
 
@@ -376,6 +424,7 @@ app.post('/api/claims', authenticateToken, upload.single('proof'), async (req, r
         let proofPath = null;
 
         if (req.file) {
+            console.log(`[DEBUG] Processing file upload: ${req.file.originalname} (${req.file.size} bytes)`);
             const filename = `claim-${Date.now()}-${Math.round(Math.random() * 1E9)}.jpeg`;
             const outputPath = path.join('uploads', filename);
 
@@ -925,7 +974,7 @@ app.post('/api/admin/payout', authenticateToken, isAdmin, async (req, res) => {
 });
 
 // Admin User Management
-app.post('/api/admin/users', authenticateToken, isAdmin, async (req, res) => {
+app.post('/api/admin/users', authenticateToken, isAdmin, registerValidation, validate, async (req, res, next) => {
     try {
         const { name, email, phone, password, birthDate, role } = req.body;
         const hashedPassword = await bcrypt.hash(password, 10);
@@ -961,27 +1010,29 @@ app.post('/api/admin/users', authenticateToken, isAdmin, async (req, res) => {
             role: role || 'staff',
             staffId
         });
-        res.status(201).json({ message: 'User created successfully', user });
+
+        // Security: don't return password
+        const userResp = user.toJSON();
+        delete userResp.password;
+
+        res.status(201).json({ message: 'User created successfully', user: userResp });
     } catch (error) {
-        if (error.name === 'SequelizeValidationError' || error.name === 'SequelizeUniqueConstraintError') {
-            return res.status(400).json({ error: error.errors.map(e => e.message).join(', ') });
-        }
-        res.status(400).json({ error: error.message });
+        next(error);
     }
 });
 
-app.get('/api/admin/users', authenticateToken, isAdmin, async (req, res) => {
+app.get('/api/admin/users', authenticateToken, isAdmin, async (req, res, next) => {
     try {
         const users = await User.findAll({
             attributes: ['id', 'name', 'email', 'phone', 'role', 'leaveQuota', 'birthDate']
         });
         res.json(users);
     } catch (error) {
-        res.status(500).json({ error: error.message });
+        next(error);
     }
 });
 
-app.put('/api/admin/users/:id', authenticateToken, isAdmin, async (req, res) => {
+app.put('/api/admin/users/:id', authenticateToken, isAdmin, async (req, res, next) => {
     try {
         const { name, phone, newPassword } = req.body;
         const user = await User.findByPk(req.params.id);
@@ -998,11 +1049,11 @@ app.put('/api/admin/users/:id', authenticateToken, isAdmin, async (req, res) => 
         await user.save();
         res.json({ message: 'User updated successfully' });
     } catch (error) {
-        res.status(400).json({ error: error.message });
+        next(error);
     }
 });
 
-app.delete('/api/admin/users/:id', authenticateToken, isAdmin, async (req, res) => {
+app.delete('/api/admin/users/:id', authenticateToken, isAdmin, async (req, res, next) => {
     try {
         const user = await User.findByPk(req.params.id);
         if (!user) return res.status(404).json({ error: 'User not found' });
@@ -1013,8 +1064,26 @@ app.delete('/api/admin/users/:id', authenticateToken, isAdmin, async (req, res) 
         await user.destroy();
         res.json({ message: 'User deleted successfully' });
     } catch (error) {
-        res.status(400).json({ error: error.message });
+        next(error);
     }
+});
+
+
+// Global Error Handler
+app.use((err, req, res, next) => {
+    console.error(err.stack); // Log stack trace for dev (or use a logger in prod)
+
+    // Sequelize Validation Error Formatting
+    if (err.name === 'SequelizeValidationError' || err.name === 'SequelizeUniqueConstraintError') {
+        return res.status(400).json({
+            error: err.errors ? err.errors.map(e => e.message).join(', ') : 'Database Validation Error'
+        });
+    }
+
+    // Default Error Response
+    res.status(500).json({
+        error: process.env.NODE_ENV === 'production' ? 'Internal Server Error' : err.message
+    });
 });
 
 
