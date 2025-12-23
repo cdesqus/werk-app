@@ -178,14 +178,34 @@ app.post('/api/register', async (req, res) => {
         const { name, email, phone, password, birthDate } = req.body;
         const hashedPassword = await bcrypt.hash(password, 10);
 
-        // Generate Staff ID
+        // Generate Staff ID safely
         const year = new Date().getFullYear();
-        const count = await User.count();
-        const staffId = `IDE-${year}-${String(count + 1).padStart(4, '0')}`;
+        const lastUser = await User.findOne({
+            where: {
+                staffId: { [Op.like]: `IDE-${year}-%` }
+            },
+            order: [['staffId', 'DESC']]
+        });
+
+        let nextSequence = 1;
+        if (lastUser && lastUser.staffId) {
+            const parts = lastUser.staffId.split('-');
+            if (parts.length === 3) {
+                const lastSeq = parseInt(parts[2]);
+                if (!isNaN(lastSeq)) {
+                    nextSequence = lastSeq + 1;
+                }
+            }
+        }
+
+        const staffId = `IDE-${year}-${String(nextSequence).padStart(4, '0')}`;
 
         const user = await User.create({ name, email, phone, password: hashedPassword, birthDate, staffId });
         res.status(201).json({ message: 'User registered' });
     } catch (error) {
+        if (error.name === 'SequelizeValidationError' || error.name === 'SequelizeUniqueConstraintError') {
+            return res.status(400).json({ error: error.errors.map(e => e.message).join(', ') });
+        }
         res.status(400).json({ error: error.message });
     }
 });
@@ -888,10 +908,27 @@ app.post('/api/admin/users', authenticateToken, isAdmin, async (req, res) => {
         const { name, email, phone, password, birthDate, role } = req.body;
         const hashedPassword = await bcrypt.hash(password, 10);
 
-        // Generate Staff ID
+        // Generate Staff ID safely
         const year = new Date().getFullYear();
-        const count = await User.count();
-        const staffId = `IDE-${year}-${String(count + 1).padStart(4, '0')}`;
+        const lastUser = await User.findOne({
+            where: {
+                staffId: { [Op.like]: `IDE-${year}-%` }
+            },
+            order: [['staffId', 'DESC']]
+        });
+
+        let nextSequence = 1;
+        if (lastUser && lastUser.staffId) {
+            const parts = lastUser.staffId.split('-');
+            if (parts.length === 3) {
+                const lastSeq = parseInt(parts[2]);
+                if (!isNaN(lastSeq)) {
+                    nextSequence = lastSeq + 1;
+                }
+            }
+        }
+
+        const staffId = `IDE-${year}-${String(nextSequence).padStart(4, '0')}`;
 
         const user = await User.create({
             name,
@@ -904,6 +941,9 @@ app.post('/api/admin/users', authenticateToken, isAdmin, async (req, res) => {
         });
         res.status(201).json({ message: 'User created successfully', user });
     } catch (error) {
+        if (error.name === 'SequelizeValidationError' || error.name === 'SequelizeUniqueConstraintError') {
+            return res.status(400).json({ error: error.errors.map(e => e.message).join(', ') });
+        }
         res.status(400).json({ error: error.message });
     }
 });
