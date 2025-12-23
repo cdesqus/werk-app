@@ -19,6 +19,7 @@ const SECRET_KEY = process.env.SECRET_KEY || 'werk-secret-key-gen-z';
 app.use(cors());
 app.use(express.json());
 app.use('/uploads', express.static('uploads'));
+app.use('/api/uploads', express.static('uploads')); // Alias for proxy compatibility
 
 // Ensure uploads directory exists
 if (!fs.existsSync('uploads')) {

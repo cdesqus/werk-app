@@ -222,7 +222,7 @@ const AdminClaims = () => {
                                 {selectedClaim.proof ? (
                                     <div className="rounded-xl overflow-hidden border border-white/10 bg-black/50">
                                         <img
-                                            src={`${api.defaults.baseURL.replace('/api', '')}${selectedClaim.proof}`}
+                                            src={`${api.defaults.baseURL}${selectedClaim.proof}`}
                                             alt="Proof"
                                             className="w-full h-auto object-contain max-h-[400px]"
                                         />
