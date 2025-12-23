@@ -222,7 +222,7 @@ const AdminClaims = () => {
                                 {selectedClaim.proof ? (
                                     <div className="rounded-xl overflow-hidden border border-white/10 bg-black/50">
                                         <img
-                                            src={`${(import.meta.env.VITE_API_URL || 'http://localhost:5000/api').replace('/api', '')}${selectedClaim.proof}`}
+                                            src={`${api.defaults.baseURL.replace('/api', '')}${selectedClaim.proof}`}
                                             alt="Proof"
                                             className="w-full h-auto object-contain max-h-[400px]"
                                         />

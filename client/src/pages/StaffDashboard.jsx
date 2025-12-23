@@ -609,12 +609,32 @@ const StaffDashboard = () => {
                                 <label className="text-xs font-bold text-zinc-500 uppercase tracking-wider">Proof</label>
                                 <div className="grid grid-cols-2 gap-4">
                                     <div className="border-2 border-dashed border-zinc-800 rounded-xl p-4 text-center hover:border-lime-400 transition-colors cursor-pointer relative bg-zinc-900/50 flex flex-col items-center justify-center gap-2">
-                                        <input type="file" accept="image/*" capture="environment" className="absolute inset-0 opacity-0 cursor-pointer" onChange={e => setClaimForm({ ...claimForm, proof: e.target.files[0] })} />
+                                        <input type="file" accept="image/png, image/jpeg, image/jpg" capture="environment" className="absolute inset-0 opacity-0 cursor-pointer" onChange={e => {
+                                            const file = e.target.files[0];
+                                            if (file) {
+                                                if (!['image/jpeg', 'image/png', 'image/jpg'].includes(file.type)) {
+                                                    toast.error('Only JPG and PNG files are allowed.');
+                                                    e.target.value = null;
+                                                    return;
+                                                }
+                                                setClaimForm({ ...claimForm, proof: file });
+                                            }
+                                        }} />
                                         <Camera className="text-zinc-400" />
                                         <span className="text-xs font-bold text-zinc-400">Take Photo</span>
                                     </div>
                                     <div className="border-2 border-dashed border-zinc-800 rounded-xl p-4 text-center hover:border-lime-400 transition-colors cursor-pointer relative bg-zinc-900/50 flex flex-col items-center justify-center gap-2">
-                                        <input type="file" accept="image/*" className="absolute inset-0 opacity-0 cursor-pointer" onChange={e => setClaimForm({ ...claimForm, proof: e.target.files[0] })} />
+                                        <input type="file" accept="image/png, image/jpeg, image/jpg" className="absolute inset-0 opacity-0 cursor-pointer" onChange={e => {
+                                            const file = e.target.files[0];
+                                            if (file) {
+                                                if (!['image/jpeg', 'image/png', 'image/jpg'].includes(file.type)) {
+                                                    toast.error('Only JPG and PNG files are allowed.');
+                                                    e.target.value = null;
+                                                    return;
+                                                }
+                                                setClaimForm({ ...claimForm, proof: file });
+                                            }
+                                        }} />
                                         <Upload className="text-zinc-400" />
                                         <span className="text-xs font-bold text-zinc-400">Upload File</span>
                                     </div>

@@ -802,32 +802,51 @@ app.get('/api/admin/summary', authenticateToken, isAdmin, async (req, res) => {
                 }
             });
 
-            // Calculate Totals (Only Approved or Paid)
-            const payableOvertimes = overtimes.filter(o => ['Approved', 'Paid'].includes(o.status));
-            const payableClaims = claims.filter(c => ['Approved', 'Paid'].includes(c.status));
+            // Calculate Totals
+            const approvedOvertimes = overtimes.filter(o => o.status === 'Approved');
+            const paidOvertimes = overtimes.filter(o => o.status === 'Paid');
 
-            const overtimeHours = payableOvertimes.reduce((sum, o) => sum + o.hours, 0);
-            const overtimeTotal = payableOvertimes.reduce((sum, o) => sum + o.payableAmount, 0);
-            const claimTotal = payableClaims.reduce((sum, c) => sum + c.amount, 0);
+            const approvedClaims = claims.filter(c => c.status === 'Approved');
+            const paidClaims = claims.filter(c => c.status === 'Paid');
+
+            const unpaidAmount = approvedOvertimes.reduce((sum, o) => sum + o.payableAmount, 0) +
+                approvedClaims.reduce((sum, c) => sum + c.amount, 0);
+
+            const paidAmount = paidOvertimes.reduce((sum, o) => sum + o.payableAmount, 0) +
+                paidClaims.reduce((sum, c) => sum + c.amount, 0);
 
             const questTotal = quests.reduce((sum, q) => {
                 const val = parseInt(q.reward.replace(/\D/g, ''));
                 return sum + (isNaN(val) ? 0 : val);
             }, 0);
 
-            const totalPayable = overtimeTotal + claimTotal + questTotal;
+            // Assuming Quests are paid externally or auto-handled, we just add them to total payable for visibility, 
+            // but for Status logic, we focus on Overtime and Claims which have explicit 'Paid' status states.
+            // If Quests need 'Paid' status tracking, that would require schema changes. 
+            // For now, let's assume if there are unpaid Overtimes/Claims, it's Processing.
+
+            const totalPayable = unpaidAmount + paidAmount + questTotal;
+
+            // Calculate Totals for Display (Both Unpaid and Paid)
+            const overtimeHours = approvedOvertimes.reduce((sum, o) => sum + o.hours, 0) +
+                paidOvertimes.reduce((sum, o) => sum + o.hours, 0);
+
+            const overtimeTotal = approvedOvertimes.reduce((sum, o) => sum + o.payableAmount, 0) +
+                paidOvertimes.reduce((sum, o) => sum + o.payableAmount, 0);
+
+            const claimTotal = approvedClaims.reduce((sum, c) => sum + c.amount, 0) +
+                paidClaims.reduce((sum, c) => sum + c.amount, 0);
 
             // Determine Status
             let status = 'No Data';
-            const hasPaidItems = overtimes.some(o => o.status === 'Paid') || claims.some(c => c.status === 'Paid');
             const hasPendingItems = overtimes.some(o => o.status === 'Pending') || claims.some(c => c.status === 'Pending');
 
-            if (totalPayable > 0) {
-                status = 'Processing';
+            if (unpaidAmount > 0) {
+                status = 'Processing'; // Ready to Pay
             } else if (hasPendingItems) {
-                status = 'Pending';
-            } else if (hasPaidItems) {
-                status = 'Paid';
+                status = 'Pending'; // Waiting Approval
+            } else if (paidAmount > 0 || questTotal > 0) {
+                status = 'Paid'; // All settled
             }
 
             if (overtimes.length > 0 || claims.length > 0 || quests.length > 0) {
@@ -997,7 +1016,8 @@ app.delete('/api/admin/users/:id', authenticateToken, isAdmin, async (req, res) 
 
 
 // Sync DB & Start Server
-sequelize.sync({ alter: true }).then(async () => {
+// Using sync() without options prevents data loss from table recreation on restarts
+sequelize.sync().then(async () => {
     console.log('Database synced');
 
     // Create Default Admin if not exists
