@@ -46,7 +46,7 @@ const AdminPayroll = () => {
     const handleSelectAll = (e) => {
         if (e.target.checked) {
             // Only select users with totalPayable > 0 and status not 'Paid'
-            const allIds = summary.filter(u => u.totalPayable > 0 && u.status !== 'Paid').map(u => u.userId);
+            const allIds = summary.filter(u => u.totalPayable > 0 && u.status !== 'Paid').map(u => u.id);
             setSelectedUserIds(allIds);
         } else {
             setSelectedUserIds([]);
@@ -178,13 +178,13 @@ const AdminPayroll = () => {
                         </thead>
                         <tbody className="divide-y divide-white/5">
                             {summary.map((user) => (
-                                <tr key={user.userId} className="hover:bg-white/5 transition-colors group">
+                                <tr key={user.id} className="hover:bg-white/5 transition-colors group">
                                     <td className="p-4 text-center">
                                         <input
                                             type="checkbox"
                                             className="rounded border-zinc-600 bg-zinc-800 text-lime-400 focus:ring-lime-400 focus:ring-offset-0 disabled:opacity-30"
-                                            checked={selectedUserIds.includes(user.userId)}
-                                            onChange={() => handleSelectUser(user.userId)}
+                                            checked={selectedUserIds.includes(user.id)}
+                                            onChange={() => handleSelectUser(user.id)}
                                             disabled={user.totalPayable === 0 || user.status === 'Paid'}
                                         />
                                     </td>
@@ -195,7 +195,7 @@ const AdminPayroll = () => {
                                             </div>
                                             <div>
                                                 <div className="font-bold text-white">{user.name}</div>
-                                                <div className="text-xs text-zinc-500 font-mono">{user.userId}</div>
+                                                <div className="text-xs text-zinc-500 font-mono">{user.staffId || user.userId}</div>
                                             </div>
                                         </div>
                                     </td>
@@ -223,7 +223,7 @@ const AdminPayroll = () => {
                                                     // We need to set state first, then open modal. 
                                                     // But handleMarkAsPaid uses selectedUserIds state.
                                                     // So we set selectedUserIds then open modal.
-                                                    setSelectedUserIds([user.userId]);
+                                                    setSelectedUserIds([user.id]);
                                                     setConfirmModal({ isOpen: true });
                                                 }}
                                                 className="text-xs font-bold text-lime-400 hover:text-lime-300 hover:underline"

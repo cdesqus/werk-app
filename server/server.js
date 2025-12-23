@@ -851,7 +851,9 @@ app.get('/api/admin/summary', authenticateToken, isAdmin, async (req, res) => {
 
             if (overtimes.length > 0 || claims.length > 0 || quests.length > 0) {
                 summary.push({
-                    userId: user.staffId || user.id,
+                    id: user.id,
+                    staffId: user.staffId,
+                    userId: user.staffId || user.id, // Kept for text filter search compatibility if any
                     name: user.name,
                     email: user.email,
                     overtimeHours,
