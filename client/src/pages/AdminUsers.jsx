@@ -180,112 +180,234 @@ const AdminUsers = () => {
             {/* Edit Modal */}
             {editingUser && (
                 <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-                    <div className="glass-card w-full max-w-lg p-8 relative animate-in fade-in zoom-in duration-200 border border-zinc-800">
-                        <button onClick={() => setEditingUser(null)} className="absolute top-4 right-4 text-zinc-500 hover:text-white"><X /></button>
-                        <h2 className="text-2xl font-black text-white mb-6">Edit User</h2>
+                    <div className="glass-card w-full max-w-5xl p-0 relative animate-in fade-in zoom-in duration-200 border border-zinc-800 flex flex-col max-h-[90vh] overflow-hidden">
+                        <div className="flex items-center justify-between p-6 border-b border-white/5">
+                            <div>
+                                <h2 className="text-2xl font-black text-white">Edit User</h2>
+                                <p className="text-zinc-500 text-sm">Manage profile and security settings.</p>
+                            </div>
+                            <button onClick={() => setEditingUser(null)} className="text-zinc-500 hover:text-white transition-colors">
+                                <X size={24} />
+                            </button>
+                        </div>
 
-                        <form onSubmit={handleUpdate} className="space-y-4">
-                            <div className="space-y-2">
-                                <label className="text-xs font-bold text-zinc-500 uppercase tracking-wider flex items-center gap-2"><User size={14} /> Full Name</label>
-                                <input type="text" value={formData.name} onChange={e => setFormData({ ...formData, name: e.target.value })} className="input-field w-full" required />
-                            </div>
-                            <div className="space-y-2">
-                                <label className="text-xs font-bold text-zinc-500 uppercase tracking-wider flex items-center gap-2"><Phone size={14} /> Phone</label>
-                                <input type="text" value={formData.phone} onChange={e => setFormData({ ...formData, phone: e.target.value })} className="input-field w-full" required />
-                            </div>
-                            <div className="space-y-2">
-                                <label className="text-xs font-bold text-zinc-500 uppercase tracking-wider flex items-center gap-2"><Calendar size={14} /> Birth Date</label>
-                                <input type="date" value={formData.birthDate} onChange={e => setFormData({ ...formData, birthDate: e.target.value })} className="input-field w-full" />
-                            </div>
+                        <div className="overflow-y-auto custom-scrollbar p-6">
+                            <form onSubmit={handleUpdate} className="flex flex-col md:grid md:grid-cols-12 gap-6">
+                                {/* LEFT COLUMN - PROFILE (Span 7) */}
+                                <div className="md:col-span-7 space-y-6">
+                                    <div className="space-y-4">
+                                        <div className="flex items-center gap-4">
+                                            <div className="w-16 h-16 rounded-full bg-gradient-to-br from-lime-400 to-emerald-400 flex items-center justify-center text-black font-black text-2xl shadow-lg shadow-lime-400/20">
+                                                {formData.name.charAt(0)}
+                                            </div>
+                                            <div>
+                                                <h3 className="text-lg font-bold text-white">{formData.name}</h3>
+                                                <p className="text-zinc-400 text-sm">{formData.email}</p>
+                                            </div>
+                                        </div>
 
-                            <div className="space-y-2">
-                                <label className="text-xs font-bold text-zinc-500 uppercase tracking-wider flex items-center gap-2"><Palmtree size={14} /> Leave Quota (Days)</label>
-                                <input
-                                    type="number"
-                                    value={formData.leaveQuota}
-                                    onChange={e => setFormData({ ...formData, leaveQuota: parseInt(e.target.value) || 0 })}
-                                    className="input-field w-full"
-                                />
-                                <p className="text-xs text-zinc-500">Default is 12 days/year.</p>
-                            </div>
+                                        <div className="grid grid-cols-1 gap-4">
+                                            <div className="space-y-2">
+                                                <label className="text-xs font-bold text-zinc-500 uppercase tracking-wider flex items-center gap-2"><Mail size={14} /> Email</label>
+                                                <input
+                                                    type="email"
+                                                    value={formData.email}
+                                                    readOnly
+                                                    className="input-field w-full opacity-60 cursor-not-allowed"
+                                                />
+                                            </div>
 
-                            <div className="pt-4 border-t border-white/10 mt-4">
-                                <h3 className="text-sm font-bold mb-2 text-red-400 flex items-center gap-2"><Shield size={14} /> Security</h3>
-                                <div className="space-y-2">
-                                    <label className="text-xs font-bold text-zinc-500 uppercase tracking-wider">New Password</label>
-                                    <input type="password" value={formData.password} onChange={e => setFormData({ ...formData, password: e.target.value })} className="input-field w-full" placeholder="Leave blank to keep current" />
+                                            <div className="space-y-2">
+                                                <label className="text-xs font-bold text-zinc-500 uppercase tracking-wider flex items-center gap-2"><User size={14} /> Full Name</label>
+                                                <input
+                                                    type="text"
+                                                    value={formData.name}
+                                                    onChange={e => setFormData({ ...formData, name: e.target.value })}
+                                                    className="input-field w-full"
+                                                    required
+                                                />
+                                            </div>
+
+                                            <div className="space-y-2">
+                                                <label className="text-xs font-bold text-zinc-500 uppercase tracking-wider flex items-center gap-2"><Phone size={14} /> Phone</label>
+                                                <input
+                                                    type="text"
+                                                    value={formData.phone}
+                                                    onChange={e => setFormData({ ...formData, phone: e.target.value })}
+                                                    className="input-field w-full"
+                                                    required
+                                                />
+                                            </div>
+
+                                            <div className="grid grid-cols-2 gap-4">
+                                                <div className="space-y-2">
+                                                    <label className="text-xs font-bold text-zinc-500 uppercase tracking-wider flex items-center gap-2"><Shield size={14} /> Role</label>
+                                                    <select
+                                                        value={formData.role}
+                                                        onChange={e => setFormData({ ...formData, role: e.target.value })}
+                                                        className="input-field w-full"
+                                                        disabled={currentUser?.role !== 'super_admin' && currentUser?.role !== 'admin'}
+                                                    >
+                                                        <option value="staff">Staff</option>
+                                                        <option value="admin">Admin</option>
+                                                        {currentUser?.role === 'super_admin' && <option value="super_admin">Super Admin</option>}
+                                                    </select>
+                                                </div>
+                                                <div className="space-y-2">
+                                                    <label className="text-xs font-bold text-zinc-500 uppercase tracking-wider flex items-center gap-2"><Calendar size={14} /> Birth Date</label>
+                                                    <input
+                                                        type="date"
+                                                        value={formData.birthDate}
+                                                        onChange={e => setFormData({ ...formData, birthDate: e.target.value })}
+                                                        className="input-field w-full"
+                                                    />
+                                                </div>
+                                            </div>
+
+                                            <div className="space-y-2">
+                                                <label className="text-xs font-bold text-zinc-500 uppercase tracking-wider flex items-center gap-2"><Palmtree size={14} /> Leave Quota</label>
+                                                <div className="flex items-center gap-4">
+                                                    <input
+                                                        type="number"
+                                                        value={formData.leaveQuota}
+                                                        onChange={e => setFormData({ ...formData, leaveQuota: parseInt(e.target.value) || 0 })}
+                                                        className="input-field w-full"
+                                                    />
+                                                    <span className="text-zinc-500 text-sm whitespace-nowrap">Days / Year</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div className="pt-4 border-t border-white/5 flex justify-end">
+                                        <button type="submit" className="btn-primary w-full md:w-auto">
+                                            Save Profile Changes
+                                        </button>
+                                    </div>
                                 </div>
-                            </div>
 
-                            <div className="flex justify-end gap-3 mt-6">
-                                <button type="button" onClick={() => setEditingUser(null)} className="px-4 py-2 rounded-xl font-bold hover:bg-white/10 transition-colors text-zinc-400">Cancel</button>
-                                <button type="submit" className="btn-primary">Save Changes</button>
-                            </div>
-                        </form>
+                                {/* RIGHT COLUMN - SECURITY & DANGER (Span 5) */}
+                                <div className="md:col-span-5 space-y-6">
+                                    {/* Security Zone */}
+                                    <div className="p-5 rounded-2xl bg-red-500/5 border border-red-500/20 space-y-4">
+                                        <div className="flex items-center gap-2 text-red-400 mb-2">
+                                            <div className="p-2 bg-red-500/10 rounded-lg">
+                                                <Lock size={18} />
+                                            </div>
+                                            <div>
+                                                <h3 className="font-bold text-sm">Security Zone</h3>
+                                                <p className="text-xs text-red-400/70">Update user password</p>
+                                            </div>
+                                        </div>
+
+                                        <div className="space-y-3">
+                                            <div className="space-y-1">
+                                                <label className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider">New Password</label>
+                                                <input
+                                                    type="password"
+                                                    value={formData.password}
+                                                    onChange={e => setFormData({ ...formData, password: e.target.value })}
+                                                    className="input-field w-full border-red-500/20 focus:border-red-500/50 focus:ring-red-500/50"
+                                                    placeholder="New password"
+                                                />
+                                            </div>
+                                            {/* Confirm password could go here if state supported it */}
+
+                                            <button
+                                                type="submit"
+                                                className="w-full py-2 bg-red-500/10 hover:bg-red-500 text-red-400 hover:text-white rounded-xl font-bold text-sm transition-all border border-red-500/20"
+                                            >
+                                                Update Password
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    {/* Danger Zone */}
+                                    <div className="p-5 rounded-2xl bg-zinc-900/50 border border-zinc-800 space-y-4">
+                                        <h3 className="font-bold text-sm text-zinc-400">Danger Zone</h3>
+                                        <p className="text-xs text-zinc-500">
+                                            Once you delete a user, there is no going back. Please be certain.
+                                        </p>
+                                        <button
+                                            type="button"
+                                            onClick={() => {
+                                                setEditingUser(null);
+                                                handleDelete(editingUser.id);
+                                            }}
+                                            className="w-full py-2 bg-zinc-800 hover:bg-red-600 hover:text-white text-zinc-400 rounded-xl font-bold text-sm transition-all flex items-center justify-center gap-2"
+                                        >
+                                            <Trash2 size={16} /> Delete User
+                                        </button>
+                                    </div>
+                                </div>
+                            </form>
+                        </div>
                     </div>
-                </div>
+                </div >
             )}
 
             {/* Add User Modal */}
-            {showAddModal && (
-                <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-                    <div className="glass-card w-full max-w-lg p-8 relative animate-in fade-in zoom-in duration-200 border border-zinc-800">
-                        <button onClick={() => setShowAddModal(false)} className="absolute top-4 right-4 text-zinc-500 hover:text-white"><X /></button>
-                        <h2 className="text-2xl font-black text-white mb-6">Add New User</h2>
+            {
+                showAddModal && (
+                    <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+                        <div className="glass-card w-full max-w-lg p-8 relative animate-in fade-in zoom-in duration-200 border border-zinc-800">
+                            <button onClick={() => setShowAddModal(false)} className="absolute top-4 right-4 text-zinc-500 hover:text-white"><X /></button>
+                            <h2 className="text-2xl font-black text-white mb-6">Add New User</h2>
 
-                        <form onSubmit={handleCreate} className="space-y-4">
-                            <div className="grid grid-cols-2 gap-4">
-                                <div className="space-y-2">
-                                    <label className="text-xs font-bold text-zinc-500 uppercase tracking-wider flex items-center gap-2"><User size={14} /> Full Name</label>
-                                    <input type="text" value={formData.name} onChange={e => setFormData({ ...formData, name: e.target.value })} className="input-field w-full" required />
+                            <form onSubmit={handleCreate} className="space-y-4">
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div className="space-y-2">
+                                        <label className="text-xs font-bold text-zinc-500 uppercase tracking-wider flex items-center gap-2"><User size={14} /> Full Name</label>
+                                        <input type="text" value={formData.name} onChange={e => setFormData({ ...formData, name: e.target.value })} className="input-field w-full" required />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <label className="text-xs font-bold text-zinc-500 uppercase tracking-wider flex items-center gap-2"><Shield size={14} /> Role</label>
+                                        <select value={formData.role} onChange={e => setFormData({ ...formData, role: e.target.value })} className="input-field w-full">
+                                            <option value="staff">Staff</option>
+                                            {(currentUser?.role === 'super_admin') && (
+                                                <>
+                                                    <option value="admin">Admin</option>
+                                                    <option value="super_admin">Super Admin</option>
+                                                </>
+                                            )}
+                                        </select>
+                                    </div>
                                 </div>
                                 <div className="space-y-2">
-                                    <label className="text-xs font-bold text-zinc-500 uppercase tracking-wider flex items-center gap-2"><Shield size={14} /> Role</label>
-                                    <select value={formData.role} onChange={e => setFormData({ ...formData, role: e.target.value })} className="input-field w-full">
-                                        <option value="staff">Staff</option>
-                                        {(currentUser?.role === 'super_admin') && (
-                                            <>
-                                                <option value="admin">Admin</option>
-                                                <option value="super_admin">Super Admin</option>
-                                            </>
-                                        )}
-                                    </select>
+                                    <label className="text-xs font-bold text-zinc-500 uppercase tracking-wider flex items-center gap-2"><Mail size={14} /> Email</label>
+                                    <input type="email" value={formData.email} onChange={e => setFormData({ ...formData, email: e.target.value })} className="input-field w-full" required />
                                 </div>
-                            </div>
-                            <div className="space-y-2">
-                                <label className="text-xs font-bold text-zinc-500 uppercase tracking-wider flex items-center gap-2"><Mail size={14} /> Email</label>
-                                <input type="email" value={formData.email} onChange={e => setFormData({ ...formData, email: e.target.value })} className="input-field w-full" required />
-                            </div>
-                            <div className="space-y-2">
-                                <label className="text-xs font-bold text-zinc-500 uppercase tracking-wider flex items-center gap-2"><Phone size={14} /> Phone</label>
-                                <input type="text" value={formData.phone} onChange={e => setFormData({ ...formData, phone: e.target.value })} className="input-field w-full" required />
-                            </div>
-                            <div className="space-y-2">
-                                <label className="text-xs font-bold text-zinc-500 uppercase tracking-wider flex items-center gap-2"><Calendar size={14} /> Birth Date</label>
-                                <input type="date" value={formData.birthDate} onChange={e => setFormData({ ...formData, birthDate: e.target.value })} className="input-field w-full" />
-                            </div>
-                            <div className="space-y-2">
-                                <label className="text-xs font-bold text-zinc-500 uppercase tracking-wider flex items-center gap-2"><Palmtree size={14} /> Initial Leave Quota</label>
-                                <input
-                                    type="number"
-                                    value={formData.leaveQuota}
-                                    onChange={e => setFormData({ ...formData, leaveQuota: parseInt(e.target.value) || 0 })}
-                                    className="input-field w-full"
-                                />
-                            </div>
-                            <div className="space-y-2">
-                                <label className="text-xs font-bold text-zinc-500 uppercase tracking-wider flex items-center gap-2"><Lock size={14} /> Password</label>
-                                <input type="password" value={formData.password} onChange={e => setFormData({ ...formData, password: e.target.value })} className="input-field w-full" required />
-                            </div>
+                                <div className="space-y-2">
+                                    <label className="text-xs font-bold text-zinc-500 uppercase tracking-wider flex items-center gap-2"><Phone size={14} /> Phone</label>
+                                    <input type="text" value={formData.phone} onChange={e => setFormData({ ...formData, phone: e.target.value })} className="input-field w-full" required />
+                                </div>
+                                <div className="space-y-2">
+                                    <label className="text-xs font-bold text-zinc-500 uppercase tracking-wider flex items-center gap-2"><Calendar size={14} /> Birth Date</label>
+                                    <input type="date" value={formData.birthDate} onChange={e => setFormData({ ...formData, birthDate: e.target.value })} className="input-field w-full" />
+                                </div>
+                                <div className="space-y-2">
+                                    <label className="text-xs font-bold text-zinc-500 uppercase tracking-wider flex items-center gap-2"><Palmtree size={14} /> Initial Leave Quota</label>
+                                    <input
+                                        type="number"
+                                        value={formData.leaveQuota}
+                                        onChange={e => setFormData({ ...formData, leaveQuota: parseInt(e.target.value) || 0 })}
+                                        className="input-field w-full"
+                                    />
+                                </div>
+                                <div className="space-y-2">
+                                    <label className="text-xs font-bold text-zinc-500 uppercase tracking-wider flex items-center gap-2"><Lock size={14} /> Password</label>
+                                    <input type="password" value={formData.password} onChange={e => setFormData({ ...formData, password: e.target.value })} className="input-field w-full" required />
+                                </div>
 
-                            <div className="flex justify-end gap-3 mt-6">
-                                <button type="button" onClick={() => setShowAddModal(false)} className="px-4 py-2 rounded-xl font-bold hover:bg-white/10 transition-colors text-zinc-400">Cancel</button>
-                                <button type="submit" className="btn-primary">Create User</button>
-                            </div>
-                        </form>
+                                <div className="flex justify-end gap-3 mt-6">
+                                    <button type="button" onClick={() => setShowAddModal(false)} className="px-4 py-2 rounded-xl font-bold hover:bg-white/10 transition-colors text-zinc-400">Cancel</button>
+                                    <button type="submit" className="btn-primary">Create User</button>
+                                </div>
+                            </form>
+                        </div>
                     </div>
-                </div>
-            )}
+                )
+            }
             {/* Confirm Modal */}
             <ConfirmModal
                 isOpen={confirmModal.isOpen}
@@ -296,7 +418,7 @@ const AdminUsers = () => {
                 confirmText="Delete User"
                 isDanger={true}
             />
-        </div>
+        </div >
     );
 };
 
