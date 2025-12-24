@@ -41,11 +41,48 @@ const StaffDashboard = () => {
     const [otDuration, setOtDuration] = useState(0);
     const [isHoliday, setIsHoliday] = useState(false);
 
-    // ... (Holidays logic skipped for brevity, it's unchanged)
+    // Holidays (Simplified for now - checking if Sunday)
+    useEffect(() => {
+        const date = new Date();
+        setIsHoliday(isSunday(date));
+    }, []);
 
-    // ... (UseEffects for history, feeds, quests... unchanged)
+    // FETCH DATA
+    const fetchHistory = async () => {
+        try {
+            const [otRes, claimRes, leaveRes] = await Promise.all([
+                api.get('/overtimes?personal=true'),
+                api.get('/claims?personal=true'),
+                api.get('/leaves?personal=true')
+            ]);
 
-    // ... (API Fetch functions... unchanged)
+            const otData = otRes.data.map(i => ({ ...i, dataType: 'overtime' }));
+            const claimData = claimRes.data.map(i => ({ ...i, dataType: 'claim' }));
+            const leaveData = leaveRes.data.map(i => ({ ...i, dataType: 'leave' }));
+
+            // Calculate Stats
+            // 1. Earned: Sum of Approved Overtimes * Hourly Rate (Assume 20k/hr if not in response)
+            // Ideally backend sends 'amount', but we can estimate or sum 'totalRate' if present. 
+            // We'll trust the user's dashboard logic, assuming 'hours' * 20000 roughly if field missing.
+            const totalEarned = otData
+                .filter(ot => ot.status === 'Approved')
+                .reduce((acc, curr) => acc + (curr.totalRate || (parseFloat(curr.hours) * 20000)), 0);
+
+            const pendingClaims = claimData.filter(c => c.status === 'Pending').length;
+
+            setStats({ earned: totalEarned, pendingClaims });
+            setHistory([...otData, ...claimData, ...leaveData].sort((a, b) => new Date(b.date || b.startDate) - new Date(a.date || a.startDate)));
+        } catch (err) {
+            console.error("Failed to fetch history", err);
+            // toast.error("Failed to load history."); // Optional, maybe too noisy on mount
+        }
+    };
+
+    useEffect(() => {
+        fetchHistory();
+        fetchFeeds();
+        fetchQuests();
+    }, []);
 
     // Password Logic
     const calculateStrength = (password) => {
@@ -213,8 +250,8 @@ const StaffDashboard = () => {
                 });
 
                 await api.post('/claims', formData, {
-                    headers: { 'Content-Type': 'multipart/form-data' },
-                    timeout: 30000 // 30s timeout for large uploads
+                    // headers: { 'Content-Type': 'multipart/form-data' }, // REMOVED: Let browser set boundary
+                    timeout: 30000
                 });
                 toast.success('Claim submitted!');
             }
