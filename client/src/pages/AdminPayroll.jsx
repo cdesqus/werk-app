@@ -96,16 +96,36 @@ const AdminPayroll = () => {
     };
 
     const handleExportExcel = () => {
+        const formatCurrency = (val) => `Rp ${val.toLocaleString('id-ID')}`;
+
         const dataToExport = summary.map(user => ({
             'Staff ID': user.userId,
             'Name': user.name,
             'Email': user.email,
             'Overtime Hours': user.overtimeHours,
-            'Overtime Amount': user.overtimeTotal,
-            'Claims Amount': user.claimTotal,
-            'Total Payable': user.totalPayable,
+            'Overtime Amount': formatCurrency(user.overtimeTotal),
+            'Claims Amount': formatCurrency(user.claimTotal),
+            'Total Payable': formatCurrency(user.totalPayable),
             'Status': user.status // Use actual status
         }));
+
+        // Calculate Totals
+        const totalOvertimeHours = summary.reduce((sum, user) => sum + (parseFloat(user.overtimeHours) || 0), 0);
+        const totalOvertimeAmount = summary.reduce((sum, user) => sum + user.overtimeTotal, 0);
+        const totalClaimsAmount = summary.reduce((sum, user) => sum + user.claimTotal, 0);
+        const totalPayableAmount = summary.reduce((sum, user) => sum + user.totalPayable, 0);
+
+        // Add Summary Row
+        dataToExport.push({
+            'Staff ID': '',
+            'Name': 'TOTAL SUMMARY',
+            'Email': '',
+            'Overtime Hours': totalOvertimeHours,
+            'Overtime Amount': formatCurrency(totalOvertimeAmount),
+            'Claims Amount': formatCurrency(totalClaimsAmount),
+            'Total Payable': formatCurrency(totalPayableAmount),
+            'Status': ''
+        });
 
         const ws = XLSX.utils.json_to_sheet(dataToExport);
         const wb = XLSX.utils.book_new();
