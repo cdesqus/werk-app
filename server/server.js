@@ -428,7 +428,8 @@ app.put('/api/overtimes/:id', authenticateToken, async (req, res) => {
             if (description) overtime.description = description;
 
             await overtime.save();
-            await logAudit(req.user.id, 'Admin Updated Overtime', `Updated OT ID: ${overtime.id} for User ${overtime.UserId}`, req);
+            const otUser = await User.findByPk(overtime.UserId);
+            await logAudit(req.user.id, 'Admin Updated Overtime', `Updated OT '${overtime.activity}' for ${otUser ? otUser.name : 'Unknown'}`, req);
             return res.json(overtime);
         }
 
@@ -571,7 +572,8 @@ app.put('/api/claims/:id', authenticateToken, async (req, res) => {
             if (amount) claim.amount = amount;
 
             await claim.save();
-            await logAudit(req.user.id, 'Admin Updated Claim', `Updated Claim ID: ${claim.id} for User ${claim.UserId}`, req);
+            const claimUser = await User.findByPk(claim.UserId);
+            await logAudit(req.user.id, 'Admin Updated Claim', `Updated Claim '${claim.title}' for ${claimUser ? claimUser.name : 'Unknown'}`, req);
             return res.json(claim);
         }
 
@@ -716,7 +718,8 @@ app.put('/api/leaves/:id', authenticateToken, async (req, res) => {
             if (reason) leave.reason = reason;
 
             await leave.save();
-            await logAudit(req.user.id, 'Admin Updated Leave', `Updated Leave ID: ${leave.id} (${leave.status}) for User ${leave.UserId}`, req);
+            const leaveUser = await User.findByPk(leave.UserId);
+            await logAudit(req.user.id, 'Admin Updated Leave', `Updated Leave '${leave.type}' (${leave.status}) for ${leaveUser ? leaveUser.name : 'Unknown'}`, req);
             return res.json(leave);
         }
 
@@ -1161,6 +1164,15 @@ app.delete('/api/admin/users/:id', authenticateToken, isAdmin, async (req, res, 
 // Admin Audit Logs
 app.get('/api/admin/audit-logs', authenticateToken, isAdmin, async (req, res, next) => {
     try {
+        // Cleanup Logs Older Than 7 Days
+        const sevenDaysAgo = new Date();
+        sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+        await AuditLog.destroy({
+            where: {
+                createdAt: { [Op.lt]: sevenDaysAgo }
+            }
+        });
+
         const logs = await AuditLog.findAll({
             include: [{ model: User, attributes: ['name', 'email', 'role'] }],
             order: [['createdAt', 'DESC']]
