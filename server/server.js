@@ -221,7 +221,13 @@ AuditLog.belongsTo(User);
 // Helper: Log Audit Event
 const logAudit = async (userId, action, details, req) => {
     try {
-        const ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
+        let ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
+
+        // If multiple IPs (behind proxy), take the first one (client origin)
+        if (ip && ip.includes(',')) {
+            ip = ip.split(',')[0].trim();
+        }
+
         await AuditLog.create({ UserId: userId, action, details, ip });
     } catch (err) {
         console.error("Failed to write audit log:", err);
@@ -422,6 +428,7 @@ app.put('/api/overtimes/:id', authenticateToken, async (req, res) => {
             if (description) overtime.description = description;
 
             await overtime.save();
+            await logAudit(req.user.id, 'Admin Updated Overtime', `Updated OT ID: ${overtime.id} for User ${overtime.UserId}`, req);
             return res.json(overtime);
         }
 
@@ -564,6 +571,7 @@ app.put('/api/claims/:id', authenticateToken, async (req, res) => {
             if (amount) claim.amount = amount;
 
             await claim.save();
+            await logAudit(req.user.id, 'Admin Updated Claim', `Updated Claim ID: ${claim.id} for User ${claim.UserId}`, req);
             return res.json(claim);
         }
 
@@ -708,6 +716,7 @@ app.put('/api/leaves/:id', authenticateToken, async (req, res) => {
             if (reason) leave.reason = reason;
 
             await leave.save();
+            await logAudit(req.user.id, 'Admin Updated Leave', `Updated Leave ID: ${leave.id} (${leave.status}) for User ${leave.UserId}`, req);
             return res.json(leave);
         }
 
@@ -777,6 +786,8 @@ app.post('/api/vibes', authenticateToken, isAdmin, async (req, res) => {
             await PollOption.bulkCreate(pollOptions);
         }
 
+        await logAudit(req.user.id, 'Admin Created Vibe', `Created ${type}: ${title}`, req);
+
         res.status(201).json(feed);
     } catch (error) {
         res.status(400).json({ error: error.message });
@@ -819,6 +830,7 @@ app.post('/api/quests', authenticateToken, isAdmin, async (req, res) => {
     try {
         const { title, reward, difficulty } = req.body;
         const quest = await Quest.create({ title, reward, difficulty });
+        await logAudit(req.user.id, 'Admin Created Quest', `Created Quest: ${title}`, req);
         res.status(201).json(quest);
     } catch (error) {
         res.status(400).json({ error: error.message });
@@ -1023,6 +1035,8 @@ app.post('/api/admin/payout', authenticateToken, isAdmin, async (req, res) => {
                 }
             }
         );
+
+        await logAudit(req.user.id, 'Admin Processed Payout', `Processed payout for ${userIds.length} users`, req);
 
         res.json({ message: 'Payout processed successfully' });
     } catch (error) {
