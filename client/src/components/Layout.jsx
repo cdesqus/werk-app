@@ -21,10 +21,12 @@ const Layout = () => {
                         <span className="text-2xl">WERK</span>
                         <sup className="text-lime-400 ml-0.5 mt-1 text-xs">IDE</sup>
                     </Link>
-                    {user?.role === 'admin' && (
-                        <Link to="/admin/users" className="text-zinc-400 hover:text-white transition-colors flex items-center gap-2 text-sm font-medium">
-                            <Users size={16} /> Users
-                        </Link>
+                    {['admin', 'super_admin'].includes(user?.role) && (
+                        <>
+                            <Link to="/admin" className="text-zinc-400 hover:text-white transition-colors flex items-center gap-2 text-sm font-medium border-l border-zinc-700 pl-4 ml-4">
+                                <LayoutDashboard size={16} /> Admin Dashboard
+                            </Link>
+                        </>
                     )}
                 </div>
 

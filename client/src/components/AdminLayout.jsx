@@ -2,7 +2,7 @@ import { Outlet, NavLink, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import {
     LayoutDashboard, Users, Palmtree, DollarSign, Clock,
-    FileText, Zap, Sparkles, LogOut, Bell, Moon, Sun, Search, Menu, ChevronLeft, ChevronRight
+    FileText, Zap, Sparkles, LogOut, Bell, Moon, Sun, Search, Menu, ChevronLeft, ChevronRight, Briefcase
 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import clsx from 'clsx';
@@ -116,6 +116,9 @@ const AdminLayout = () => {
                     <SectionHeader label="Culture" />
                     <NavItem to="/admin/quests" icon={Zap} label="Side Quests" />
                     <NavItem to="/admin/vibes" icon={Sparkles} label="Vibe Check" />
+
+                    <SectionHeader label="Personal" />
+                    <NavItem to="/staff" icon={Briefcase} label="My Workspace" />
                 </div>
 
                 {/* Footer */}
