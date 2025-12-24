@@ -978,11 +978,27 @@ app.get('/api/admin/summary', authenticateToken, isAdmin, async (req, res) => {
                     userId: user.staffId || user.id, // Kept for text filter search compatibility if any
                     name: user.name,
                     email: user.email,
-                    overtimeHours,
                     overtimeTotal,
                     claimTotal,
                     totalPayable,
-                    status
+                    status,
+                    details: {
+                        overtimes: overtimes.map(o => ({
+                            id: o.id,
+                            date: o.date,
+                            activity: o.activity,
+                            hours: o.hours,
+                            amount: o.payableAmount,
+                            status: o.status
+                        })),
+                        claims: claims.map(c => ({
+                            id: c.id,
+                            date: c.date,
+                            title: c.title,
+                            amount: c.amount,
+                            status: c.status
+                        }))
+                    }
                 });
             }
         }

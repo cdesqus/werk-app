@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useToast } from '../context/ToastContext';
 import api from '../utils/api';
 import ConfirmModal from '../components/ui/ConfirmModal';
-import { DollarSign, Calendar, ChevronLeft, ChevronRight, Download, CheckCircle, Loader, CheckCircle2 } from 'lucide-react';
+import { DollarSign, Calendar, ChevronLeft, ChevronRight, Download, CheckCircle, Loader, CheckCircle2, ChevronDown, ChevronUp, Clock, FileText } from 'lucide-react';
 import { format, subMonths, addMonths } from 'date-fns';
 import * as XLSX from 'xlsx';
 import clsx from 'clsx';
@@ -14,6 +14,17 @@ const AdminPayroll = () => {
     const [selectedUserIds, setSelectedUserIds] = useState([]);
     const [isProcessing, setIsProcessing] = useState(false);
     const [confirmModal, setConfirmModal] = useState({ isOpen: false });
+    const [expandedRows, setExpandedRows] = useState(new Set());
+
+    const toggleRow = (id) => {
+        const newExpanded = new Set(expandedRows);
+        if (newExpanded.has(id)) {
+            newExpanded.delete(id);
+        } else {
+            newExpanded.add(id);
+        }
+        setExpandedRows(newExpanded);
+    };
 
     // New state for month and year to align with the provided snippet's month navigation
     const [month, setMonth] = useState(currentDate.getMonth() + 1);
@@ -178,61 +189,147 @@ const AdminPayroll = () => {
                         </thead>
                         <tbody className="divide-y divide-white/5">
                             {summary.map((user) => (
-                                <tr key={user.id} className="hover:bg-white/5 transition-colors group">
-                                    <td className="p-4 text-center">
-                                        <input
-                                            type="checkbox"
-                                            className="rounded border-zinc-600 bg-zinc-800 text-lime-400 focus:ring-lime-400 focus:ring-offset-0 disabled:opacity-30"
-                                            checked={selectedUserIds.includes(user.id)}
-                                            onChange={() => handleSelectUser(user.id)}
-                                            disabled={user.totalPayable === 0 || user.status === 'Paid'}
-                                        />
-                                    </td>
-                                    <td className="p-4">
-                                        <div className="flex items-center gap-3">
-                                            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-indigo-500 to-purple-500 flex items-center justify-center text-white font-bold shadow-lg">
-                                                {user.name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase()}
+                                <>
+                                    <tr key={user.id} className="hover:bg-white/5 transition-colors group">
+                                        <td className="p-4 text-center">
+                                            <input
+                                                type="checkbox"
+                                                className="rounded border-zinc-600 bg-zinc-800 text-lime-400 focus:ring-lime-400 focus:ring-offset-0 disabled:opacity-30"
+                                                checked={selectedUserIds.includes(user.id)}
+                                                onChange={() => handleSelectUser(user.id)}
+                                                disabled={user.totalPayable === 0 || user.status === 'Paid'}
+                                            />
+                                        </td>
+                                        <td className="p-4">
+                                            <div className="flex items-center gap-3">
+                                                <button
+                                                    onClick={() => toggleRow(user.id)}
+                                                    className="p-1 rounded-full hover:bg-white/10 text-zinc-500 hover:text-white transition-colors"
+                                                >
+                                                    {expandedRows.has(user.id) ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+                                                </button>
+                                                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-indigo-500 to-purple-500 flex items-center justify-center text-white font-bold shadow-lg">
+                                                    {user.name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase()}
+                                                </div>
+                                                <div>
+                                                    <div className="font-bold text-white cursor-pointer hover:underline" onClick={() => toggleRow(user.id)}>{user.name}</div>
+                                                    <div className="text-xs text-zinc-500 font-mono">{user.staffId || user.userId}</div>
+                                                </div>
                                             </div>
-                                            <div>
-                                                <div className="font-bold text-white">{user.name}</div>
-                                                <div className="text-xs text-zinc-500 font-mono">{user.staffId || user.userId}</div>
-                                            </div>
-                                        </div>
-                                    </td>
-                                    <td className="p-4 text-center font-mono text-zinc-300">
-                                        {user.overtimeHours}h
-                                    </td>
-                                    <td className="p-4 text-right font-mono text-zinc-300">
-                                        Rp {user.overtimeTotal.toLocaleString('id-ID')}
-                                    </td>
-                                    <td className="p-4 text-right font-mono text-zinc-300">
-                                        Rp {user.claimTotal.toLocaleString('id-ID')}
-                                    </td>
-                                    <td className="p-4 text-right">
-                                        <span className="font-bold text-lime-400 font-mono">
-                                            Rp {user.totalPayable.toLocaleString('id-ID')}
-                                        </span>
-                                    </td>
-                                    <td className="p-4 text-center">
-                                        <StatusBadge status={user.status} />
-                                    </td>
-                                    <td className="p-4 text-right">
-                                        {user.status !== 'Paid' && user.totalPayable > 0 && (
-                                            <button
-                                                onClick={() => {
-                                                    // We need to set state first, then open modal. 
-                                                    // But handleMarkAsPaid uses selectedUserIds state.
-                                                    // So we set selectedUserIds then open modal.
-                                                    setSelectedUserIds([user.id]);
-                                                    setConfirmModal({ isOpen: true });
-                                                }}
-                                                className="text-xs font-bold text-lime-400 hover:text-lime-300 hover:underline"
-                                            >
-                                                Pay Now
-                                            </button>
-                                        )}
-                                    </td>
-                                </tr>
+                                        </td>
+                                        <td className="p-4 text-center font-mono text-zinc-300">
+                                            {user.overtimeHours}h
+                                        </td>
+                                        <td className="p-4 text-right font-mono text-zinc-300">
+                                            Rp {user.overtimeTotal.toLocaleString('id-ID')}
+                                        </td>
+                                        <td className="p-4 text-right font-mono text-zinc-300">
+                                            Rp {user.claimTotal.toLocaleString('id-ID')}
+                                        </td>
+                                        <td className="p-4 text-right">
+                                            <span className="font-bold text-lime-400 font-mono">
+                                                Rp {user.totalPayable.toLocaleString('id-ID')}
+                                            </span>
+                                        </td>
+                                        <td className="p-4 text-center">
+                                            <StatusBadge status={user.status} />
+                                        </td>
+                                        <td className="p-4 text-right">
+                                            {user.status !== 'Paid' && user.totalPayable > 0 && (
+                                                <button
+                                                    onClick={() => {
+                                                        setSelectedUserIds([user.id]);
+                                                        setConfirmModal({ isOpen: true });
+                                                    }}
+                                                    className="text-xs font-bold text-lime-400 hover:text-lime-300 hover:underline"
+                                                >
+                                                    Pay Now
+                                                </button>
+                                            )}
+                                        </td>
+                                    </tr>
+                                    {/* Expanded Details Row */}
+                                    {expandedRows.has(user.id) && (
+                                        <tr className="bg-white/[0.02]">
+                                            <td colSpan="8" className="p-0">
+                                                <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-8 animate-in fade-in slide-in-from-top-2 border-b border-white/5">
+
+                                                    {/* Overtimes Detail */}
+                                                    <div className="space-y-3">
+                                                        <h4 className="text-xs font-bold text-zinc-500 uppercase tracking-widest flex items-center gap-2">
+                                                            <Clock size={14} /> Overtime Details
+                                                        </h4>
+                                                        {user.details?.overtimes?.length > 0 ? (
+                                                            <div className="bg-zinc-950/50 rounded-lg border border-white/5 overflow-hidden">
+                                                                <table className="w-full text-sm">
+                                                                    <thead className="bg-white/5 text-zinc-400 text-xs">
+                                                                        <tr>
+                                                                            <th className="p-2 text-left">Date</th>
+                                                                            <th className="p-2 text-left">Activity</th>
+                                                                            <th className="p-2 text-right">Hrs</th>
+                                                                            <th className="p-2 text-right">Amount</th>
+                                                                        </tr>
+                                                                    </thead>
+                                                                    <tbody className="divide-y divide-white/5">
+                                                                        {user.details.overtimes.map(ot => (
+                                                                            <tr key={ot.id}>
+                                                                                <td className="p-2 text-zinc-400">{format(new Date(ot.date), 'dd/MM')}</td>
+                                                                                <td className="p-2 text-white">{ot.activity}</td>
+                                                                                <td className="p-2 text-right font-mono text-zinc-300">{ot.hours}</td>
+                                                                                <td className="p-2 text-right font-mono text-lime-400">Rp {ot.amount.toLocaleString('id-ID')}</td>
+                                                                            </tr>
+                                                                        ))}
+                                                                    </tbody>
+                                                                </table>
+                                                            </div>
+                                                        ) : (
+                                                            <div className="text-sm text-zinc-600 italic px-2">No overtime logged.</div>
+                                                        )}
+                                                    </div>
+
+                                                    {/* Claims Detail */}
+                                                    <div className="space-y-3">
+                                                        <h4 className="text-xs font-bold text-zinc-500 uppercase tracking-widest flex items-center gap-2">
+                                                            <FileText size={14} /> Claims Details
+                                                        </h4>
+                                                        {user.details?.claims?.length > 0 ? (
+                                                            <div className="bg-zinc-950/50 rounded-lg border border-white/5 overflow-hidden">
+                                                                <table className="w-full text-sm">
+                                                                    <thead className="bg-white/5 text-zinc-400 text-xs">
+                                                                        <tr>
+                                                                            <th className="p-2 text-left">Date</th>
+                                                                            <th className="p-2 text-left">Title</th>
+                                                                            <th className="p-2 text-right">Status</th>
+                                                                            <th className="p-2 text-right">Amount</th>
+                                                                        </tr>
+                                                                    </thead>
+                                                                    <tbody className="divide-y divide-white/5">
+                                                                        {user.details.claims.map(claim => (
+                                                                            <tr key={claim.id}>
+                                                                                <td className="p-2 text-zinc-400">{format(new Date(claim.date), 'dd/MM')}</td>
+                                                                                <td className="p-2 text-white">{claim.title}</td>
+                                                                                <td className="p-2 text-right">
+                                                                                    <span className={clsx("text-xs font-bold",
+                                                                                        claim.status === 'Paid' ? "text-emerald-500" :
+                                                                                            claim.status === 'Approved' ? "text-lime-500" : "text-yellow-500"
+                                                                                    )}>{claim.status}</span>
+                                                                                </td>
+                                                                                <td className="p-2 text-right font-mono text-lime-400">Rp {claim.amount.toLocaleString('id-ID')}</td>
+                                                                            </tr>
+                                                                        ))}
+                                                                    </tbody>
+                                                                </table>
+                                                            </div>
+                                                        ) : (
+                                                            <div className="text-sm text-zinc-600 italic px-2">No claims filed.</div>
+                                                        )}
+                                                    </div>
+
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    )}
+                                </>
                             ))}
                             {summary.length === 0 && (
                                 <tr>
