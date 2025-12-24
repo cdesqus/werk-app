@@ -1132,7 +1132,6 @@ app.delete('/api/admin/users/:id', authenticateToken, isAdmin, async (req, res, 
         const user = await User.findByPk(req.params.id);
         if (!user) return res.status(404).json({ error: 'User not found' });
 
-        // Prevent deleting self
         if (user.id === req.user.id) return res.status(400).json({ error: 'Cannot delete your own account' });
 
         await user.destroy();
@@ -1140,6 +1139,19 @@ app.delete('/api/admin/users/:id', authenticateToken, isAdmin, async (req, res, 
         await logAudit(req.user.id, 'Admin Deleted User', `Deleted user ID: ${req.params.id} (${user.email})`, req);
 
         res.json({ message: 'User deleted successfully' });
+    } catch (error) {
+        next(error);
+    }
+});
+
+// Admin Audit Logs
+app.get('/api/admin/audit-logs', authenticateToken, isAdmin, async (req, res, next) => {
+    try {
+        const logs = await AuditLog.findAll({
+            include: [{ model: User, attributes: ['name', 'email', 'role'] }],
+            order: [['createdAt', 'DESC']]
+        });
+        res.json(logs);
     } catch (error) {
         next(error);
     }

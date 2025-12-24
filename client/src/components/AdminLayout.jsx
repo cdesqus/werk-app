@@ -57,6 +57,7 @@ const AdminLayout = () => {
         if (path.includes('claims')) return 'Finance / Claims';
         if (path.includes('quests')) return 'Culture / Side Quests';
         if (path.includes('vibes')) return 'Culture / Vibe Check';
+        if (path.includes('logs')) return 'System / Audit Logs';
         return 'HQ';
     };
 
@@ -116,6 +117,9 @@ const AdminLayout = () => {
                     <SectionHeader label="Culture" />
                     <NavItem to="/admin/quests" icon={Zap} label="Side Quests" />
                     <NavItem to="/admin/vibes" icon={Sparkles} label="Vibe Check" />
+
+                    <SectionHeader label="System" />
+                    <NavItem to="/admin/logs" icon={ShieldAlert} label="Audit Logs" />
 
                     <SectionHeader label="Personal" />
                     <NavItem to="/staff" icon={Briefcase} label="My Workspace" />

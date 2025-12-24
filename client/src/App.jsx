@@ -16,6 +16,7 @@ import AdminPayroll from './pages/AdminPayroll';
 import AdminLeaves from './pages/AdminLeaves';
 import AdminQuests from './pages/AdminQuests';
 import AdminVibeCheck from './pages/AdminVibeCheck';
+import AdminAuditLogs from './pages/AdminAuditLogs';
 
 import { ToastProvider } from './context/ToastContext';
 
@@ -53,6 +54,7 @@ function App() {
                 <Route path="/admin/claims" element={<AdminClaims />} />
                 <Route path="/admin/quests" element={<AdminQuests />} />
                 <Route path="/admin/vibes" element={<AdminVibeCheck />} />
+                <Route path="/admin/logs" element={<AdminAuditLogs />} />
               </Route>
             </Route>
 
