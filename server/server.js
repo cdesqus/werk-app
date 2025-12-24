@@ -1051,6 +1051,7 @@ app.get('/api/admin/summary', authenticateToken, isAdmin, async (req, res) => {
                     userId: user.staffId || user.id, // Kept for text filter search compatibility if any
                     name: user.name,
                     email: user.email,
+                    overtimeHours,
                     overtimeTotal,
                     claimTotal,
                     totalPayable,
