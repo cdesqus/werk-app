@@ -19,14 +19,23 @@ const app = express();
 const PORT = process.env.PORT || 5000;
 const SECRET_KEY = process.env.SECRET_KEY || 'werk-secret-key-gen-z';
 
-// Security: Helmet (Secure Headers)
-// Relaxing policies to ensure CORS works for cross-origin API usage
-app.use(helmet({
-    crossOriginResourcePolicy: false,
-    crossOriginEmbedderPolicy: false
-}));
+// --- CONFIGURATION & DEFINITIONS ---
 
-// Middleware (Order is Critical: CORS first, then Security/Body Parsing)
+// 1. Security: Rate Limiters (Define first)
+const generalLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: 300,
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: 'Too many requests, please try again later.'
+});
+
+const authLimiter = rateLimit({
+    windowMs: 60 * 60 * 1000,
+    max: 10,
+    message: 'Too many login attempts, please try again later.'
+});
+
 const allowedOrigins = [
     'https://werk.kaumtech.com',
     'https://www.werk.kaumtech.com',
@@ -34,6 +43,50 @@ const allowedOrigins = [
     'http://localhost:5173',
     'http://localhost:3000'
 ];
+
+// --- MIDDLEWARE PIPELINE (Order is Critical) ---
+
+// 1. CORS (Must be absolutely first)
+app.use(cors({
+    origin: (origin, callback) => {
+        // Allow mobile/curl (no origin) or allowed domains
+        if (!origin || allowedOrigins.includes(origin) || origin.endsWith('.kaumtech.com')) {
+            callback(null, true);
+        } else {
+            console.log('Blocked by CORS:', origin);
+            callback(new Error('Not allowed by CORS'));
+        }
+    },
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
+    credentials: true,
+    optionsSuccessStatus: 200
+}));
+app.options(/.*/, cors());
+
+// 2. Manual Fallback Headers (Double safety for proxies)
+app.use((req, res, next) => {
+    const origin = req.headers.origin;
+    if (origin && (allowedOrigins.includes(origin) || origin.endsWith('.kaumtech.com'))) {
+        res.header('Access-Control-Allow-Origin', origin);
+        res.header('Access-Control-Allow-Credentials', 'true');
+    }
+    res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+    res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+    next();
+});
+
+// 3. Security: Helmet (Secure Headers)
+app.use(helmet({
+    crossOriginResourcePolicy: false,
+    crossOriginEmbedderPolicy: false
+}));
+
+// 4. Rate Limiter
+app.use(generalLimiter);
+
+// Middleware (Order is Critical: CORS first, then Security/Body Parsing)
+
 
 app.use(cors({
     origin: function (origin, callback) {
@@ -54,22 +107,12 @@ app.use(cors({
     credentials: true,
     optionsSuccessStatus: 204
 }));
-app.options('*', cors()); // Enable preflight for all routes
+app.options(/.*/, cors()); // FIX CRASH (Duplicate)
 
 // Security: Rate Limiters
-const generalLimiter = rateLimit({
-    windowMs: 15 * 60 * 1000, // 15 minutes
-    max: 300, // Limit each IP to 300 requests per windowMs
-    standardHeaders: true,
-    legacyHeaders: false,
-    message: 'Too many requests, please try again later.'
-});
 
-const authLimiter = rateLimit({
-    windowMs: 60 * 60 * 1000, // 1 hour
-    max: 10, // Limit each IP to 10 login/register attempts per hour
-    message: 'Too many login attempts, please try again later.'
-});
+
+
 
 app.use(generalLimiter);
 // app.use(cors({...})) removed from here
