@@ -280,6 +280,31 @@ app.post('/api/login', authLimiter, loginValidation, validate, async (req, res, 
     }
 });
 
+// Change Password Route
+app.put('/api/auth/change-password', authenticateToken, [
+    body('currentPassword').notEmpty().withMessage('Current password is required'),
+    body('newPassword').isLength({ min: 8 }).withMessage('Password must be at least 8 characters')
+        .matches(/^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d@$!%*#?&]{8,}$/).withMessage('Password must contain at least one letter and one number for Medium strength'),
+], validate, async (req, res) => {
+    try {
+        const { currentPassword, newPassword } = req.body;
+        const user = await User.findByPk(req.user.id);
+
+        // 1. Verify Current Password
+        const validPassword = await bcrypt.compare(currentPassword, user.password);
+        if (!validPassword) return res.status(400).json({ error: 'Incorrect current password' });
+
+        // 2. Hash New Password
+        const hashedPassword = await bcrypt.hash(newPassword, 10);
+        user.password = hashedPassword;
+        await user.save();
+
+        res.json({ message: 'Password updated successfully' });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
 // Overtime
 app.post('/api/overtimes', authenticateToken, async (req, res) => {
     try {
