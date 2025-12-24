@@ -983,7 +983,7 @@ app.get('/api/admin/summary', authenticateToken, isAdmin, async (req, res) => {
                     totalPayable,
                     status,
                     details: {
-                        overtimes: overtimes.map(o => ({
+                        overtimes: overtimes.filter(o => ['Approved', 'Paid'].includes(o.status)).map(o => ({
                             id: o.id,
                             date: o.date,
                             activity: o.activity,
@@ -991,7 +991,7 @@ app.get('/api/admin/summary', authenticateToken, isAdmin, async (req, res) => {
                             amount: o.payableAmount,
                             status: o.status
                         })),
-                        claims: claims.map(c => ({
+                        claims: claims.filter(c => ['Approved', 'Paid'].includes(c.status)).map(c => ({
                             id: c.id,
                             date: c.date,
                             title: c.title,
