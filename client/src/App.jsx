@@ -36,7 +36,7 @@ function App() {
             <Route path="/register" element={<Register />} />
 
             {/* Staff Routes */}
-            <Route element={<ProtectedRoute allowedRoles={['staff']} />}>
+            <Route element={<ProtectedRoute allowedRoles={['staff', 'admin', 'super_admin']} />}>
               <Route element={<Layout />}>
                 <Route path="/staff" element={<StaffDashboard />} />
               </Route>
