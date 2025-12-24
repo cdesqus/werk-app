@@ -41,7 +41,7 @@ const Login = () => {
 
         try {
             const user = await login(email, password);
-            if (user.role === 'admin') navigate('/admin');
+            if (['admin', 'super_admin'].includes(user.role)) navigate('/admin');
             else navigate('/staff');
         } catch (err) {
             setError(err.response?.data?.error || 'Login failed');
