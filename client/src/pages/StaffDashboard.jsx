@@ -525,6 +525,95 @@ const StaffDashboard = () => {
                         ))}
                     </div>
                 )}
+
+                {/* Security Tab */}
+                {activeTab === 'security' && (
+                    <div className="max-w-xl mx-auto glass-card p-8 animate-in fade-in slide-in-from-bottom-4">
+                        <h2 className="text-2xl font-black text-white mb-6">Security Settings</h2>
+
+                        <form onSubmit={handlePasswordChange} className="space-y-6">
+                            <div className="space-y-2">
+                                <label className="text-xs font-bold text-zinc-500 uppercase tracking-wider">Current Password</label>
+                                <input
+                                    type="password"
+                                    className="input-field w-full"
+                                    value={passwordForm.current}
+                                    onChange={e => setPasswordForm({ ...passwordForm, current: e.target.value })}
+                                    required
+                                />
+                            </div>
+
+                            <div className="space-y-2">
+                                <label className="text-xs font-bold text-zinc-500 uppercase tracking-wider">New Password</label>
+                                <div className="relative">
+                                    <input
+                                        type="text"
+                                        className={clsx("input-field w-full",
+                                            passwordStrength.level === 'High' ? 'border-lime-400 focus:ring-lime-400' :
+                                                passwordStrength.level === 'Medium' ? 'border-yellow-400 focus:ring-yellow-400' :
+                                                    passwordStrength.level === 'Low' && passwordForm.new.length > 0 ? 'border-red-400 focus:ring-red-400' : ''
+                                        )}
+                                        value={passwordForm.new}
+                                        onChange={e => {
+                                            setPasswordForm({ ...passwordForm, new: e.target.value });
+                                            calculateStrength(e.target.value);
+                                        }}
+                                        required
+                                    />
+                                    <button
+                                        type="button"
+                                        onClick={generatePassword}
+                                        className="absolute right-2 top-1.5 p-1.5 bg-zinc-800 text-zinc-400 hover:text-white rounded-lg transition-colors text-xs font-bold flex items-center gap-1"
+                                        title="Generate Strong Password"
+                                    >
+                                        <Sparkles size={12} /> Generate
+                                    </button>
+                                </div>
+
+                                {/* Strength Meter */}
+                                {passwordForm.new && (
+                                    <div className="space-y-1">
+                                        <div className="flex gap-1 h-1 mt-2">
+                                            <div className={clsx("flex-1 rounded-full", passwordStrength.score >= 1 ? "bg-red-400" : "bg-zinc-800")}></div>
+                                            <div className={clsx("flex-1 rounded-full", passwordStrength.score >= 2 ? "bg-yellow-400" : "bg-zinc-800")}></div>
+                                            <div className={clsx("flex-1 rounded-full", passwordStrength.score >= 3 ? "bg-lime-400" : "bg-zinc-800")}></div>
+                                        </div>
+                                        <p className={clsx("text-xs font-bold text-right",
+                                            passwordStrength.level === 'High' ? "text-lime-400" :
+                                                passwordStrength.level === 'Medium' ? "text-yellow-400" : "text-red-400"
+                                        )}>
+                                            Strength: {passwordStrength.level}
+                                        </p>
+                                        {passwordStrength.level === 'Low' && (
+                                            <p className="text-[10px] text-red-400 mt-1">
+                                                Password must be at least 8 chars and contain letters & numbers.
+                                            </p>
+                                        )}
+                                    </div>
+                                )}
+                            </div>
+
+                            <div className="space-y-2">
+                                <label className="text-xs font-bold text-zinc-500 uppercase tracking-wider">Confirm New Password</label>
+                                <input
+                                    type="password"
+                                    className="input-field w-full"
+                                    value={passwordForm.confirm}
+                                    onChange={e => setPasswordForm({ ...passwordForm, confirm: e.target.value })}
+                                    required
+                                />
+                            </div>
+
+                            <button
+                                type="submit"
+                                disabled={loading || passwordStrength.score < 2}
+                                className="btn-primary w-full disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                                {loading ? 'Updating...' : 'Update Password'}
+                            </button>
+                        </form>
+                    </div>
+                )}
             </div>
 
             {/* MODALS */}
@@ -739,94 +828,7 @@ const StaffDashboard = () => {
                 isDanger={true}
             />
 
-            {/* Security Tab */}
-            {activeTab === 'security' && (
-                <div className="max-w-xl mx-auto glass-card p-8 animate-in fade-in slide-in-from-bottom-4">
-                    <h2 className="text-2xl font-black text-white mb-6">Security Settings</h2>
 
-                    <form onSubmit={handlePasswordChange} className="space-y-6">
-                        <div className="space-y-2">
-                            <label className="text-xs font-bold text-zinc-500 uppercase tracking-wider">Current Password</label>
-                            <input
-                                type="password"
-                                className="input-field w-full"
-                                value={passwordForm.current}
-                                onChange={e => setPasswordForm({ ...passwordForm, current: e.target.value })}
-                                required
-                            />
-                        </div>
-
-                        <div className="space-y-2">
-                            <label className="text-xs font-bold text-zinc-500 uppercase tracking-wider">New Password</label>
-                            <div className="relative">
-                                <input
-                                    type="text" // Visible for generator convenience, or toggle? Let's use text for simplicity with generator, or password normally. Use text if recent generated? Sticking to password for security, generator fills it.
-                                    className={clsx("input-field w-full",
-                                        passwordStrength.level === 'High' ? 'border-lime-400 focus:ring-lime-400' :
-                                            passwordStrength.level === 'Medium' ? 'border-yellow-400 focus:ring-yellow-400' :
-                                                passwordStrength.level === 'Low' && passwordForm.new.length > 0 ? 'border-red-400 focus:ring-red-400' : ''
-                                    )}
-                                    value={passwordForm.new}
-                                    onChange={e => {
-                                        setPasswordForm({ ...passwordForm, new: e.target.value });
-                                        calculateStrength(e.target.value);
-                                    }}
-                                    required
-                                />
-                                <button
-                                    type="button"
-                                    onClick={generatePassword}
-                                    className="absolute right-2 top-1.5 p-1.5 bg-zinc-800 text-zinc-400 hover:text-white rounded-lg transition-colors text-xs font-bold flex items-center gap-1"
-                                    title="Generate Strong Password"
-                                >
-                                    <Sparkles size={12} /> Generate
-                                </button>
-                            </div>
-
-                            {/* Strength Meter */}
-                            {passwordForm.new && (
-                                <div className="space-y-1">
-                                    <div className="flex gap-1 h-1 mt-2">
-                                        <div className={clsx("flex-1 rounded-full", passwordStrength.score >= 1 ? "bg-red-400" : "bg-zinc-800")}></div>
-                                        <div className={clsx("flex-1 rounded-full", passwordStrength.score >= 2 ? "bg-yellow-400" : "bg-zinc-800")}></div>
-                                        <div className={clsx("flex-1 rounded-full", passwordStrength.score >= 3 ? "bg-lime-400" : "bg-zinc-800")}></div>
-                                    </div>
-                                    <p className={clsx("text-xs font-bold text-right",
-                                        passwordStrength.level === 'High' ? "text-lime-400" :
-                                            passwordStrength.level === 'Medium' ? "text-yellow-400" : "text-red-400"
-                                    )}>
-                                        Strength: {passwordStrength.level}
-                                    </p>
-                                    {passwordStrength.level === 'Low' && (
-                                        <p className="text-[10px] text-red-400 mt-1">
-                                            Password must be at least 8 chars and contain letters & numbers.
-                                        </p>
-                                    )}
-                                </div>
-                            )}
-                        </div>
-
-                        <div className="space-y-2">
-                            <label className="text-xs font-bold text-zinc-500 uppercase tracking-wider">Confirm New Password</label>
-                            <input
-                                type="password"
-                                className="input-field w-full"
-                                value={passwordForm.confirm}
-                                onChange={e => setPasswordForm({ ...passwordForm, confirm: e.target.value })}
-                                required
-                            />
-                        </div>
-
-                        <button
-                            type="submit"
-                            disabled={loading || passwordStrength.score < 2}
-                            className="btn-primary w-full disabled:opacity-50 disabled:cursor-not-allowed"
-                        >
-                            {loading ? 'Updating...' : 'Update Password'}
-                        </button>
-                    </form>
-                </div>
-            )}
 
             {/* Lightbox */}
             {viewingImage && (
