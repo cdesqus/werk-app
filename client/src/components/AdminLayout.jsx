@@ -2,7 +2,7 @@ import { Outlet, NavLink, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import {
     LayoutDashboard, Users, Palmtree, DollarSign, Clock,
-    FileText, Zap, Sparkles, LogOut, Bell, Moon, Sun, Search, Menu, ChevronLeft, ChevronRight, Briefcase
+    FileText, Zap, Sparkles, LogOut, Bell, Moon, Sun, Search, Menu, ChevronLeft, ChevronRight, Briefcase, ShieldAlert
 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import clsx from 'clsx';
