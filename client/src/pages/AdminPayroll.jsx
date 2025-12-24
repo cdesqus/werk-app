@@ -339,6 +339,24 @@ const AdminPayroll = () => {
                                 </tr>
                             )}
                         </tbody>
+                        <tfoot className="bg-zinc-900/80 border-t-2 border-zinc-700 font-bold">
+                            <tr>
+                                <td colSpan="2" className="p-4 text-right text-zinc-400 uppercase tracking-wider text-xs">Total Summary</td>
+                                <td className="p-4 text-center font-mono text-lime-400">
+                                    {summary.reduce((sum, user) => sum + (parseFloat(user.overtimeHours) || 0), 0)}h
+                                </td>
+                                <td className="p-4 text-right font-mono text-lime-400">
+                                    Rp {summary.reduce((sum, user) => sum + user.overtimeTotal, 0).toLocaleString('id-ID')}
+                                </td>
+                                <td className="p-4 text-right font-mono text-lime-400">
+                                    Rp {summary.reduce((sum, user) => sum + user.claimTotal, 0).toLocaleString('id-ID')}
+                                </td>
+                                <td className="p-4 text-right font-mono text-lime-400">
+                                    Rp {summary.reduce((sum, user) => sum + user.totalPayable, 0).toLocaleString('id-ID')}
+                                </td>
+                                <td colSpan="2"></td>
+                            </tr>
+                        </tfoot>
                     </table>
                 </div>
             </div>
