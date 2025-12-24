@@ -185,6 +185,14 @@ const Quest = sequelize.define('Quest', {
 });
 
 // Relationships
+// Audit Log Model
+const AuditLog = sequelize.define('AuditLog', {
+    action: { type: DataTypes.STRING, allowNull: false },
+    details: { type: DataTypes.TEXT },
+    ip: { type: DataTypes.STRING },
+});
+
+// Relationships
 User.hasMany(Overtime);
 Overtime.belongsTo(User);
 User.hasMany(Claim);
@@ -206,6 +214,19 @@ PollVote.belongsTo(User);
 
 User.hasMany(Quest, { foreignKey: 'assignedTo' });
 Quest.belongsTo(User, { foreignKey: 'assignedTo' });
+
+User.hasMany(AuditLog);
+AuditLog.belongsTo(User);
+
+// Helper: Log Audit Event
+const logAudit = async (userId, action, details, req) => {
+    try {
+        const ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
+        await AuditLog.create({ UserId: userId, action, details, ip });
+    } catch (err) {
+        console.error("Failed to write audit log:", err);
+    }
+};
 
 // Middleware
 const authenticateToken = (req, res, next) => {
@@ -256,6 +277,7 @@ app.post('/api/register', authLimiter, registerValidation, validate, async (req,
         const staffId = `IDE-${year}-${String(nextSequence).padStart(4, '0')}`;
 
         const user = await User.create({ name, email, phone, password: hashedPassword, birthDate, staffId });
+        await logAudit(user.id, 'User Registered', `Account created with Staff ID: ${staffId}`, req);
         res.status(201).json({ message: 'User registered' });
     } catch (error) {
         // Pass to global error handler to sanitize output
@@ -273,6 +295,9 @@ app.post('/api/login', authLimiter, loginValidation, validate, async (req, res, 
         if (!validPassword) return res.status(400).json({ error: 'Invalid password' });
 
         const token = jwt.sign({ id: user.id, role: user.role, name: user.name }, SECRET_KEY, { expiresIn: '24h' });
+
+        await logAudit(user.id, 'User Login', 'Successful login', req);
+
         // Security: Explicitly define returned fields, excluding password hash
         res.json({ token, user: { id: user.id, name: user.name, email: user.email, role: user.role, leaveQuota: user.leaveQuota } });
     } catch (error) {
@@ -298,6 +323,8 @@ app.put('/api/auth/change-password', authenticateToken, [
         const hashedPassword = await bcrypt.hash(newPassword, 10);
         user.password = hashedPassword;
         await user.save();
+
+        await logAudit(user.id, 'Password Changed', 'User changed their own password', req);
 
         res.json({ message: 'Password updated successfully' });
     } catch (error) {
@@ -1056,6 +1083,8 @@ app.post('/api/admin/users', authenticateToken, isAdmin, registerValidation, val
         const userResp = user.toJSON();
         delete userResp.password;
 
+        await logAudit(req.user.id, 'Admin Created User', `Created user: ${name} (${email}) - Role: ${role || 'staff'}`, req);
+
         res.status(201).json({ message: 'User created successfully', user: userResp });
     } catch (error) {
         next(error);
@@ -1089,6 +1118,9 @@ app.put('/api/admin/users/:id', authenticateToken, isAdmin, async (req, res, nex
         }
 
         await user.save();
+
+        await logAudit(req.user.id, 'Admin Updated User', `Updated user ID: ${user.id} (${user.email})`, req);
+
         res.json({ message: 'User updated successfully' });
     } catch (error) {
         next(error);
@@ -1104,6 +1136,9 @@ app.delete('/api/admin/users/:id', authenticateToken, isAdmin, async (req, res, 
         if (user.id === req.user.id) return res.status(400).json({ error: 'Cannot delete your own account' });
 
         await user.destroy();
+
+        await logAudit(req.user.id, 'Admin Deleted User', `Deleted user ID: ${req.params.id} (${user.email})`, req);
+
         res.json({ message: 'User deleted successfully' });
     } catch (error) {
         next(error);
