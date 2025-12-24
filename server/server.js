@@ -40,13 +40,18 @@ const authLimiter = rateLimit({
 });
 
 // Middleware
-app.use(generalLimiter);
+// Middleware (Order is Critical: CORS first, then Security/Body Parsing)
 app.use(cors({
-    origin: ['https://werk.kaumtech.com', 'http://localhost:5173', 'http://localhost:3000'],
+    origin: ['https://werk.kaumtech.com', 'https://www.werk.kaumtech.com', 'http://localhost:5173', 'http://localhost:3000'],
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization'],
-    credentials: true
+    credentials: true,
+    optionsSuccessStatus: 200 // Legacy browser support
 }));
+app.options('*', cors()); // Enable preflight for all routes
+
+app.use(generalLimiter);
+// app.use(cors({...})) removed from here
 app.use(express.json({ limit: '10kb' })); // Security: Limit body size
 app.use('/uploads', express.static('uploads'));
 app.use('/api/uploads', express.static('uploads')); // Alias for proxy compatibility
@@ -904,7 +909,11 @@ app.get('/api/admin/summary', authenticateToken, isAdmin, async (req, res) => {
         endTs.setHours(23, 59, 59, 999);
         const timestampFilter = { [Op.between]: [startTs, endTs] };
 
-        const users = await User.findAll({ where: { role: 'staff' } });
+        const users = await User.findAll({
+            where: {
+                role: { [Op.or]: ['staff', 'admin'] }
+            }
+        });
         const summary = [];
 
         for (const user of users) {
