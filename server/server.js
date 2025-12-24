@@ -449,13 +449,13 @@ app.post('/api/claims', authenticateToken, upload.single('proof'), async (req, r
 
 app.get('/api/claims', authenticateToken, async (req, res) => {
     try {
-        const { month, year } = req.query;
+        const { month, year, personal } = req.query;
         if ((month && isNaN(month)) || (year && isNaN(year))) {
             return res.status(400).json({ error: 'Invalid month or year format' });
         }
         let whereClause = {};
 
-        if (!['admin', 'super_admin'].includes(req.user.role)) {
+        if (!['admin', 'super_admin'].includes(req.user.role) || personal === 'true') {
             whereClause.UserId = req.user.id;
             // Staff: Max 3 months back
             const today = new Date();
@@ -578,13 +578,13 @@ app.post('/api/leaves', authenticateToken, async (req, res) => {
 
 app.get('/api/leaves', authenticateToken, async (req, res) => {
     try {
-        const { month, year } = req.query;
+        const { month, year, personal } = req.query;
         if ((month && isNaN(month)) || (year && isNaN(year))) {
             return res.status(400).json({ error: 'Invalid month or year format' });
         }
         let whereClause = {};
 
-        if (!['admin', 'super_admin'].includes(req.user.role)) {
+        if (!['admin', 'super_admin'].includes(req.user.role) || personal === 'true') {
             whereClause.UserId = req.user.id;
             const today = new Date();
             const threeMonthsAgoDate = new Date(today.getFullYear(), today.getMonth() - 3, 1);
