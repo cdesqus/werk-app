@@ -3,7 +3,7 @@ import { useToast } from '../context/ToastContext';
 import { useAuth } from '../context/AuthContext';
 import api from '../utils/api';
 import ConfirmModal from '../components/ui/ConfirmModal';
-import { Edit2, X, Shield, User, Phone, Calendar, Search, Plus, Trash2, Mail, Lock } from 'lucide-react';
+import { Edit2, X, Shield, User, Phone, Calendar, Search, Plus, Trash2, Mail, Lock, Palmtree } from 'lucide-react';
 
 const AdminUsers = () => {
     const toast = useToast();
@@ -11,7 +11,7 @@ const AdminUsers = () => {
     const [users, setUsers] = useState([]);
     const [editingUser, setEditingUser] = useState(null);
     const [showAddModal, setShowAddModal] = useState(false);
-    const [formData, setFormData] = useState({ name: '', email: '', phone: '', birthDate: '', password: '', role: 'staff' });
+    const [formData, setFormData] = useState({ name: '', email: '', phone: '', birthDate: '', password: '', role: 'staff', leaveQuota: 12 });
     const [searchTerm, setSearchTerm] = useState('');
     const [confirmModal, setConfirmModal] = useState({ isOpen: false, id: null });
 
@@ -30,11 +30,19 @@ const AdminUsers = () => {
 
     const handleEditClick = (user) => {
         setEditingUser(user);
-        setFormData({ name: user.name, email: user.email, phone: user.phone, birthDate: user.birthDate || '', password: '', role: user.role });
+        setFormData({
+            name: user.name,
+            email: user.email,
+            phone: user.phone,
+            birthDate: user.birthDate || '',
+            password: '',
+            role: user.role,
+            leaveQuota: user.leaveQuota !== undefined ? user.leaveQuota : 12
+        });
     };
 
     const handleAddClick = () => {
-        setFormData({ name: '', email: '', phone: '', birthDate: '', password: '', role: 'staff' });
+        setFormData({ name: '', email: '', phone: '', birthDate: '', password: '', role: 'staff', leaveQuota: 12 });
         setShowAddModal(true);
     };
 
@@ -45,7 +53,8 @@ const AdminUsers = () => {
                 name: formData.name,
                 phone: formData.phone,
                 birthDate: formData.birthDate,
-                newPassword: formData.password
+                newPassword: formData.password,
+                leaveQuota: formData.leaveQuota
             });
             setEditingUser(null);
             fetchUsers();
@@ -124,6 +133,7 @@ const AdminUsers = () => {
                             <th className="p-4 font-bold">Email</th>
                             <th className="p-4 font-bold">Phone</th>
                             <th className="p-4 font-bold">Birth Date</th>
+                            <th className="p-4 font-bold">Leave Quota</th>
                             <th className="p-4 font-bold">Role</th>
                             <th className="p-4 font-bold text-right">Action</th>
                         </tr>
@@ -140,6 +150,11 @@ const AdminUsers = () => {
                                 <td className="p-4 text-zinc-400 font-medium">{user.email}</td>
                                 <td className="p-4 text-zinc-400 font-medium">{user.phone}</td>
                                 <td className="p-4 text-zinc-400 font-medium">{user.birthDate || '-'}</td>
+                                <td className="p-4">
+                                    <span className="bg-emerald-500/10 text-emerald-400 px-2 py-1 rounded-lg font-bold text-xs">
+                                        {user.leaveQuota} Days
+                                    </span>
+                                </td>
                                 <td className="p-4">
                                     <span className={`px-2 py-1 rounded text-xs uppercase font-bold tracking-wider ${user.role === 'super_admin' ? 'bg-amber-500/20 text-amber-400' :
                                         user.role === 'admin' ? 'bg-purple-500/20 text-purple-400' :
@@ -181,6 +196,17 @@ const AdminUsers = () => {
                             <div className="space-y-2">
                                 <label className="text-xs font-bold text-zinc-500 uppercase tracking-wider flex items-center gap-2"><Calendar size={14} /> Birth Date</label>
                                 <input type="date" value={formData.birthDate} onChange={e => setFormData({ ...formData, birthDate: e.target.value })} className="input-field w-full" />
+                            </div>
+
+                            <div className="space-y-2">
+                                <label className="text-xs font-bold text-zinc-500 uppercase tracking-wider flex items-center gap-2"><Palmtree size={14} /> Leave Quota (Days)</label>
+                                <input
+                                    type="number"
+                                    value={formData.leaveQuota}
+                                    onChange={e => setFormData({ ...formData, leaveQuota: parseInt(e.target.value) || 0 })}
+                                    className="input-field w-full"
+                                />
+                                <p className="text-xs text-zinc-500">Default is 12 days/year.</p>
                             </div>
 
                             <div className="pt-4 border-t border-white/10 mt-4">
@@ -237,6 +263,15 @@ const AdminUsers = () => {
                             <div className="space-y-2">
                                 <label className="text-xs font-bold text-zinc-500 uppercase tracking-wider flex items-center gap-2"><Calendar size={14} /> Birth Date</label>
                                 <input type="date" value={formData.birthDate} onChange={e => setFormData({ ...formData, birthDate: e.target.value })} className="input-field w-full" />
+                            </div>
+                            <div className="space-y-2">
+                                <label className="text-xs font-bold text-zinc-500 uppercase tracking-wider flex items-center gap-2"><Palmtree size={14} /> Initial Leave Quota</label>
+                                <input
+                                    type="number"
+                                    value={formData.leaveQuota}
+                                    onChange={e => setFormData({ ...formData, leaveQuota: parseInt(e.target.value) || 0 })}
+                                    className="input-field w-full"
+                                />
                             </div>
                             <div className="space-y-2">
                                 <label className="text-xs font-bold text-zinc-500 uppercase tracking-wider flex items-center gap-2"><Lock size={14} /> Password</label>

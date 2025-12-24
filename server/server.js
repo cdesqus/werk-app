@@ -1053,6 +1053,7 @@ app.put('/api/admin/users/:id', authenticateToken, isAdmin, async (req, res, nex
         if (name) user.name = name;
         if (phone) user.phone = phone;
         if (req.body.birthDate) user.birthDate = req.body.birthDate;
+        if (req.body.leaveQuota !== undefined) user.leaveQuota = req.body.leaveQuota;
         if (newPassword) {
             user.password = await bcrypt.hash(newPassword, 10);
         }
