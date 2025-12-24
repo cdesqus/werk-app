@@ -1,11 +1,13 @@
 import { useState, useEffect } from 'react';
 import { useToast } from '../context/ToastContext';
+import { useAuth } from '../context/AuthContext';
 import api from '../utils/api';
 import ConfirmModal from '../components/ui/ConfirmModal';
 import { Edit2, X, Shield, User, Phone, Calendar, Search, Plus, Trash2, Mail, Lock } from 'lucide-react';
 
 const AdminUsers = () => {
     const toast = useToast();
+    const { user: currentUser } = useAuth();
     const [users, setUsers] = useState([]);
     const [editingUser, setEditingUser] = useState(null);
     const [showAddModal, setShowAddModal] = useState(false);
@@ -114,7 +116,7 @@ const AdminUsers = () => {
                 </div>
             </header>
 
-            <div className="glass-card overflow-hidden">
+            <div className="glass-card overflow-x-auto">
                 <table className="w-full text-left">
                     <thead className="bg-zinc-900/50 text-zinc-500 text-xs uppercase tracking-wider">
                         <tr>
@@ -139,8 +141,11 @@ const AdminUsers = () => {
                                 <td className="p-4 text-zinc-400 font-medium">{user.phone}</td>
                                 <td className="p-4 text-zinc-400 font-medium">{user.birthDate || '-'}</td>
                                 <td className="p-4">
-                                    <span className={`px-2 py-1 rounded text-xs uppercase font-bold tracking-wider ${user.role === 'admin' ? 'bg-purple-500/20 text-purple-400' : 'bg-zinc-800 text-zinc-400'}`}>
-                                        {user.role}
+                                    <span className={`px-2 py-1 rounded text-xs uppercase font-bold tracking-wider ${user.role === 'super_admin' ? 'bg-amber-500/20 text-amber-400' :
+                                        user.role === 'admin' ? 'bg-purple-500/20 text-purple-400' :
+                                            'bg-zinc-800 text-zinc-400'
+                                        }`}>
+                                        {user.role.replace('_', ' ')}
                                     </span>
                                 </td>
                                 <td className="p-4 text-right flex justify-end gap-2">
@@ -212,7 +217,12 @@ const AdminUsers = () => {
                                     <label className="text-xs font-bold text-zinc-500 uppercase tracking-wider flex items-center gap-2"><Shield size={14} /> Role</label>
                                     <select value={formData.role} onChange={e => setFormData({ ...formData, role: e.target.value })} className="input-field w-full">
                                         <option value="staff">Staff</option>
-                                        <option value="admin">Admin</option>
+                                        {(currentUser?.role === 'super_admin') && (
+                                            <>
+                                                <option value="admin">Admin</option>
+                                                <option value="super_admin">Super Admin</option>
+                                            </>
+                                        )}
                                     </select>
                                 </div>
                             </div>

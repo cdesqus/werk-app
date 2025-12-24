@@ -20,6 +20,7 @@ const StaffDashboard = () => {
 
     // Editing State
     const [editingId, setEditingId] = useState(null);
+    const [viewingImage, setViewingImage] = useState(null);
 
     // Forms
     const [otForm, setOtForm] = useState({ date: '', startTime: '', endTime: '', activity: '', customer: '', description: '' });
@@ -327,6 +328,26 @@ const StaffDashboard = () => {
                                     </>
                                 )}
                             </div>
+                            {item.dataType === 'claim' && item.proof && (
+                                <div className="mt-4 pt-4 border-t border-white/5">
+                                    <p className="text-xs font-bold text-zinc-500 uppercase tracking-wider mb-2">Proof Attached</p>
+                                    <div
+                                        className="relative w-full h-32 bg-zinc-900 rounded-lg overflow-hidden cursor-zoom-in group/img"
+                                        onClick={() => setViewingImage(`${api.defaults.baseURL}${item.proof}`)}
+                                    >
+                                        <img
+                                            src={`${api.defaults.baseURL}${item.proof}`}
+                                            alt="Proof of Payment"
+                                            className="w-full h-full object-cover opacity-70 group-hover/img:opacity-100 transition-all duration-300"
+                                        />
+                                        <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover/img:opacity-100 bg-black/40 transition-opacity backdrop-blur-[2px]">
+                                            <span className="text-xs font-bold text-white flex items-center gap-2 bg-black/50 px-3 py-1.5 rounded-full border border-white/20">
+                                                <Camera size={14} /> View Proof
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
                         </div>
                         <div className="absolute top-0 right-0 p-4 flex gap-2 z-10">
                             {item.status === 'Pending' && (
@@ -341,7 +362,6 @@ const StaffDashboard = () => {
                             )}
                             <StatusBadge status={item.status} />
                         </div>
-                        {/* Payable Footer Removed as per request */}
                     </div>
                 ))}
             </div>
@@ -722,6 +742,26 @@ const StaffDashboard = () => {
                 confirmText="Delete"
                 isDanger={true}
             />
+
+            {/* Lightbox */}
+            {viewingImage && (
+                <div
+                    className="fixed inset-0 bg-black/95 backdrop-blur-lg z-[60] flex items-center justify-center p-4 animate-in fade-in duration-200"
+                    onClick={() => setViewingImage(null)}
+                >
+                    <button
+                        className="absolute top-4 right-4 text-zinc-500 hover:text-white transition-colors p-2 bg-black/50 rounded-full"
+                        onClick={() => setViewingImage(null)}
+                    >
+                        <X size={24} />
+                    </button>
+                    <img
+                        src={viewingImage}
+                        alt="Full Size Proof"
+                        className="max-w-full max-h-[90vh] object-contain rounded-lg shadow-2xl shadow-black/50 animate-in zoom-in-95 duration-200"
+                    />
+                </div>
+            )}
         </div>
     );
 };

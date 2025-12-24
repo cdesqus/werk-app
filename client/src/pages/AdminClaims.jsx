@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import api from '../utils/api';
-import { Check, X, FileText, Calendar, Search, Filter, Download, ExternalLink } from 'lucide-react';
+import { Check, X, FileText, Calendar, Search, Filter, Download, ExternalLink, Maximize2 } from 'lucide-react';
 import clsx from 'clsx';
 import { Skeleton } from '../components/ui/Skeleton';
 import { useToast } from '../context/ToastContext';
@@ -61,6 +61,7 @@ const AdminClaims = () => {
     };
 
     const [selectedClaim, setSelectedClaim] = useState(null);
+    const [viewingImage, setViewingImage] = useState(null);
 
     return (
         <div className="space-y-6">
@@ -165,18 +166,35 @@ const AdminClaims = () => {
                                         </button>
                                     </div>
                                 </div>
-
-                                {item.status === 'Pending' && (
-                                    <div className="flex gap-2 w-full md:w-auto mt-2 md:mt-0">
-                                        <button onClick={() => handleAction(item.id, 'Approved')} className="flex-1 md:flex-none px-4 py-2 bg-lime-400 text-black font-bold rounded-xl hover:bg-lime-300 transition-colors flex items-center justify-center gap-2 shadow-lg shadow-lime-400/10">
-                                            <Check size={16} /> Approve
-                                        </button>
-                                        <button onClick={() => handleAction(item.id, 'Rejected')} className="flex-1 md:flex-none px-4 py-2 bg-zinc-800 text-red-400 font-bold rounded-xl hover:bg-red-400/10 transition-colors flex items-center justify-center gap-2">
-                                            <X size={16} /> Reject
-                                        </button>
+                                {item.proof && (
+                                    <div className="hidden sm:block ml-4 shrink-0">
+                                        <div
+                                            className="w-16 h-16 rounded-lg border border-white/10 overflow-hidden cursor-pointer hover:ring-2 hover:ring-lime-400 transition-all bg-black/50 group/img relative"
+                                            onClick={() => setViewingImage(`${api.defaults.baseURL}${item.proof}`)}
+                                        >
+                                            <img
+                                                src={`${api.defaults.baseURL}${item.proof}`}
+                                                alt="Proof Thumbnail"
+                                                className="w-full h-full object-cover opacity-80 group-hover/img:opacity-100 transition-opacity"
+                                            />
+                                            <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover/img:opacity-100 bg-black/40 transition-opacity">
+                                                <ExternalLink size={12} className="text-white" />
+                                            </div>
+                                        </div>
                                     </div>
                                 )}
                             </div>
+
+                            {item.status === 'Pending' && (
+                                <div className="flex gap-2 w-full md:w-auto mt-2 md:mt-0">
+                                    <button onClick={() => handleAction(item.id, 'Approved')} className="flex-1 md:flex-none px-4 py-2 bg-lime-400 text-black font-bold rounded-xl hover:bg-lime-300 transition-colors flex items-center justify-center gap-2 shadow-lg shadow-lime-400/10">
+                                        <Check size={16} /> Approve
+                                    </button>
+                                    <button onClick={() => handleAction(item.id, 'Rejected')} className="flex-1 md:flex-none px-4 py-2 bg-zinc-800 text-red-400 font-bold rounded-xl hover:bg-red-400/10 transition-colors flex items-center justify-center gap-2">
+                                        <X size={16} /> Reject
+                                    </button>
+                                </div>
+                            )}
                         </div>
                     ))
                 )}
@@ -220,12 +238,20 @@ const AdminClaims = () => {
                             <div>
                                 <span className="text-xs font-bold text-zinc-500 uppercase tracking-wider block mb-2">Proof of Payment</span>
                                 {selectedClaim.proof ? (
-                                    <div className="rounded-xl overflow-hidden border border-white/10 bg-black/50">
+                                    <div
+                                        className="rounded-xl overflow-hidden border border-white/10 bg-black/50 cursor-zoom-in relative group/proof"
+                                        onClick={() => setViewingImage(`${api.defaults.baseURL}${selectedClaim.proof}`)}
+                                    >
                                         <img
                                             src={`${api.defaults.baseURL}${selectedClaim.proof}`}
                                             alt="Proof"
-                                            className="w-full h-auto object-contain max-h-[400px]"
+                                            className="w-full h-auto object-contain max-h-[400px] hover:scale-[1.02] transition-transform duration-300"
                                         />
+                                        <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover/proof:opacity-100 bg-black/30 transition-all backdrop-blur-[1px]">
+                                            <span className="bg-black/50 text-white text-xs font-bold px-3 py-1.5 rounded-full flex items-center gap-2 backdrop-blur-md border border-white/20">
+                                                <Maximize2 size={12} /> Click to Zoom
+                                            </span>
+                                        </div>
                                     </div>
                                 ) : (
                                     <div className="p-8 text-center text-zinc-500 border-2 border-dashed border-zinc-800 rounded-xl">
@@ -251,6 +277,26 @@ const AdminClaims = () => {
                             </button>
                         </div>
                     </div>
+                </div>
+            )}
+
+            {/* Lightbox */}
+            {viewingImage && (
+                <div
+                    className="fixed inset-0 bg-black/95 backdrop-blur-lg z-[60] flex items-center justify-center p-4 animate-in fade-in duration-200"
+                    onClick={() => setViewingImage(null)}
+                >
+                    <button
+                        className="absolute top-4 right-4 text-zinc-500 hover:text-white transition-colors p-2 bg-black/50 rounded-full"
+                        onClick={() => setViewingImage(null)}
+                    >
+                        <X size={24} />
+                    </button>
+                    <img
+                        src={viewingImage}
+                        alt="Full Size Proof"
+                        className="max-w-full max-h-[90vh] object-contain rounded-lg shadow-2xl shadow-black/50 animate-in zoom-in-95 duration-200"
+                    />
                 </div>
             )}
         </div>

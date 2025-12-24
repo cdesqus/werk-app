@@ -216,7 +216,7 @@ const authenticateToken = (req, res, next) => {
 };
 
 const isAdmin = (req, res, next) => {
-    if (req.user.role !== 'admin') return res.sendStatus(403);
+    if (!['admin', 'super_admin'].includes(req.user.role)) return res.sendStatus(403);
     next();
 };
 
@@ -302,7 +302,7 @@ app.get('/api/overtimes', authenticateToken, async (req, res) => {
         }
         let whereClause = {};
 
-        if (req.user.role !== 'admin') {
+        if (!['admin', 'super_admin'].includes(req.user.role)) {
             whereClause.UserId = req.user.id;
             // Staff Restriction: Max 3 months back
             const today = new Date();
@@ -350,7 +350,7 @@ app.put('/api/overtimes/:id', authenticateToken, async (req, res) => {
         if (!overtime) return res.status(404).json({ error: 'Not found' });
 
         // Admin Logic
-        if (req.user.role === 'admin') {
+        if (['admin', 'super_admin'].includes(req.user.role)) {
             const { status, date, startTime, endTime, hours, activity, customer, description } = req.body;
             if (status) overtime.status = status;
             if (date) overtime.date = date;
@@ -455,7 +455,7 @@ app.get('/api/claims', authenticateToken, async (req, res) => {
         }
         let whereClause = {};
 
-        if (req.user.role !== 'admin') {
+        if (!['admin', 'super_admin'].includes(req.user.role)) {
             whereClause.UserId = req.user.id;
             // Staff: Max 3 months back
             const today = new Date();
@@ -498,7 +498,7 @@ app.put('/api/claims/:id', authenticateToken, async (req, res) => {
         const claim = await Claim.findByPk(req.params.id);
         if (!claim) return res.status(404).json({ error: 'Not found' });
 
-        if (req.user.role === 'admin') {
+        if (['admin', 'super_admin'].includes(req.user.role)) {
             const { status, date, category, title, amount } = req.body;
             if (status) claim.status = status;
             if (date) claim.date = date;
@@ -584,7 +584,7 @@ app.get('/api/leaves', authenticateToken, async (req, res) => {
         }
         let whereClause = {};
 
-        if (req.user.role !== 'admin') {
+        if (!['admin', 'super_admin'].includes(req.user.role)) {
             whereClause.UserId = req.user.id;
             const today = new Date();
             const threeMonthsAgoDate = new Date(today.getFullYear(), today.getMonth() - 3, 1);
@@ -627,7 +627,7 @@ app.put('/api/leaves/:id', authenticateToken, async (req, res) => {
         const leave = await Leave.findByPk(req.params.id);
         if (!leave) return res.status(404).json({ error: 'Not found' });
 
-        if (req.user.role === 'admin') {
+        if (['admin', 'super_admin'].includes(req.user.role)) {
             // Admin Update Logic
             const { status, reason } = req.body;
 
@@ -974,9 +974,20 @@ app.post('/api/admin/payout', authenticateToken, isAdmin, async (req, res) => {
 });
 
 // Admin User Management
+// Admin User Management
 app.post('/api/admin/users', authenticateToken, isAdmin, registerValidation, validate, async (req, res, next) => {
     try {
         const { name, email, phone, password, birthDate, role } = req.body;
+
+        // RBAC: Role Hierarchy Check
+        const hierarchy = { 'staff': 1, 'admin': 2, 'super_admin': 3 };
+        const creatorLevel = hierarchy[req.user.role] || 0;
+        const targetLevel = hierarchy[role || 'staff'] || 1;
+
+        if (targetLevel >= creatorLevel && req.user.role !== 'super_admin') {
+            return res.status(403).json({ error: 'You do not have permission to assign this role.' });
+        }
+
         const hashedPassword = await bcrypt.hash(password, 10);
 
         // Generate Staff ID safely
@@ -1093,24 +1104,33 @@ sequelize.sync().then(async () => {
     console.log('Database synced');
 
     // Create Default Admin if not exists
-    const adminExists = await User.findOne({ where: { role: 'admin' } });
+    // Create Default Super Admin if not exists
+    const adminExists = await User.findOne({ where: { role: 'super_admin' } });
+    const oldAdmin = await User.findOne({ where: { role: 'admin', email: 'admin@werk.com' } });
+
     if (!adminExists) {
-        const hashedPassword = await bcrypt.hash('admin123', 10);
-        await User.create({
-            name: 'Super Admin',
-            email: 'admin@werk.com',
-            phone: '0000000000',
-            password: hashedPassword,
-            role: 'admin',
-            birthDate: '2000-01-01'
-        });
-        console.log('Default Admin Created: admin@werk.com / admin123');
+        if (oldAdmin) {
+            // Upgrade old default admin to super_admin
+            oldAdmin.role = 'super_admin';
+            oldAdmin.name = 'Super Admin';
+            const hashedPassword = await bcrypt.hash('admin123', 10);
+            oldAdmin.password = hashedPassword;
+            await oldAdmin.save();
+            console.log('Upgraded existing default admin to Super Admin');
+        } else {
+            const hashedPassword = await bcrypt.hash('admin123', 10);
+            await User.create({
+                name: 'Super Admin',
+                email: 'admin@werk.com',
+                phone: '0000000000',
+                password: hashedPassword,
+                role: 'super_admin',
+                birthDate: '2000-01-01'
+            });
+            console.log('Default Super Admin Created: admin@werk.com / admin123');
+        }
     } else {
-        // Force reset password to ensure access
-        const hashedPassword = await bcrypt.hash('admin123', 10);
-        adminExists.password = hashedPassword;
-        await adminExists.save();
-        console.log('Admin password verified/reset to: admin123');
+        console.log('Super Admin already exists');
     }
 
     app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
