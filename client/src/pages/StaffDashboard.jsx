@@ -101,7 +101,166 @@ const StaffDashboard = () => {
         }
     };
 
-    // ... (Other handlers unchanged)
+    const fetchFeeds = async () => {
+        try {
+            const res = await api.get('/vibes');
+            setFeeds(res.data);
+        } catch (err) { console.error("Failed to fetch vibes", err); }
+    };
+
+    const fetchQuests = async () => {
+        try {
+            const res = await api.get('/quests');
+            setQuests(res.data);
+        } catch (err) { console.error("Failed to fetch quests", err); }
+    };
+
+    const handleDelete = (type, id) => {
+        setConfirmModal({ isOpen: true, type, id });
+    };
+
+    const confirmDelete = async () => {
+        const { type, id } = confirmModal;
+        try {
+            const endpoint = type === 'overtime' ? 'overtimes' : type === 'claim' ? 'claims' : 'leaves';
+            await api.delete(`/${endpoint}/${id}`);
+            toast.success('Item deleted successfully');
+            fetchHistory();
+        } catch (err) {
+            toast.error(err.response?.data?.error || 'Delete failed');
+        } finally {
+            setConfirmModal({ isOpen: false, type: null, id: null });
+        }
+    };
+
+    const handleEdit = (item) => {
+        setEditingId(item.id);
+        if (item.dataType === 'overtime') {
+            setOtForm({
+                date: item.date,
+                startTime: item.startTime,
+                endTime: item.endTime,
+                activity: item.activity,
+                customer: item.customer,
+                description: item.description
+            });
+            setShowOtModal(true);
+        } else if (item.dataType === 'claim') {
+            setClaimForm({
+                date: item.date,
+                category: item.category,
+                title: item.title,
+                amount: item.amount,
+                proof: null // Reset proof as we can't pre-fill file input
+            });
+            setShowClaimModal(true);
+        } else if (item.dataType === 'leave') {
+            setLeaveForm({
+                type: item.type,
+                startDate: item.startDate,
+                endDate: item.endDate,
+                reason: item.reason
+            });
+            setShowLeaveModal(true);
+        }
+    };
+
+    const resetForms = () => {
+        setEditingId(null);
+        setOtForm({ date: '', startTime: '', endTime: '', activity: '', customer: '', description: '' });
+        setClaimForm({ date: '', category: 'Transport', title: '', amount: '', proof: null });
+        setLeaveForm({ type: 'annual', startDate: '', endDate: '', reason: '' });
+    };
+
+    const handleOtSubmit = async (e) => {
+        e.preventDefault();
+        if (otDuration <= 0) {
+            toast.error('End time must be after start time.');
+            return;
+        }
+        setLoading(true);
+        try {
+            if (editingId) {
+                await api.put(`/overtimes/${editingId}`, { ...otForm, hours: otDuration });
+                toast.success('Overtime updated!');
+            } else {
+                await api.post('/overtimes', { ...otForm, hours: otDuration });
+                toast.success('Overtime submitted!');
+            }
+            resetForms();
+            setShowOtModal(false);
+            fetchHistory();
+        } catch (err) { toast.error(err.response?.data?.error || 'Error'); }
+        setLoading(false);
+    };
+
+    const handleClaimSubmit = async (e) => {
+        e.preventDefault();
+        setLoading(true);
+
+        try {
+            if (editingId) {
+                // Edit Mode: Send JSON as backend PUT doesn't support file update in this version easily
+                // Filter out File object if present, only send other fields
+                const { proof, ...rest } = claimForm;
+                await api.put(`/claims/${editingId}`, rest);
+                toast.success('Claim updated!');
+            } else {
+                // Create Mode: Send FormData
+                const formData = new FormData();
+                Object.keys(claimForm).forEach(key => {
+                    if (claimForm[key] !== null) formData.append(key, claimForm[key]);
+                });
+
+                await api.post('/claims', formData, {
+                    headers: { 'Content-Type': 'multipart/form-data' },
+                    timeout: 30000 // 30s timeout for large uploads
+                });
+                toast.success('Claim submitted!');
+            }
+            resetForms();
+            setShowClaimModal(false);
+            fetchHistory();
+        } catch (err) {
+            console.error(err);
+            toast.error(err.response?.data?.error || 'Failed to submit claim. Potentially file too large.');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleLeaveSubmit = async (e) => {
+        e.preventDefault();
+        setLoading(true);
+        try {
+            if (editingId) {
+                await api.put(`/leaves/${editingId}`, leaveForm);
+                toast.success('Leave updated!');
+            } else {
+                await api.post('/leaves', leaveForm);
+                toast.success('Leave requested!');
+            }
+            resetForms();
+            setShowLeaveModal(false);
+            fetchHistory();
+        } catch (err) { toast.error(err.response?.data?.error || 'Error'); }
+        setLoading(false);
+    };
+
+    const handleVote = async (feedId, optionId) => {
+        try {
+            await api.post(`/vibes/${feedId}/vote`, { optionId });
+            fetchFeeds();
+        } catch (err) { toast.error(err.response?.data?.error || 'Error'); }
+    };
+
+    const handleAcceptQuest = async (id) => {
+        try {
+            await api.put(`/quests/${id}/accept`);
+            fetchQuests();
+            toast.success('Quest Accepted! Good luck.');
+        } catch (err) { toast.error(err.response?.data?.error || 'Error'); }
+    };
 
     const tabs = [
         { id: 'overtime', label: 'My Hustle', icon: Clock },
