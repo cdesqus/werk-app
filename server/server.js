@@ -20,9 +20,41 @@ const PORT = process.env.PORT || 5000;
 const SECRET_KEY = process.env.SECRET_KEY || 'werk-secret-key-gen-z';
 
 // Security: Helmet (Secure Headers)
+// Relaxing policies to ensure CORS works for cross-origin API usage
 app.use(helmet({
-    crossOriginResourcePolicy: { policy: "cross-origin" } // Allow loading images from uploads
+    crossOriginResourcePolicy: false,
+    crossOriginEmbedderPolicy: false
 }));
+
+// Middleware (Order is Critical: CORS first, then Security/Body Parsing)
+const allowedOrigins = [
+    'https://werk.kaumtech.com',
+    'https://www.werk.kaumtech.com',
+    'https://api-werk.kaumtech.com',
+    'http://localhost:5173',
+    'http://localhost:3000'
+];
+
+app.use(cors({
+    origin: function (origin, callback) {
+        // Allow requests with no origin (like mobile apps or curl requests)
+        if (!origin) return callback(null, true);
+
+        if (allowedOrigins.indexOf(origin) !== -1 || origin.endsWith('.kaumtech.com')) {
+            return callback(null, true);
+        } else {
+            // For debugging production issues, we log the blocked origin
+            console.log('Blocked by CORS:', origin);
+            // Fail safe: reject if really unknown
+            return callback(new Error('Not allowed by CORS'));
+        }
+    },
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
+    credentials: true,
+    optionsSuccessStatus: 204
+}));
+app.options('*', cors()); // Enable preflight for all routes
 
 // Security: Rate Limiters
 const generalLimiter = rateLimit({
@@ -38,17 +70,6 @@ const authLimiter = rateLimit({
     max: 10, // Limit each IP to 10 login/register attempts per hour
     message: 'Too many login attempts, please try again later.'
 });
-
-// Middleware
-// Middleware (Order is Critical: CORS first, then Security/Body Parsing)
-app.use(cors({
-    origin: ['https://werk.kaumtech.com', 'https://www.werk.kaumtech.com', 'http://localhost:5173', 'http://localhost:3000'],
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization'],
-    credentials: true,
-    optionsSuccessStatus: 200 // Legacy browser support
-}));
-app.options('*', cors()); // Enable preflight for all routes
 
 app.use(generalLimiter);
 // app.use(cors({...})) removed from here
