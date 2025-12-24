@@ -41,7 +41,12 @@ const authLimiter = rateLimit({
 
 // Middleware
 app.use(generalLimiter);
-app.use(cors());
+app.use(cors({
+    origin: ['https://werk.kaumtech.com', 'http://localhost:5173', 'http://localhost:3000'],
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
+    credentials: true
+}));
 app.use(express.json({ limit: '10kb' })); // Security: Limit body size
 app.use('/uploads', express.static('uploads'));
 app.use('/api/uploads', express.static('uploads')); // Alias for proxy compatibility
@@ -302,7 +307,7 @@ app.get('/api/overtimes', authenticateToken, async (req, res) => {
         }
         let whereClause = {};
 
-        if (!['admin', 'super_admin'].includes(req.user.role)) {
+        if (!['admin', 'super_admin'].includes(req.user.role) || req.query.personal === 'true') {
             whereClause.UserId = req.user.id;
             // Staff Restriction: Max 3 months back
             const today = new Date();

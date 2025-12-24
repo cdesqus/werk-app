@@ -85,9 +85,9 @@ const StaffDashboard = () => {
     const fetchHistory = async () => {
         try {
             const [otRes, claimRes, leaveRes] = await Promise.all([
-                api.get('/overtimes'),
-                api.get('/claims'),
-                api.get('/leaves')
+                api.get('/overtimes', { params: { personal: 'true' } }),
+                api.get('/claims', { params: { personal: 'true' } }),
+                api.get('/leaves', { params: { personal: 'true' } })
             ]);
             const combined = [
                 ...otRes.data.map(i => ({ ...i, dataType: 'overtime', date: i.date })),
