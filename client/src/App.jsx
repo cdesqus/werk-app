@@ -23,7 +23,7 @@ const HomeRedirect = () => {
   const { user, loading } = useAuth();
   if (loading) return null;
   if (!user) return <Navigate to="/login" replace />;
-  return user.role === 'admin' ? <Navigate to="/admin" replace /> : <Navigate to="/staff" replace />;
+  return ['admin', 'super_admin'].includes(user.role) ? <Navigate to="/admin" replace /> : <Navigate to="/staff" replace />;
 };
 
 function App() {
@@ -43,7 +43,7 @@ function App() {
             </Route>
 
             {/* Admin Routes */}
-            <Route element={<ProtectedRoute allowedRoles={['admin']} />}>
+            <Route element={<ProtectedRoute allowedRoles={['admin', 'super_admin']} />}>
               <Route element={<AdminLayout />}>
                 <Route path="/admin" element={<AdminDashboard />} />
                 <Route path="/admin/users" element={<AdminUsers />} />
