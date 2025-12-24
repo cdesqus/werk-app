@@ -1,122 +1,137 @@
 # WERK IDE - Application Documentation
 
 ## Overview
-WERK IDE is a modern, Gen-Z styled internal tool for managing staff activities, including overtime logging, reimbursement claims, leave requests, and team engagement (Vibe Check). The application features a dual-role system (Admin & Staff) with a secure, math-captcha protected login.
+WERK IDE is a modern, Gen-Z styled internal tool for managing staff activities, including overtime logging, reimbursement claims, leave requests, and team engagement (Vibe Check). The application features a dual-role system (Admin & Staff) with robust security measures and comprehensive audit logging.
 
 ## 🚀 Features
 
-### 1. Authentication & Security
-*   **Math CAPTCHA**: A rotating 20-second challenge to prevent bot attacks on the login screen.
-*   **Role-Based Access Control (RBAC)**: Distinct dashboards and permissions for 'Admin' and 'Staff'.
-*   **JWT Authentication**: Secure session management.
+### 1. Authentication & Security (Defense in Depth)
+*   **Math CAPTCHA**: A rotating 20-second challenge to prevent bot attacks on login/register screens.
+*   **Role-Based Access Control (RBAC)**: Strict separation between 'Staff', 'Admin', and 'Super Admin'.
+*   **JWT Authentication**: Secure, expiration-based session management (24h).
+*   **Rate Limiting**:
+    *   *Login protection*: Limits failed attempts to prevent brute-force attacks.
+    *   *API protection*: General rate limits on all endpoints to prevent DoS.
+*   **File Sanitization**:
+    *   Strict allow-list for file uploads (`.jpg`, `.jpeg`, `.png` only).
+    *   Server-side image re-processing (via `sharp`) to strip malicious metadata.
+*   **Audit Logging**: Detailed tracking of critical security events (Login, Password Change, Admin Actions).
 
 ### 2. Staff Features (The Hustle)
-*   **Overtime Logging**: Log work hours with automatic duration calculation.
-    *   *Flat Rate*: Fixed at Rp 40,000/hour.
-    *   *Holiday Detection*: Alerts if the selected date is a weekend or National Holiday.
-*   **Reimbursement Claims**: Submit expenses with categories (Transport, Medical, Food, Subscription, Other) and proof of payment (image upload).
-*   **Leave Management**: Request Annual, Sick, or Unpaid leave. Real-time quota tracking (Default: 12 days).
-*   **Side Quests**: View and accept extra tasks/bounties posted by Admins.
-*   **Vibe Check**: Participate in polls and view company announcements.
+*   **Overtime Logging**: Log work hours with automatic duration calculation (Rp 40,000/hour flat rate).
+*   **Reimbursement Claims**: Submit expenses with proof. File inputs strictly limit acceptance to image files.
+*   **Leave Management**: Request Annual, Sick, or Unpaid leave. Real-time quota tracking.
+*   **Side Quests**: View and accept extra tasks/bounties.
+*   **Vibe Check**: Participate in anonymous/public polls.
+*   **Security Profile**: Change password securely (requires current password verification).
 
 ### 3. Admin Features (The Boss)
-*   **Dashboard Overview**: Quick stats on pending requests, total payroll, and active users.
-*   **Request Management**: Approve or Reject Overtime, Claims, and Leave requests.
+*   **Dashboard Overview**: Quick stats on pending requests, payroll, and active users.
+*   **User Management**:
+    *   **Bento Grid Interface**: Modern UI for editing user profiles.
+    *   **Security Zone**: Admins can reset staff passwords.
+    *   **Danger Zone**: Permanent account deletion with confirmation.
 *   **Payroll System**:
-    *   View monthly summaries of approved Overtime and Claims per user.
-    *   Export data to Excel.
-    *   "Mark as Paid" functionality for processed payments.
-*   **User Management**: Create and manage staff accounts (Auto-generated Staff IDs: `IDE-YYYY-XXXX`).
-*   **Content Management**: Create Quests, Polls, and Announcements.
+    *   **Drill-Down Details**: Expand staff rows to see exact breakdown of approved Overtimes and Claims.
+    *   **Visibility Control**: Only "Approved" items appear in the payment view.
+    *   **Bulk Processing**: "Mark as Paid" action updates status for all selected items.
+*   **Audit Logs**:
+    *   View chronological history of all security-critical events.
+    *   Tracks: Timestamp, User, Action Type, Details, and Origin IP Address.
+    *   **Auto-Retention**: Logs older than 7 days are automatically purged to save storage.
 
 ---
 
 ## 🔄 User Flows
 
 ### Login Flow
-1.  **Access**: User visits the login page.
-2.  **Verification**: Solves the math CAPTCHA (refreshes every 20s).
+```mermaid
+graph TD
+    A[User Visits Login] --> B{Resolve CAPTCHA};
+    B -- Incorrect --> A;
+    B -- Correct --> C[Enter Credentials];
+    C --> D{Validate Credentials};
+    D -- Invalid --> C;
+    D -- Valid --> E[Log Audit Event];
+    E --> F{Check Role};
+    F -- Admin --> G[Redirect /admin];
+    F -- Staff --> H[Redirect /staff];
+```
+
+1.  **Access**: User visits `/login`.
+2.  **Verification**: Solves the math CAPTCHA.
 3.  **Credentials**: Enters Email and Password.
-4.  **Routing**:
-    *   `Admin` -> Redirected to `/admin` (Admin Dashboard).
-    *   `Staff` -> Redirected to `/staff` (Staff Dashboard).
+4.  **Audit**: Successful login is logged to Audit Trail.
+5.  **Routing**: Redirects to appropriate dashboard based on Role.
 
-### Overtime Flow (Staff)
-1.  **Initiate**: Click "New Hustle" in the Overtime tab.
-2.  **Input**: Select Date, Start Time, End Time, Activity, and Customer.
-3.  **Submit**: System calculates hours and payable amount. Status set to `Pending`.
-4.  **Review**: Admin reviews the request.
-    *   *Approve*: Added to payroll calculation.
-    *   *Reject*: Marked as rejected.
+### Security Audit Flow (Super Admin)
+```mermaid
+graph LR
+    A[Page Load] --> B{Check Old Logs};
+    B -- > 7 Days --> C[Auto Delete];
+    B -- < 7 Days --> D[Keep Logs];
+    C --> E[Fetch Recent Logs];
+    D --> E;
+    E --> F[Display UI];
+    F --> G[Admin Reviews IPs/Actions];
+```
 
-### Claim Flow (Staff)
-1.  **Initiate**: Click "New Claim".
-2.  **Input**: Upload Proof, enter Amount, Title, and Category.
-3.  **Submit**: Status set to `Pending`.
-4.  **Review**: Admin checks proof and details.
-    *   *Approve*: Added to payroll.
-    *   *Reject*: User notified.
+1.  **Access**: Navigate to **System > Audit Logs**.
+2.  **Review**:
+    *   See who logged in, who created/deleted users, and who modified financial records.
+    *   Check "IP Address" to verify location (Public Origin IP).
+3.  **Search**: Filter logs by User Name or Action type (e.g., "Delete").
+4.  **Cleanup**: System automatically deletes logs > 7 days old upon page load.
 
 ### Payroll Flow (Admin)
-1.  **View**: Navigate to Payroll page.
+```mermaid
+graph TD
+    A[Select Month/Year] --> B[Fetch Payroll Summary];
+    B --> C{Review Details};
+    C -- Expand Row --> D[View Approved Overtimes/Claims];
+    D --> E{Verify Amounts};
+    E -- Error --> F[Contact Staff];
+    E -- Correct --> G[Select Staff];
+    G --> H[Click 'Mark as Paid'];
+    H --> I[Update Status in DB];
+    I --> J[Log Audit Event];
+    J --> K[Re-fetch Updated Data];
+```
+
+1.  **View**: Navigate to **Finance > Payroll**.
 2.  **Filter**: Select Month/Year.
-3.  **Process**: Check "Total Payable" for each user.
-4.  **Action**:
-    *   *Export*: Download Excel report for finance.
-    *   *Pay*: Click "Mark as Paid" to update status of all approved items for that period.
+3.  **Inspect**: Click the arrow (`v`) next to a staff member to expand details.
+    *   *Verify*: Check that only valid, approved items are listed.
+4.  **Process**: Select staff members and click **Mark as Paid**.
+    *   *Audit*: This action is logged as "Admin Processed Payout".
+5.  **Export**: Download Excel report for external banking processing.
 
 ---
 
 ## 🛠️ Technical Architecture
 
 ### Tech Stack
-*   **Frontend**: React, Vite, TailwindCSS (Glassmorphism UI).
-*   **Backend**: Node.js, Express.
-*   **Database**: SQLite (Sequelize ORM).
-*   **Containerization**: Docker, Docker Compose.
+*   **Frontend**: React, Vite, TailwindCSS (Glassmorphism), Lucide Icons.
+*   **Backend**: Node.js, Express, Sequelize (SQLite).
+*   **Security Middleware**: `helmet` (headers), `express-rate-limit`, `express-validator`, `multer` (upload limits).
 
-### Database Schema
-*   **Users**: `id`, `name`, `email`, `password`, `role`, `leaveQuota`, `staffId`.
-*   **Overtimes**: `id`, `UserId`, `date`, `hours`, `payableAmount`, `status`.
-*   **Claims**: `id`, `UserId`, `amount`, `proof`, `status`, `category`.
-*   **Leaves**: `id`, `UserId`, `startDate`, `endDate`, `days`, `status`.
-*   **Feeds/Polls**: `id`, `type`, `title`, `content`, `options` (relational).
-*   **Quests**: `id`, `title`, `reward`, `status`, `assignedTo`.
+### Database Schema (Key Models)
+*   **Users**: `id`, `name`, `email`, `password` (hashed), `role`, `leaveQuota`, `staffId`.
+*   **AuditLog**: `id`, `UserId`, `action`, `details`, `ip`, `createdAt`.
+*   **Overtimes**: `id`, `UserId`, `status` ('Pending', 'Approved', 'Paid', 'Rejected'), `payableAmount`.
+*   **Claims**: `id`, `UserId`, `status`, `proof` (sanitized path).
 
 ---
 
 ## 🐳 Production Deployment (Docker)
 
-To deploy the application in a production environment:
-
-1.  **Prerequisites**: Ensure Docker and Docker Compose are installed.
-2.  **Configuration**:
-    *   Update the `.env` file in `server/` with your production secrets (SMTP, Secret Keys).
-    *   **Secret Key**: This is used to sign session tokens. You can generate a secure one by running this command in your terminal:
-        ```bash
-        node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
-        ```
-        Copy the output and paste it as `SECRET_KEY` in your `.env` file or `docker-compose.yml`.
-3.  **Build & Run**:
+1.  **Configuration**:
+    *   Ensure `.env` contains a strong `SECRET_KEY`.
+2.  **Build & Run**:
     ```bash
     docker-compose up -d --build
     ```
-4.  **Access**:
-    *   Frontend: `http://localhost:81` (or your domain).
-    *   API: `http://localhost/api` (proxied internally).
-
-### Directory Structure
-```
-werk-app/
-├── client/                 # React Frontend
-│   ├── Dockerfile
-│   ├── nginx.conf
-│   └── ...
-├── server/                 # Node.js Backend
-│   ├── Dockerfile
-│   ├── database.sqlite     # Persisted via volume
-│   ├── uploads/            # Persisted via volume
-│   └── ...
-├── docker-compose.yml
-└── DOCUMENTATION.md
-```
+3.  **Access**:
+    *   Frontend: `http://localhost:81`
+    *   API: `http://localhost/api`
+    *   Uploads: `http://localhost/uploads` (Served securely via Nginx).
