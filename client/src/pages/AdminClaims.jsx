@@ -1,25 +1,27 @@
 import { useState, useEffect } from 'react';
 import api from '../utils/api';
-import { Check, X, FileText, Calendar, Search, Filter, Download, ExternalLink, Maximize2 } from 'lucide-react';
+import { Check, X, FileText, Calendar, Search, Filter, Download, ExternalLink, Maximize2, Clock, AlertTriangle } from 'lucide-react';
 import clsx from 'clsx';
 import { Skeleton } from '../components/ui/Skeleton';
 import { useToast } from '../context/ToastContext';
+import { format, differenceInDays } from 'date-fns';
 
 const AdminClaims = () => {
     const [claims, setClaims] = useState([]);
     const [filterStatus, setFilterStatus] = useState('All');
+    const [calculateSortBy, setCalculateSortBy] = useState('submission'); // 'submission' or 'activity'
     const [searchTerm, setSearchTerm] = useState('');
     const [loading, setLoading] = useState(true);
     const toast = useToast();
 
     useEffect(() => {
         fetchClaims();
-    }, []);
+    }, [calculateSortBy]); // Refetch when sort changes
 
     const fetchClaims = async () => {
         setLoading(true);
         try {
-            const { data } = await api.get('/claims'); // Admin sees all
+            const { data } = await api.get(`/claims?sortBy=${calculateSortBy}`);
             setClaims(data);
         } catch (error) {
             console.error("Failed to fetch claims", error);
@@ -60,24 +62,50 @@ const AdminClaims = () => {
         );
     };
 
+    const isLate = (activityDate, submissionDate) => {
+        if (!activityDate || !submissionDate) return false;
+        return differenceInDays(new Date(submissionDate), new Date(activityDate)) > 7;
+    };
+
     const [selectedClaim, setSelectedClaim] = useState(null);
     const [viewingImage, setViewingImage] = useState(null);
 
     return (
         <div className="space-y-6">
             {/* ... header ... */}
-            <header className="flex flex-col md:flex-row justify-between items-center gap-4">
+            <header className="flex flex-col xl:flex-row justify-between items-start xl:items-center gap-4">
                 <div>
                     <h1 className="text-3xl font-black text-white mb-1">Reimbursement Claims</h1>
                     <p className="text-zinc-400 text-sm">Process staff expenses and receipts.</p>
                 </div>
-                <div className="flex items-center gap-4 w-full md:w-auto flex-1 justify-end">
-                    <div className="relative flex-1 w-full max-w-md">
+                <div className="flex flex-wrap items-center gap-4 w-full xl:w-auto flex-1 justify-end">
+
+                    {/* Filter Toggle */}
+                    <div className="flex items-center bg-zinc-900 rounded-xl p-1 border border-zinc-700">
+                        <button
+                            onClick={() => setCalculateSortBy('submission')}
+                            className={clsx("px-3 py-2 text-xs font-bold rounded-lg transition-colors flex items-center gap-2",
+                                calculateSortBy === 'submission' ? "bg-lime-400 text-zinc-900" : "text-zinc-400 hover:text-white hover:bg-zinc-800"
+                            )}
+                        >
+                            <Calendar size={14} /> Submitted
+                        </button>
+                        <button
+                            onClick={() => setCalculateSortBy('activity')}
+                            className={clsx("px-3 py-2 text-xs font-bold rounded-lg transition-colors flex items-center gap-2",
+                                calculateSortBy === 'activity' ? "bg-lime-400 text-zinc-900" : "text-zinc-400 hover:text-white hover:bg-zinc-800"
+                            )}
+                        >
+                            <Clock size={14} /> Activity
+                        </button>
+                    </div>
+
+                    <div className="relative flex-1 w-full max-w-xs">
                         <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500" size={16} />
                         <input
                             type="text"
-                            placeholder="Search staff or title..."
-                            className="flex-1 w-full bg-zinc-900 border border-white/10 rounded-xl px-4 py-2.5 pl-9 focus:ring-2 focus:ring-lime-400 outline-none text-white placeholder-zinc-500 transition-all"
+                            placeholder="Search..."
+                            className="flex-1 w-full bg-zinc-900 border border-white/10 rounded-xl px-4 py-2 pl-9 focus:ring-2 focus:ring-lime-400 outline-none text-white placeholder-zinc-500 transition-all text-sm"
                             value={searchTerm}
                             onChange={e => setSearchTerm(e.target.value)}
                         />
@@ -130,73 +158,93 @@ const AdminClaims = () => {
                         No claims found matching your filters.
                     </div>
                 ) : (
-                    filteredItems.map(item => (
-                        <div key={item.id} className="glass-card p-5 flex flex-col gap-4 group hover:border-lime-400/30 transition-all">
-                            {/* User Identity Header */}
-                            <div className="flex items-center justify-between border-b border-white/5 pb-3 mb-1">
-                                <div className="flex items-center gap-3">
-                                    <div className="w-8 h-8 rounded-full bg-gradient-to-br from-lime-400 to-emerald-500 flex items-center justify-center text-black font-bold text-xs shadow-lg shadow-lime-400/20">
-                                        {item.User?.name?.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase()}
-                                    </div>
-                                    <div>
-                                        <h4 className="text-white font-bold text-sm leading-tight">{item.User?.name}</h4>
-                                        <p className="text-zinc-500 text-xs font-medium">{item.User?.role} • {item.User?.email}</p>
-                                    </div>
-                                </div>
-                                <StatusBadge status={item.status} />
-                            </div>
-
-                            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-                                <div className="flex items-start gap-4">
-                                    <div className="w-10 h-10 rounded-full bg-zinc-800 flex items-center justify-center text-zinc-400 shrink-0 mt-1">
-                                        <FileText size={20} />
-                                    </div>
-                                    <div>
-                                        <h4 className="text-zinc-300 font-bold text-lg">{item.title}</h4>
-                                        <div className="flex items-center gap-4 text-xs text-zinc-500 mt-1 font-mono">
-                                            <span className="flex items-center gap-1"><Calendar size={12} /> {item.date}</span>
-                                            <span>•</span>
-                                            <span className="text-lime-400 font-bold">Rp {item.amount.toLocaleString('id-ID')}</span>
+                    filteredItems.map((item) => {
+                        const late = isLate(item.date, item.createdAt);
+                        return (
+                            <div key={item.id} className="glass-card p-5 flex flex-col gap-4 group hover:border-lime-400/30 transition-all">
+                                {/* User Identity Header */}
+                                <div className="flex items-center justify-between border-b border-white/5 pb-3 mb-1">
+                                    <div className="flex items-center gap-3">
+                                        <div className="w-8 h-8 rounded-full bg-gradient-to-br from-lime-400 to-emerald-500 flex items-center justify-center text-black font-bold text-xs shadow-lg shadow-lime-400/20">
+                                            {item.User?.name?.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase()}
                                         </div>
-                                        {item.description && (
-                                            <p className="text-zinc-500 text-xs mt-2 italic max-w-xl border-l-2 border-zinc-800 pl-3 line-clamp-1">"{item.description}"</p>
-                                        )}
-                                        <button onClick={() => setSelectedClaim(item)} className="inline-flex items-center gap-1 text-xs font-bold text-blue-400 hover:text-blue-300 mt-2">
-                                            <ExternalLink size={12} /> View Details & Proof
-                                        </button>
+                                        <div>
+                                            <h4 className="text-white font-bold text-sm leading-tight">{item.User?.name}</h4>
+                                            <p className="text-zinc-500 text-xs font-medium">{item.User?.role} • {item.User?.email}</p>
+                                        </div>
                                     </div>
+                                    <StatusBadge status={item.status} />
                                 </div>
-                                {item.proof && (
-                                    <div className="hidden sm:block ml-4 shrink-0">
-                                        <div
-                                            className="w-16 h-16 rounded-lg border border-white/10 overflow-hidden cursor-pointer hover:ring-2 hover:ring-lime-400 transition-all bg-black/50 group/img relative"
-                                            onClick={() => setViewingImage(`${api.defaults.baseURL}${item.proof}`)}
-                                        >
-                                            <img
-                                                src={`${api.defaults.baseURL}${item.proof}`}
-                                                alt="Proof Thumbnail"
-                                                className="w-full h-full object-cover opacity-80 group-hover/img:opacity-100 transition-opacity"
-                                            />
-                                            <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover/img:opacity-100 bg-black/40 transition-opacity">
-                                                <ExternalLink size={12} className="text-white" />
+
+                                <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                                    <div className="flex items-start gap-4">
+                                        <div className="w-10 h-10 rounded-full bg-zinc-800 flex items-center justify-center text-zinc-400 shrink-0 mt-1">
+                                            <FileText size={20} />
+                                        </div>
+                                        <div>
+                                            <h4 className="text-zinc-300 font-bold text-lg">{item.title}</h4>
+
+                                            {/* Date & Amount Row */}
+                                            <div className="flex flex-wrap items-center gap-4 text-xs text-zinc-500 mt-1 font-mono">
+                                                <div className="flex flex-col">
+                                                    <span className="flex items-center gap-1 text-zinc-300 font-bold"><Calendar size={12} /> {format(new Date(item.date), 'dd MMM yyyy')}</span>
+                                                    {item.createdAt && (
+                                                        <span className="text-[10px] text-zinc-600">
+                                                            Submitted: {format(new Date(item.createdAt), 'dd MMM HH:mm')}
+                                                        </span>
+                                                    )}
+                                                </div>
+
+                                                {late && (
+                                                    <div className="flex items-center gap-1 text-yellow-500 text-[10px] font-bold border border-yellow-500/30 bg-yellow-500/10 px-2 py-0.5 rounded-full" title="Submitted > 7 days after activity">
+                                                        <AlertTriangle size={10} /> Late Submission
+                                                    </div>
+                                                )}
+
+                                                <span className="text-zinc-700">|</span>
+                                                <span className="text-lime-400 font-bold text-sm">Rp {item.amount.toLocaleString('id-ID')}</span>
+                                            </div>
+
+                                            {item.description && (
+                                                <p className="text-zinc-500 text-xs mt-2 italic max-w-xl border-l-2 border-zinc-800 pl-3 line-clamp-1">"{item.description}"</p>
+                                            )}
+                                            <button onClick={() => setSelectedClaim(item)} className="inline-flex items-center gap-1 text-xs font-bold text-blue-400 hover:text-blue-300 mt-2">
+                                                <ExternalLink size={12} /> View Details & Proof
+                                            </button>
+                                        </div>
+                                    </div>
+                                    {item.proof && (
+                                        <div className="hidden sm:block ml-4 shrink-0">
+                                            <div
+                                                className="w-16 h-16 rounded-lg border border-white/10 overflow-hidden cursor-pointer hover:ring-2 hover:ring-lime-400 transition-all bg-black/50 group/img relative"
+                                                onClick={() => setViewingImage(`${api.defaults.baseURL}${item.proof}`)}
+                                            >
+                                                <img
+                                                    src={`${api.defaults.baseURL}${item.proof}`}
+                                                    alt="Proof Thumbnail"
+                                                    className="w-full h-full object-cover opacity-80 group-hover/img:opacity-100 transition-opacity"
+                                                />
+                                                <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover/img:opacity-100 bg-black/40 transition-opacity">
+                                                    <ExternalLink size={12} className="text-white" />
+                                                </div>
                                             </div>
                                         </div>
+                                    )}
+                                </div>
+
+                                {item.status === 'Pending' && (
+                                    <div className="flex gap-2 w-full md:w-auto mt-2 md:mt-0">
+                                        <button onClick={() => handleAction(item.id, 'Approved')} className="flex-1 md:flex-none px-4 py-2 bg-lime-400 text-black font-bold rounded-xl hover:bg-lime-300 transition-colors flex items-center justify-center gap-2 shadow-lg shadow-lime-400/10">
+                                            <Check size={16} /> Approve
+                                        </button>
+                                        <button onClick={() => handleAction(item.id, 'Rejected')} className="flex-1 md:flex-none px-4 py-2 bg-zinc-800 text-red-400 font-bold rounded-xl hover:bg-red-400/10 transition-colors flex items-center justify-center gap-2">
+                                            <X size={16} /> Reject
+                                        </button>
                                     </div>
                                 )}
                             </div>
-
-                            {item.status === 'Pending' && (
-                                <div className="flex gap-2 w-full md:w-auto mt-2 md:mt-0">
-                                    <button onClick={() => handleAction(item.id, 'Approved')} className="flex-1 md:flex-none px-4 py-2 bg-lime-400 text-black font-bold rounded-xl hover:bg-lime-300 transition-colors flex items-center justify-center gap-2 shadow-lg shadow-lime-400/10">
-                                        <Check size={16} /> Approve
-                                    </button>
-                                    <button onClick={() => handleAction(item.id, 'Rejected')} className="flex-1 md:flex-none px-4 py-2 bg-zinc-800 text-red-400 font-bold rounded-xl hover:bg-red-400/10 transition-colors flex items-center justify-center gap-2">
-                                        <X size={16} /> Reject
-                                    </button>
-                                </div>
-                            )}
-                        </div>
-                    ))
+                        )
+                    })
                 )}
             </div>
 

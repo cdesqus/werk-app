@@ -622,10 +622,16 @@ app.get('/api/claims', authenticateToken, async (req, res) => {
             }
         }
 
+        const { sortBy } = req.query;
+        let orderClause = [['date', 'DESC']];
+        if (sortBy === 'submission') {
+            orderClause = [['createdAt', 'DESC']];
+        }
+
         const claims = await Claim.findAll({
             where: whereClause,
             include: [{ model: User, attributes: ['name', 'email', 'role'] }],
-            order: [['date', 'DESC']]
+            order: orderClause
         });
         res.json(claims);
     } catch (error) {

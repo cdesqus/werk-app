@@ -3,6 +3,7 @@ import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import api from '../utils/api';
 import ConfirmModal from '../components/ui/ConfirmModal';
+import DateInput from '../components/ui/DateInput';
 import { Clock, FileText, History, Palmtree, Sparkles, Upload, Megaphone, BarChart2, Zap, CheckCircle, Circle, Plus, X, Calendar, Pencil, Trash2, Camera, CheckCircle2, Lock } from 'lucide-react';
 import { format, differenceInMinutes, parse, isSunday } from 'date-fns';
 import clsx from 'clsx';
@@ -664,7 +665,7 @@ const StaffDashboard = () => {
                         <form onSubmit={handleOtSubmit} className="space-y-4">
                             <div className="space-y-2">
                                 <label className="text-xs font-bold text-zinc-500 uppercase tracking-wider">Date</label>
-                                <input type="date" required className="input-field w-full"
+                                <DateInput required className="w-full"
                                     value={otForm.date} onChange={e => setOtForm({ ...otForm, date: e.target.value })} />
                                 {isHoliday && (
                                     <div className="flex items-center gap-2 text-red-400 text-xs font-bold mt-1">
@@ -726,7 +727,7 @@ const StaffDashboard = () => {
                             <div className="grid grid-cols-2 gap-4">
                                 <div className="space-y-2">
                                     <label className="text-xs font-bold text-zinc-500 uppercase tracking-wider">Date</label>
-                                    <input type="date" required className="input-field w-full"
+                                    <DateInput required className="w-full"
                                         value={claimForm.date} onChange={e => setClaimForm({ ...claimForm, date: e.target.value })} />
                                 </div>
                                 <div className="space-y-2">
@@ -834,12 +835,12 @@ const StaffDashboard = () => {
                             <div className="grid grid-cols-2 gap-4">
                                 <div className="space-y-2">
                                     <label className="text-xs font-bold text-zinc-500 uppercase tracking-wider">Start Date</label>
-                                    <input type="date" required className="input-field w-full"
+                                    <DateInput required className="w-full"
                                         value={leaveForm.startDate} onChange={e => setLeaveForm({ ...leaveForm, startDate: e.target.value })} />
                                 </div>
                                 <div className="space-y-2">
                                     <label className="text-xs font-bold text-zinc-500 uppercase tracking-wider">End Date</label>
-                                    <input type="date" required className="input-field w-full"
+                                    <DateInput required className="w-full"
                                         value={leaveForm.endDate} onChange={e => setLeaveForm({ ...leaveForm, endDate: e.target.value })} />
                                 </div>
                             </div>
