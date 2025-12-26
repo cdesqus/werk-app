@@ -28,16 +28,16 @@ const AdminDashboard = () => {
         try {
             const [summaryRes, otRes, claimRes, leaveRes] = await Promise.all([
                 api.get(`/admin/summary?month=${month}&year=${year}`),
-                api.get(`/overtimes?month=${month}&year=${year}`),
-                api.get(`/claims?month=${month}&year=${year}`),
-                api.get(`/leaves?month=${month}&year=${year}`)
+                api.get(`/overtimes?status=Pending`),
+                api.get(`/claims?status=Pending`),
+                api.get(`/leaves?status=Pending`)
             ]);
             setSummary(summaryRes.data);
 
             const pending = [
-                ...otRes.data.filter(i => i.status === 'Pending').map(i => ({ ...i, dataType: 'overtime' })),
-                ...claimRes.data.filter(i => i.status === 'Pending').map(i => ({ ...i, dataType: 'claim' })),
-                ...leaveRes.data.filter(i => i.status === 'Pending').map(i => ({ ...i, dataType: 'leave' }))
+                ...otRes.data.map(i => ({ ...i, dataType: 'overtime' })),
+                ...claimRes.data.map(i => ({ ...i, dataType: 'claim' })),
+                ...leaveRes.data.map(i => ({ ...i, dataType: 'leave' }))
             ];
             setPendingItems(pending);
         } catch (err) { console.error(err); }

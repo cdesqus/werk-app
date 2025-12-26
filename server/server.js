@@ -428,7 +428,7 @@ app.post('/api/overtimes', authenticateToken, async (req, res) => {
 
 app.get('/api/overtimes', authenticateToken, async (req, res) => {
     try {
-        const { month, year } = req.query;
+        const { month, year, status } = req.query;
         if ((month && isNaN(month)) || (year && isNaN(year))) {
             return res.status(400).json({ error: 'Invalid month or year format' });
         }
@@ -460,6 +460,10 @@ app.get('/api/overtimes', authenticateToken, async (req, res) => {
                 const endDate = new Date(year, month, 0);
                 whereClause.date = { [Op.between]: [startDate, endDate] };
             }
+        }
+
+        if (status) {
+            whereClause.status = status;
         }
 
         const { sortBy } = req.query;
@@ -589,7 +593,7 @@ app.post('/api/claims', authenticateToken, upload.single('proof'), async (req, r
 
 app.get('/api/claims', authenticateToken, async (req, res) => {
     try {
-        const { month, year, personal } = req.query;
+        const { month, year, personal, status } = req.query;
         if ((month && isNaN(month)) || (year && isNaN(year))) {
             return res.status(400).json({ error: 'Invalid month or year format' });
         }
@@ -620,6 +624,10 @@ app.get('/api/claims', authenticateToken, async (req, res) => {
                 const endDate = new Date(year, month, 0);
                 whereClause.date = { [Op.between]: [startDate, endDate] };
             }
+        }
+
+        if (status) {
+            whereClause.status = status;
         }
 
         const { sortBy } = req.query;
@@ -755,6 +763,10 @@ app.get('/api/leaves', authenticateToken, async (req, res) => {
                 const endDate = new Date(year, month, 0);
                 whereClause.startDate = { [Op.between]: [startDate, endDate] };
             }
+        }
+
+        if (status) {
+            whereClause.status = status;
         }
 
         const leaves = await Leave.findAll({
