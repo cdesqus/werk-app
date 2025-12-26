@@ -2,8 +2,8 @@ import { useState, useEffect } from 'react';
 import { useToast } from '../context/ToastContext';
 import api from '../utils/api';
 import ConfirmModal from '../components/ui/ConfirmModal';
-import { DollarSign, Calendar, ChevronLeft, ChevronRight, Download, CheckCircle, Loader, CheckCircle2, ChevronDown, ChevronUp, Clock, FileText } from 'lucide-react';
-import { format, subMonths, addMonths } from 'date-fns';
+import { DollarSign, Calendar, ChevronLeft, ChevronRight, Download, CheckCircle, Loader, CheckCircle2, ChevronDown, ChevronUp, Clock, FileText, AlertTriangle, Filter } from 'lucide-react';
+import { format, subMonths, addMonths, differenceInDays } from 'date-fns';
 import * as XLSX from 'xlsx';
 import clsx from 'clsx';
 
@@ -15,6 +15,7 @@ const AdminPayroll = () => {
     const [isProcessing, setIsProcessing] = useState(false);
     const [confirmModal, setConfirmModal] = useState({ isOpen: false });
     const [expandedRows, setExpandedRows] = useState(new Set());
+    const [filterMode, setFilterMode] = useState('submission'); // 'submission' or 'activity'
 
     const toggleRow = (id) => {
         const newExpanded = new Set(expandedRows);
@@ -37,13 +38,13 @@ const AdminPayroll = () => {
 
     useEffect(() => {
         fetchPayroll();
-    }, [currentDate]);
+    }, [currentDate, filterMode]); // Refetch on date or filter mode change
 
     const fetchPayroll = async () => {
         const currentMonth = currentDate.getMonth() + 1;
         const currentYear = currentDate.getFullYear();
         try {
-            const { data } = await api.get(`/admin/summary?month=${currentMonth}&year=${currentYear}`);
+            const { data } = await api.get(`/admin/summary?month=${currentMonth}&year=${currentYear}&filterMode=${filterMode}`);
             setSummary(data);
             setSelectedUserIds([]); // Reset selection on month change
         } catch (error) {
@@ -146,14 +147,40 @@ const AdminPayroll = () => {
         );
     };
 
+    // Helper for Late Check
+    const isLate = (activityDate, submissionDate) => {
+        if (!activityDate || !submissionDate) return false;
+        return differenceInDays(new Date(submissionDate), new Date(activityDate)) > 7;
+    };
+
     return (
         <div className="space-y-6">
-            <header className="flex flex-col md:flex-row justify-between items-center gap-4">
+            <header className="flex flex-col xl:flex-row justify-between items-start xl:items-center gap-4">
                 <div>
                     <h1 className="text-3xl font-black text-white mb-1">Payroll Management</h1>
                     <p className="text-zinc-400 text-sm">Review and process staff salaries.</p>
                 </div>
-                <div className="flex items-center gap-4">
+                <div className="flex flex-wrap items-center gap-4">
+                    {/* Filter Toggle */}
+                    <div className="flex items-center bg-zinc-900 rounded-xl p-1 border border-zinc-700">
+                        <button
+                            onClick={() => setFilterMode('submission')}
+                            className={clsx("px-3 py-2 text-xs font-bold rounded-lg transition-colors flex items-center gap-2",
+                                filterMode === 'submission' ? "bg-lime-400 text-zinc-900" : "text-zinc-400 hover:text-white hover:bg-zinc-800"
+                            )}
+                        >
+                            <Calendar size={14} /> Submission Date
+                        </button>
+                        <button
+                            onClick={() => setFilterMode('activity')}
+                            className={clsx("px-3 py-2 text-xs font-bold rounded-lg transition-colors flex items-center gap-2",
+                                filterMode === 'activity' ? "bg-lime-400 text-zinc-900" : "text-zinc-400 hover:text-white hover:bg-zinc-800"
+                            )}
+                        >
+                            <Clock size={14} /> Activity Date
+                        </button>
+                    </div>
+
                     <div className="flex items-center bg-zinc-900 rounded-xl p-1 border border-zinc-700">
                         <button onClick={() => setMonth(m => m === 1 ? 12 : m - 1)} className="p-2 hover:bg-zinc-800 rounded-lg text-zinc-400 hover:text-white transition-colors"><ChevronLeft size={16} /></button>
                         <span className="w-32 text-center font-bold text-white text-sm">{new Date(year, month - 1).toLocaleString('default', { month: 'long', year: 'numeric' })}</span>
@@ -291,14 +318,31 @@ const AdminPayroll = () => {
                                                                         </tr>
                                                                     </thead>
                                                                     <tbody className="divide-y divide-white/5">
-                                                                        {user.details.overtimes.map(ot => (
-                                                                            <tr key={ot.id}>
-                                                                                <td className="p-2 text-zinc-400">{format(new Date(ot.date), 'dd/MM')}</td>
-                                                                                <td className="p-2 text-white">{ot.activity}</td>
-                                                                                <td className="p-2 text-right font-mono text-zinc-300">{ot.hours}</td>
-                                                                                <td className="p-2 text-right font-mono text-lime-400">Rp {ot.amount.toLocaleString('id-ID')}</td>
-                                                                            </tr>
-                                                                        ))}
+                                                                        {user.details.overtimes.map(ot => {
+                                                                            const late = isLate(ot.date, ot.createdAt);
+                                                                            return (
+                                                                                <tr key={ot.id}>
+                                                                                    <td className="p-2">
+                                                                                        <div className="flex flex-col">
+                                                                                            <span className="text-zinc-200 font-medium">{format(new Date(ot.date), 'dd MMM')}</span>
+                                                                                            {ot.createdAt && (
+                                                                                                <span className="text-[10px] text-zinc-500">
+                                                                                                    Sub: {format(new Date(ot.createdAt), 'dd MMM')}
+                                                                                                </span>
+                                                                                            )}
+                                                                                            {late && (
+                                                                                                <div className="flex items-center gap-1 text-yellow-500 text-[10px] mt-0.5" title="Submitted > 7 days after activity">
+                                                                                                    <AlertTriangle size={10} /> Late
+                                                                                                </div>
+                                                                                            )}
+                                                                                        </div>
+                                                                                    </td>
+                                                                                    <td className="p-2 text-white">{ot.activity}</td>
+                                                                                    <td className="p-2 text-right font-mono text-zinc-300">{ot.hours}</td>
+                                                                                    <td className="p-2 text-right font-mono text-lime-400">Rp {ot.amount.toLocaleString('id-ID')}</td>
+                                                                                </tr>
+                                                                            );
+                                                                        })}
                                                                     </tbody>
                                                                 </table>
                                                             </div>
@@ -324,19 +368,36 @@ const AdminPayroll = () => {
                                                                         </tr>
                                                                     </thead>
                                                                     <tbody className="divide-y divide-white/5">
-                                                                        {user.details.claims.map(claim => (
-                                                                            <tr key={claim.id}>
-                                                                                <td className="p-2 text-zinc-400">{format(new Date(claim.date), 'dd/MM')}</td>
-                                                                                <td className="p-2 text-white">{claim.title}</td>
-                                                                                <td className="p-2 text-right">
-                                                                                    <span className={clsx("text-xs font-bold",
-                                                                                        claim.status === 'Paid' ? "text-emerald-500" :
-                                                                                            claim.status === 'Approved' ? "text-lime-500" : "text-yellow-500"
-                                                                                    )}>{claim.status}</span>
-                                                                                </td>
-                                                                                <td className="p-2 text-right font-mono text-lime-400">Rp {claim.amount.toLocaleString('id-ID')}</td>
-                                                                            </tr>
-                                                                        ))}
+                                                                        {user.details.claims.map(claim => {
+                                                                            const late = isLate(claim.date, claim.createdAt);
+                                                                            return (
+                                                                                <tr key={claim.id}>
+                                                                                    <td className="p-2">
+                                                                                        <div className="flex flex-col">
+                                                                                            <span className="text-zinc-200 font-medium">{format(new Date(claim.date), 'dd MMM')}</span>
+                                                                                            {claim.createdAt && (
+                                                                                                <span className="text-[10px] text-zinc-500">
+                                                                                                    Sub: {format(new Date(claim.createdAt), 'dd MMM')}
+                                                                                                </span>
+                                                                                            )}
+                                                                                            {late && (
+                                                                                                <div className="flex items-center gap-1 text-yellow-500 text-[10px] mt-0.5" title="Submitted > 7 days after activity">
+                                                                                                    <AlertTriangle size={10} /> Late
+                                                                                                </div>
+                                                                                            )}
+                                                                                        </div>
+                                                                                    </td>
+                                                                                    <td className="p-2 text-white">{claim.title}</td>
+                                                                                    <td className="p-2 text-right">
+                                                                                        <span className={clsx("text-xs font-bold",
+                                                                                            claim.status === 'Paid' ? "text-emerald-500" :
+                                                                                                claim.status === 'Approved' ? "text-lime-500" : "text-yellow-500"
+                                                                                        )}>{claim.status}</span>
+                                                                                    </td>
+                                                                                    <td className="p-2 text-right font-mono text-lime-400">Rp {claim.amount.toLocaleString('id-ID')}</td>
+                                                                                </tr>
+                                                                            );
+                                                                        })}
                                                                     </tbody>
                                                                 </table>
                                                             </div>

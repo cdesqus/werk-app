@@ -958,20 +958,49 @@ app.get('/api/birthdays/today', authenticateToken, async (req, res) => {
 // Admin Summary (Payroll)
 app.get('/api/admin/summary', authenticateToken, isAdmin, async (req, res) => {
     try {
-        const { month, year } = req.query;
+        const { month, year, filterMode = 'submission' } = req.query;
         if ((month && isNaN(month)) || (year && isNaN(year))) {
             return res.status(400).json({ error: 'Invalid month or year format' });
         }
 
-        const startDate = new Date(year, month - 1, 1).toISOString().split('T')[0];
-        const endDate = new Date(year, month, 0).toISOString().split('T')[0];
-        const dateFilter = { [Op.between]: [startDate, endDate] };
+        let dateFilter = {};
+        let timestampFilter = {};
 
-        // For Quests (createdAt is TIMESTAMP), use Date objects
-        const startTs = new Date(year, month - 1, 1);
-        const endTs = new Date(year, month, 0);
-        endTs.setHours(23, 59, 59, 999);
-        const timestampFilter = { [Op.between]: [startTs, endTs] };
+        if (filterMode === 'submission') {
+            // Payroll Cycle: 28th Previous Month to 27th Current Month
+            // Example: Dec Payroll = Nov 28 - Dec 27
+            // JS Date Month is 0-indexed.
+
+            // Start: 28th of Previous Month
+            // (month - 1) is current month index. (month - 2) is previous.
+            const startDate = new Date(year, month - 2, 28);
+            startDate.setHours(0, 0, 0, 0);
+
+            // End: 27th of Current Month
+            const endDate = new Date(year, month - 1, 27);
+            endDate.setHours(23, 59, 59, 999);
+
+            // Filter for createdAt (Submission Date)
+            timestampFilter = { [Op.between]: [startDate, endDate] };
+
+            // For Date-based fields that are just YYYY-MM-DD (like Overtime.date), keep a loose filter 
+            // OR we should filter them by createdAt as per checking user requirement.
+            // User: "Include Items where... created_at is between 28th... and 27th..."
+            // So we primarily filter by createdAt for Overtimes and Claims.
+            dateFilter = null; // We won't use the 'date' column for filtering in this mode
+        } else {
+            // Activity Date Mode (Traditional Calendar Month)
+            // 1st to Last Day of Month
+            const startDate = new Date(year, month - 1, 1);
+            const endDate = new Date(year, month, 0);
+            endDate.setHours(23, 59, 59, 999);
+
+            const startStr = startDate.toISOString().split('T')[0];
+            const endStr = endDate.toISOString().split('T')[0];
+
+            dateFilter = { [Op.between]: [startStr, endStr] }; // For 'date' column
+            timestampFilter = { [Op.between]: [startDate, endDate] }; // For 'createdAt' column (Quests)
+        }
 
         const users = await User.findAll({
             where: {
@@ -981,12 +1010,24 @@ app.get('/api/admin/summary', authenticateToken, isAdmin, async (req, res) => {
         const summary = [];
 
         for (const user of users) {
+            // Fetch items based on filter mode
+            let overtimeWhere = { UserId: user.id };
+            let claimWhere = { UserId: user.id };
+
+            if (filterMode === 'submission') {
+                overtimeWhere.createdAt = timestampFilter;
+                claimWhere.createdAt = timestampFilter;
+            } else {
+                overtimeWhere.date = dateFilter;
+                claimWhere.date = dateFilter;
+            }
+
             // Fetch ALL items for the period to determine status correctly
             const overtimes = await Overtime.findAll({
-                where: { UserId: user.id, date: dateFilter }
+                where: overtimeWhere
             });
             const claims = await Claim.findAll({
-                where: { UserId: user.id, date: dateFilter }
+                where: claimWhere
             });
 
             const quests = await Quest.findAll({
@@ -1060,6 +1101,7 @@ app.get('/api/admin/summary', authenticateToken, isAdmin, async (req, res) => {
                         overtimes: overtimes.filter(o => ['Approved', 'Paid'].includes(o.status)).map(o => ({
                             id: o.id,
                             date: o.date,
+                            createdAt: o.createdAt,
                             activity: o.activity,
                             hours: o.hours,
                             amount: o.payableAmount,
@@ -1068,6 +1110,7 @@ app.get('/api/admin/summary', authenticateToken, isAdmin, async (req, res) => {
                         claims: claims.filter(c => ['Approved', 'Paid'].includes(c.status)).map(c => ({
                             id: c.id,
                             date: c.date,
+                            createdAt: c.createdAt,
                             title: c.title,
                             amount: c.amount,
                             status: c.status
