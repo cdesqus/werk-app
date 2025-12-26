@@ -462,10 +462,16 @@ app.get('/api/overtimes', authenticateToken, async (req, res) => {
             }
         }
 
+        const { sortBy } = req.query;
+        let orderClause = [['date', 'DESC']]; // Default Activity Date
+        if (sortBy === 'submission') {
+            orderClause = [['createdAt', 'DESC']];
+        }
+
         const overtimes = await Overtime.findAll({
             where: whereClause,
             include: [{ model: User, attributes: ['name', 'email', 'role'] }],
-            order: [['date', 'DESC']]
+            order: orderClause
         });
         res.json(overtimes);
     } catch (error) {
