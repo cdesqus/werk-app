@@ -1341,6 +1341,60 @@ app.get('/api/admin/audit-logs', authenticateToken, isAdmin, async (req, res, ne
 });
 
 
+// Admin Payroll Summary
+app.get('/api/admin/summary', authenticateToken, isAdmin, async (req, res, next) => {
+    try {
+        const { month, year } = req.query;
+        if (!month || !year) return res.status(400).json({ error: 'Month and Year required' });
+
+        const startDate = new Date(year, month - 1, 1).toISOString().split('T')[0];
+        const endDate = new Date(year, month, 0).toISOString().split('T')[0];
+
+        const users = await User.findAll({
+            attributes: ['id', 'name', 'role']
+        });
+
+        const summary = [];
+
+        for (const user of users) {
+            const overtimes = await Overtime.findAll({
+                where: {
+                    UserId: user.id,
+                    status: 'Approved',
+                    date: { [Op.between]: [startDate, endDate] }
+                }
+            });
+
+            const claims = await Claim.findAll({
+                where: {
+                    UserId: user.id,
+                    status: 'Approved',
+                    date: { [Op.between]: [startDate, endDate] }
+                }
+            });
+
+            const overtimeTotal = overtimes.reduce((sum, item) => sum + (item.payableAmount || 0), 0);
+            const claimTotal = claims.reduce((sum, item) => sum + (item.amount || 0), 0);
+
+            summary.push({
+                userId: user.id,
+                name: user.name,
+                role: user.role,
+                overtimeTotal,
+                claimTotal,
+                totalPayable: overtimeTotal + claimTotal
+            });
+        }
+
+        summary.sort((a, b) => b.totalPayable - a.totalPayable);
+
+        res.json(summary);
+    } catch (error) {
+        next(error);
+    }
+});
+
+
 // Global Error Handler
 app.use((err, req, res, next) => {
     console.error(err.stack); // Log stack trace for dev (or use a logger in prod)
