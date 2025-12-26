@@ -1,0 +1,11 @@
+{
+    "smtp": {
+        "host": "",
+        "port": 587,
+        "secure": false,
+        "user": "",
+        "pass": "",
+        "fromEmail": "",
+        "fromName": "WERK OS"
+    }
+}

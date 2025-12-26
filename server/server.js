@@ -1382,5 +1382,111 @@ sequelize.sync().then(async () => {
         console.log('Super Admin already exists');
     }
 
+    // --- SYSTEM SETTINGS (SMTP) ---
+    const SETTINGS_FILE = path.join(__dirname, 'settings.json');
+
+    const getSettings = () => {
+        try {
+            if (!fs.existsSync(SETTINGS_FILE)) return {};
+            return JSON.parse(fs.readFileSync(SETTINGS_FILE, 'utf8'));
+        } catch (err) {
+            console.error("Error reading settings:", err);
+            return {};
+        }
+    };
+
+    const saveSettings = (newSettings) => {
+        try {
+            const current = getSettings();
+            const updated = { ...current, ...newSettings };
+            fs.writeFileSync(SETTINGS_FILE, JSON.stringify(updated, null, 4));
+            return updated;
+        } catch (err) {
+            console.error("Error saving settings:", err);
+            throw err;
+        }
+    };
+
+    // Get SMTP Config
+    app.get('/api/admin/config/smtp', authenticateToken, isAdmin, (req, res) => {
+        const settings = getSettings();
+        const smtp = settings.smtp || {};
+        // Return config but mask password if needed? For editing, we usually need to know if it's set, or return it.
+        // We'll return it for now as this is a super admin route.
+        res.json(smtp);
+    });
+
+    // Update SMTP Config
+    app.put('/api/admin/config/smtp', authenticateToken, isAdmin, async (req, res) => {
+        try {
+            const { host, port, secure, user, pass, fromEmail, fromName } = req.body;
+            const settings = getSettings();
+            const updatedSmtp = {
+                host,
+                port: parseInt(port),
+                secure,
+                user,
+                pass,
+                fromEmail,
+                fromName
+            };
+
+            saveSettings({ smtp: updatedSmtp });
+
+            await logAudit(req.user.id, 'System Config', 'Updated SMTP Settings', req);
+            res.json({ message: 'Settings saved', smtp: updatedSmtp });
+        } catch (error) {
+            res.status(500).json({ error: 'Failed to save settings' });
+        }
+    });
+
+    // Test SMTP
+    app.post('/api/admin/config/smtp/test', authenticateToken, isAdmin, async (req, res) => {
+        try {
+            const { email } = req.body;
+            const settings = getSettings();
+            const smtp = settings.smtp;
+
+            if (!smtp || !smtp.host) {
+                return res.status(400).json({ error: 'SMTP not configured' });
+            }
+
+            const transporter = nodemailer.createTransport({
+                host: smtp.host,
+                port: smtp.port,
+                secure: smtp.secure,
+                auth: {
+                    user: smtp.user,
+                    pass: smtp.pass
+                }
+            });
+
+            await transporter.sendMail({
+                from: `"${smtp.fromName}" <${smtp.fromEmail}>`,
+                to: email,
+                subject: 'WERK OS: Test Email',
+                text: 'This is a test email to verify your SMTP configuration. If you are reading this, it works!',
+                html: `
+                <div style="font-family: sans-serif; padding: 20px; background: #f4f4f5;">
+                    <div style="background: white; padding: 20px; border-radius: 10px; max-width: 500px; margin: 0 auto;">
+                        <h2 style="color: #000;">Test Email</h2>
+                        <p style="color: #555;">Your SMTP configuration is working correctly.</p>
+                        <hr style="border: 0; border-top: 1px solid #eee; margin: 20px 0;">
+                        <small style="color: #999;">Sent from WERK OS</small>
+                    </div>
+                </div>
+            `
+            });
+
+            await logAudit(req.user.id, 'System Config', `Test email sent to ${email}`, req);
+            res.json({ message: 'Test email sent successfully' });
+        } catch (error) {
+            console.error("Test email failed:", error);
+            res.status(500).json({ error: `Failed to send email: ${error.message}` });
+        }
+    });
+
+    // --- SERVER START ---
+    // Sync Database and Start Server
     app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
 });
