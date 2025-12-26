@@ -1394,6 +1394,9 @@ sequelize.sync().then(async () => {
         console.log('Super Admin already exists');
     }
 
+
+
+
     // --- SYSTEM SETTINGS (SMTP) ---
     const SETTINGS_FILE = path.join(__dirname, 'settings.json');
 
@@ -1423,8 +1426,6 @@ sequelize.sync().then(async () => {
     app.get('/api/admin/config/smtp', authenticateToken, isAdmin, (req, res) => {
         const settings = getSettings();
         const smtp = settings.smtp || {};
-        // Return config but mask password if needed? For editing, we usually need to know if it's set, or return it.
-        // We'll return it for now as this is a super admin route.
         res.json(smtp);
     });
 
@@ -1479,15 +1480,15 @@ sequelize.sync().then(async () => {
                 subject: 'WERK OS: Test Email',
                 text: 'This is a test email to verify your SMTP configuration. If you are reading this, it works!',
                 html: `
-                <div style="font-family: sans-serif; padding: 20px; background: #f4f4f5;">
-                    <div style="background: white; padding: 20px; border-radius: 10px; max-width: 500px; margin: 0 auto;">
-                        <h2 style="color: #000;">Test Email</h2>
-                        <p style="color: #555;">Your SMTP configuration is working correctly.</p>
-                        <hr style="border: 0; border-top: 1px solid #eee; margin: 20px 0;">
-                        <small style="color: #999;">Sent from WERK OS</small>
-                    </div>
+            <div style="font-family: sans-serif; padding: 20px; background: #f4f4f5;">
+                <div style="background: white; padding: 20px; border-radius: 10px; max-width: 500px; margin: 0 auto;">
+                    <h2 style="color: #000;">Test Email</h2>
+                    <p style="color: #555;">Your SMTP configuration is working correctly.</p>
+                    <hr style="border: 0; border-top: 1px solid #eee; margin: 20px 0;">
+                    <small style="color: #999;">Sent from WERK OS</small>
                 </div>
-            `
+            </div>
+        `
             });
 
             await logAudit(req.user.id, 'System Config', `Test email sent to ${email}`, req);
