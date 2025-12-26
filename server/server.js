@@ -1360,7 +1360,7 @@ app.get('/api/admin/summary', authenticateToken, isAdmin, async (req, res, next)
             const overtimes = await Overtime.findAll({
                 where: {
                     UserId: user.id,
-                    status: 'Approved',
+                    status: { [Op.in]: ['Approved', 'Pending'] },
                     date: { [Op.between]: [startDate, endDate] }
                 }
             });
@@ -1368,7 +1368,7 @@ app.get('/api/admin/summary', authenticateToken, isAdmin, async (req, res, next)
             const claims = await Claim.findAll({
                 where: {
                     UserId: user.id,
-                    status: 'Approved',
+                    status: { [Op.in]: ['Approved', 'Pending'] },
                     date: { [Op.between]: [startDate, endDate] }
                 }
             });
