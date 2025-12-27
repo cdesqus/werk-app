@@ -25,6 +25,7 @@ const AdminDashboard = () => {
     const fetchData = async () => {
         const month = currentDate.getMonth() + 1;
         const year = currentDate.getFullYear();
+        console.log(`[Frontend Debug] Fetching Admin Summary for: ${month}/${year}`);
         try {
             const [summaryRes, otRes, claimRes, leaveRes] = await Promise.all([
                 api.get(`/admin/summary?month=${month}&year=${year}`),
@@ -33,6 +34,7 @@ const AdminDashboard = () => {
                 api.get(`/leaves?status=Pending`)
             ]);
             setSummary(summaryRes.data);
+            console.log('[Frontend Debug] Summary Response:', summaryRes.data);
 
             const pending = [
                 ...otRes.data.map(i => ({ ...i, dataType: 'overtime' })),

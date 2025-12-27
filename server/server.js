@@ -1026,6 +1026,9 @@ app.get('/api/admin/summary', authenticateToken, isAdmin, async (req, res) => {
             timestampFilter = { [Op.between]: [startDate, endDate] }; // For 'createdAt' column (Quests)
         }
 
+        console.log(`[DEBUG] Summary Request - Month: ${month}, Year: ${year}, Mode: ${filterMode}`);
+        console.log(`[DEBUG] Date Range: ${timestampFilter[Op.between][0].toString()} to ${timestampFilter[Op.between][1].toString()}`);
+
         const users = await User.findAll({
             where: {
                 role: { [Op.or]: ['staff', 'admin'] }
@@ -1045,6 +1048,9 @@ app.get('/api/admin/summary', authenticateToken, isAdmin, async (req, res) => {
                 overtimeWhere.date = dateFilter;
                 claimWhere.date = dateFilter;
             }
+
+            // DEBUG LOG
+            console.log(`[DEBUG] User ${user.email}: Fetching Overtimes with filter:`, JSON.stringify(overtimeWhere, null, 2));
 
             // Fetch ALL items for the period to determine status correctly
             const overtimes = await Overtime.findAll({
@@ -1069,11 +1075,11 @@ app.get('/api/admin/summary', authenticateToken, isAdmin, async (req, res) => {
             const approvedClaims = claims.filter(c => c.status === 'Approved');
             const paidClaims = claims.filter(c => c.status === 'Paid');
 
-            const unpaidAmount = approvedOvertimes.reduce((sum, o) => sum + o.payableAmount, 0) +
-                approvedClaims.reduce((sum, c) => sum + c.amount, 0);
+            const unpaidAmount = approvedOvertimes.reduce((sum, o) => sum + (o.payableAmount || 0), 0) +
+                approvedClaims.reduce((sum, c) => sum + (c.amount || 0), 0);
 
-            const paidAmount = paidOvertimes.reduce((sum, o) => sum + o.payableAmount, 0) +
-                paidClaims.reduce((sum, c) => sum + c.amount, 0);
+            const paidAmount = paidOvertimes.reduce((sum, o) => sum + (o.payableAmount || 0), 0) +
+                paidClaims.reduce((sum, c) => sum + (c.amount || 0), 0);
 
             const questTotal = quests.reduce((sum, q) => {
                 const val = parseInt(q.reward.replace(/\D/g, ''));
@@ -1088,14 +1094,14 @@ app.get('/api/admin/summary', authenticateToken, isAdmin, async (req, res) => {
             const totalPayable = unpaidAmount + paidAmount + questTotal;
 
             // Calculate Totals for Display (Both Unpaid and Paid)
-            const overtimeHours = approvedOvertimes.reduce((sum, o) => sum + o.hours, 0) +
-                paidOvertimes.reduce((sum, o) => sum + o.hours, 0);
+            const overtimeHours = approvedOvertimes.reduce((sum, o) => sum + (o.hours || 0), 0) +
+                paidOvertimes.reduce((sum, o) => sum + (o.hours || 0), 0);
 
-            const overtimeTotal = approvedOvertimes.reduce((sum, o) => sum + o.payableAmount, 0) +
-                paidOvertimes.reduce((sum, o) => sum + o.payableAmount, 0);
+            const overtimeTotal = approvedOvertimes.reduce((sum, o) => sum + (o.payableAmount || 0), 0) +
+                paidOvertimes.reduce((sum, o) => sum + (o.payableAmount || 0), 0);
 
-            const claimTotal = approvedClaims.reduce((sum, c) => sum + c.amount, 0) +
-                paidClaims.reduce((sum, c) => sum + c.amount, 0);
+            const claimTotal = approvedClaims.reduce((sum, c) => sum + (c.amount || 0), 0) +
+                paidClaims.reduce((sum, c) => sum + (c.amount || 0), 0);
 
             // Determine Status
             let status = 'No Data';
