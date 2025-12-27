@@ -10,6 +10,7 @@ services:
     volumes:
       - ./server/uploads:/app/uploads
       - ./server/data:/app/data
+      - ./server/settings.json:/app/settings.json
     environment:
       - PORT=5000
       - SECRET_KEY=${SECRET_KEY:-werk-secret-key-gen-z}
