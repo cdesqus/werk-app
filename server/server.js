@@ -734,7 +734,7 @@ app.post('/api/leaves', authenticateToken, async (req, res) => {
 
 app.get('/api/leaves', authenticateToken, async (req, res) => {
     try {
-        const { month, year, personal } = req.query;
+        const { month, year, personal, status } = req.query;
         if ((month && isNaN(month)) || (year && isNaN(year))) {
             return res.status(400).json({ error: 'Invalid month or year format' });
         }
