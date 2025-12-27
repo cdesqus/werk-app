@@ -138,7 +138,7 @@ const AdminSettings = () => {
     return (
         <div className="space-y-6">
             <header>
-                <h1 className="text-3xl font-black text-white mb-1">Email Settings</h1>
+                <h1 className="text-3xl font-black text-white mb-1">System Settings</h1>
                 <p className="text-zinc-400 text-sm">Configure global system parameters and integrations.</p>
             </header>
 

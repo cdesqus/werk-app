@@ -120,7 +120,7 @@ const AdminLayout = () => {
 
                     <SectionHeader label="System" />
                     <NavItem to="/admin/logs" icon={ShieldAlert} label="Audit Logs" />
-                    <NavItem to="/admin/settings" icon={Settings} label="Email Settings" />
+                    <NavItem to="/admin/settings" icon={Settings} label="System Settings" />
 
                     <SectionHeader label="Personal" />
                     <NavItem to="/staff" icon={Briefcase} label="My Workspace" />
