@@ -1537,7 +1537,7 @@ sequelize.sync().then(async () => {
             await transporter.sendMail({
                 from: `"${smtp.fromName}" <${smtp.fromEmail}>`,
                 to: email,
-                subject: 'WERK OS: Test Email',
+                subject: 'WERK IDE: Test Email',
                 text: 'This is a test email to verify your SMTP configuration. If you are reading this, it works!',
                 html: `
             <div style="font-family: sans-serif; padding: 20px; background: #f4f4f5;">
@@ -1545,7 +1545,7 @@ sequelize.sync().then(async () => {
                     <h2 style="color: #000;">Test Email</h2>
                     <p style="color: #555;">Your SMTP configuration is working correctly.</p>
                     <hr style="border: 0; border-top: 1px solid #eee; margin: 20px 0;">
-                    <small style="color: #999;">Sent from WERK OS</small>
+                    <small style="color: #999;">Sent from WERK IDE</small>
                 </div>
             </div>
         `

@@ -21,7 +21,7 @@ const AdminSettings = () => {
         user: '',
         pass: '',
         fromEmail: '',
-        fromName: 'WERK OS'
+        fromName: 'WERK IDE'
     });
 
     const [testEmail, setTestEmail] = useState('');
@@ -41,7 +41,7 @@ const AdminSettings = () => {
                     user: data.user || '',
                     pass: data.pass || '', // Typically we might not send pass back for security, but for editing we might need to know it's set.
                     fromEmail: data.fromEmail || '',
-                    fromName: data.fromName || 'WERK OS'
+                    fromName: data.fromName || 'WERK IDE'
                 });
             }
         } catch (error) {

@@ -158,7 +158,7 @@ const AdminLayout = () => {
                             <Menu size={24} />
                         </button>
                         <div className="hidden md:flex items-center gap-2">
-                            <span className="text-lime-400 font-bold">WERK OS</span>
+                            <span className="text-lime-400 font-bold">WERK IDE</span>
                             <span className="text-zinc-700">/</span>
                             <span className="text-white">{getBreadcrumb()}</span>
                         </div>
