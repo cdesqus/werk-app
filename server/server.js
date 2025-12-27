@@ -22,6 +22,7 @@ const SECRET_KEY = process.env.SECRET_KEY || 'werk-secret-key-gen-z';
 // --- CONFIGURATION & DEFINITIONS ---
 
 // 1. Security: Rate Limiters (Define first)
+const { startDailyBrief } = require('./services/cronService');
 const generalLimiter = rateLimit({
     windowMs: 15 * 60 * 1000,
     max: 300,
@@ -1558,6 +1559,9 @@ sequelize.sync().then(async () => {
             res.status(500).json({ error: `Failed to send email: ${error.message}` });
         }
     });
+
+    // --- CRON JOBS ---
+    startDailyBrief({ User, Overtime, Claim, Leave }, transporter);
 
     // --- SERVER START ---
     // Sync Database and Start Server
