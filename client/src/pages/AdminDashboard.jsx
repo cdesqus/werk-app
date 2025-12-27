@@ -173,28 +173,6 @@ const AdminDashboard = () => {
                 </div>
             </div>
 
-            {/* System Services Control */}
-            <div className="glass-card p-6 border-zinc-800">
-                <div className="flex items-center gap-2 mb-6">
-                    <Zap className="text-yellow-400" />
-                    <h2 className="text-xl font-bold text-white">System Services</h2>
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <ServiceToggle
-                        label="Daily Morning Brief"
-                        description="Automated email summary at 08:00 AM"
-                        isOn={services['daily_email']}
-                        onToggle={() => toggleService('daily_email')}
-                    />
-                    <ServiceToggle
-                        label="Monthly Payday Invoice"
-                        description="Automated invoice email on the 28th"
-                        isOn={services['monthly_email']}
-                        onToggle={() => toggleService('monthly_email')}
-                    />
-                </div>
-            </div>
-
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                 {/* Action Center */}
                 <div className="space-y-6">
@@ -274,94 +252,98 @@ const AdminDashboard = () => {
             </div>
 
             {/* Post Vibe Modal */}
-            {showVibeModal && (
-                <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-                    <div className="glass-card w-full max-w-lg p-8 space-y-6 animate-in fade-in zoom-in duration-200 border border-zinc-800">
-                        <div className="flex justify-between items-center">
-                            <h2 className="text-2xl font-black text-white">Post Vibe Check</h2>
-                            <button onClick={() => setShowVibeModal(false)} className="text-zinc-400 hover:text-white"><X /></button>
-                        </div>
-
-                        <form onSubmit={handlePostVibe} className="space-y-4">
-                            <div className="grid grid-cols-2 gap-4">
-                                <button type="button" onClick={() => setVibeForm({ ...vibeForm, type: 'announcement' })}
-                                    className={clsx("p-3 rounded-xl font-bold border transition-all", vibeForm.type === 'announcement' ? "bg-lime-400 text-black border-lime-400" : "bg-zinc-900 border-zinc-700 text-zinc-400")}>
-                                    Announcement
-                                </button>
-                                <button type="button" onClick={() => setVibeForm({ ...vibeForm, type: 'poll' })}
-                                    className={clsx("p-3 rounded-xl font-bold border transition-all", vibeForm.type === 'poll' ? "bg-purple-500 text-white border-purple-500" : "bg-zinc-900 border-zinc-700 text-zinc-400")}>
-                                    Poll
-                                </button>
+            {
+                showVibeModal && (
+                    <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+                        <div className="glass-card w-full max-w-lg p-8 space-y-6 animate-in fade-in zoom-in duration-200 border border-zinc-800">
+                            <div className="flex justify-between items-center">
+                                <h2 className="text-2xl font-black text-white">Post Vibe Check</h2>
+                                <button onClick={() => setShowVibeModal(false)} className="text-zinc-400 hover:text-white"><X /></button>
                             </div>
 
-                            <div className="space-y-2">
-                                <label className="text-xs font-bold text-zinc-500 uppercase tracking-wider">Title</label>
-                                <input type="text" required className="input-field w-full"
-                                    value={vibeForm.title} onChange={e => setVibeForm({ ...vibeForm, title: e.target.value })} />
-                            </div>
-
-                            <div className="space-y-2">
-                                <label className="text-xs font-bold text-zinc-500 uppercase tracking-wider">Content / Question</label>
-                                <textarea required className="input-field w-full h-24"
-                                    value={vibeForm.content} onChange={e => setVibeForm({ ...vibeForm, content: e.target.value })} />
-                            </div>
-
-                            {vibeForm.type === 'poll' && (
-                                <div className="space-y-3">
-                                    <label className="text-xs font-bold text-zinc-500 uppercase tracking-wider">Options</label>
-                                    {vibeForm.options.map((opt, idx) => (
-                                        <input key={idx} type="text" placeholder={`Option ${idx + 1}`} className="input-field w-full"
-                                            value={opt} onChange={e => updateOption(idx, e.target.value)} />
-                                    ))}
-                                    <button type="button" onClick={addOption} className="text-sm text-lime-400 font-bold hover:underline">+ Add Option</button>
+                            <form onSubmit={handlePostVibe} className="space-y-4">
+                                <div className="grid grid-cols-2 gap-4">
+                                    <button type="button" onClick={() => setVibeForm({ ...vibeForm, type: 'announcement' })}
+                                        className={clsx("p-3 rounded-xl font-bold border transition-all", vibeForm.type === 'announcement' ? "bg-lime-400 text-black border-lime-400" : "bg-zinc-900 border-zinc-700 text-zinc-400")}>
+                                        Announcement
+                                    </button>
+                                    <button type="button" onClick={() => setVibeForm({ ...vibeForm, type: 'poll' })}
+                                        className={clsx("p-3 rounded-xl font-bold border transition-all", vibeForm.type === 'poll' ? "bg-purple-500 text-white border-purple-500" : "bg-zinc-900 border-zinc-700 text-zinc-400")}>
+                                        Poll
+                                    </button>
                                 </div>
-                            )}
 
-                            <button type="submit" className="btn-primary w-full mt-4">Post Vibe</button>
-                        </form>
+                                <div className="space-y-2">
+                                    <label className="text-xs font-bold text-zinc-500 uppercase tracking-wider">Title</label>
+                                    <input type="text" required className="input-field w-full"
+                                        value={vibeForm.title} onChange={e => setVibeForm({ ...vibeForm, title: e.target.value })} />
+                                </div>
+
+                                <div className="space-y-2">
+                                    <label className="text-xs font-bold text-zinc-500 uppercase tracking-wider">Content / Question</label>
+                                    <textarea required className="input-field w-full h-24"
+                                        value={vibeForm.content} onChange={e => setVibeForm({ ...vibeForm, content: e.target.value })} />
+                                </div>
+
+                                {vibeForm.type === 'poll' && (
+                                    <div className="space-y-3">
+                                        <label className="text-xs font-bold text-zinc-500 uppercase tracking-wider">Options</label>
+                                        {vibeForm.options.map((opt, idx) => (
+                                            <input key={idx} type="text" placeholder={`Option ${idx + 1}`} className="input-field w-full"
+                                                value={opt} onChange={e => updateOption(idx, e.target.value)} />
+                                        ))}
+                                        <button type="button" onClick={addOption} className="text-sm text-lime-400 font-bold hover:underline">+ Add Option</button>
+                                    </div>
+                                )}
+
+                                <button type="submit" className="btn-primary w-full mt-4">Post Vibe</button>
+                            </form>
+                        </div>
                     </div>
-                </div>
-            )}
+                )
+            }
 
             {/* Create Quest Modal */}
-            {showQuestModal && (
-                <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-                    <div className="glass-card w-full max-w-lg p-8 space-y-6 animate-in fade-in zoom-in duration-200 border border-zinc-800">
-                        <div className="flex justify-between items-center">
-                            <h2 className="text-2xl font-black text-white">Create Side Quest</h2>
-                            <button onClick={() => setShowQuestModal(false)} className="text-zinc-400 hover:text-white"><X /></button>
+            {
+                showQuestModal && (
+                    <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+                        <div className="glass-card w-full max-w-lg p-8 space-y-6 animate-in fade-in zoom-in duration-200 border border-zinc-800">
+                            <div className="flex justify-between items-center">
+                                <h2 className="text-2xl font-black text-white">Create Side Quest</h2>
+                                <button onClick={() => setShowQuestModal(false)} className="text-zinc-400 hover:text-white"><X /></button>
+                            </div>
+
+                            <form onSubmit={handleCreateQuest} className="space-y-4">
+                                <div className="space-y-2">
+                                    <label className="text-xs font-bold text-zinc-500 uppercase tracking-wider">Quest Title</label>
+                                    <input type="text" required className="input-field w-full" placeholder="e.g. Fix the Coffee Machine"
+                                        value={questForm.title} onChange={e => setQuestForm({ ...questForm, title: e.target.value })} />
+                                </div>
+
+                                <div className="space-y-2">
+                                    <label className="text-xs font-bold text-zinc-500 uppercase tracking-wider">Reward</label>
+                                    <input type="text" required className="input-field w-full" placeholder="e.g. IDR 50k"
+                                        value={questForm.reward} onChange={e => setQuestForm({ ...questForm, reward: e.target.value })} />
+                                </div>
+
+                                <div className="space-y-2">
+                                    <label className="text-xs font-bold text-zinc-500 uppercase tracking-wider">Difficulty</label>
+                                    <select className="input-field w-full" value={questForm.difficulty} onChange={e => setQuestForm({ ...questForm, difficulty: e.target.value })}>
+                                        <option value="Easy">Easy</option>
+                                        <option value="Medium">Medium</option>
+                                        <option value="Hard">Hard</option>
+                                    </select>
+                                </div>
+
+                                <button type="submit" className="w-full bg-yellow-400 text-black font-black py-4 rounded-xl hover:bg-yellow-300 transition-all uppercase tracking-wide mt-4">
+                                    Create Bounty
+                                </button>
+                            </form>
                         </div>
-
-                        <form onSubmit={handleCreateQuest} className="space-y-4">
-                            <div className="space-y-2">
-                                <label className="text-xs font-bold text-zinc-500 uppercase tracking-wider">Quest Title</label>
-                                <input type="text" required className="input-field w-full" placeholder="e.g. Fix the Coffee Machine"
-                                    value={questForm.title} onChange={e => setQuestForm({ ...questForm, title: e.target.value })} />
-                            </div>
-
-                            <div className="space-y-2">
-                                <label className="text-xs font-bold text-zinc-500 uppercase tracking-wider">Reward</label>
-                                <input type="text" required className="input-field w-full" placeholder="e.g. IDR 50k"
-                                    value={questForm.reward} onChange={e => setQuestForm({ ...questForm, reward: e.target.value })} />
-                            </div>
-
-                            <div className="space-y-2">
-                                <label className="text-xs font-bold text-zinc-500 uppercase tracking-wider">Difficulty</label>
-                                <select className="input-field w-full" value={questForm.difficulty} onChange={e => setQuestForm({ ...questForm, difficulty: e.target.value })}>
-                                    <option value="Easy">Easy</option>
-                                    <option value="Medium">Medium</option>
-                                    <option value="Hard">Hard</option>
-                                </select>
-                            </div>
-
-                            <button type="submit" className="w-full bg-yellow-400 text-black font-black py-4 rounded-xl hover:bg-yellow-300 transition-all uppercase tracking-wide mt-4">
-                                Create Bounty
-                            </button>
-                        </form>
                     </div>
-                </div>
-            )}
-        </div>
+                )
+            }
+        </div >
     );
 };
 

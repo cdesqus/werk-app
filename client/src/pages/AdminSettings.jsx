@@ -1,9 +1,26 @@
 import { useState, useEffect } from 'react';
 import api from '../utils/api';
 import { useToast } from '../context/ToastContext';
-import { Mail, Save, Server, Shield, Globe, Send, CheckCircle, AlertTriangle } from 'lucide-react';
+import { Mail, Save, Server, Shield, Globe, Send, CheckCircle, AlertTriangle, Zap } from 'lucide-react';
 import clsx from 'clsx';
 import { useAuth } from '../context/AuthContext';
+
+const ServiceToggle = ({ label, description, isOn, onToggle }) => {
+    return (
+        <div className="bg-zinc-900 rounded-xl p-4 flex items-center justify-between border border-zinc-800">
+            <div>
+                <h3 className="font-bold text-white">{label}</h3>
+                <p className="text-zinc-400 text-sm mt-1">{description}</p>
+            </div>
+            <button
+                onClick={onToggle}
+                className={`w-12 h-6 rounded-full p-1 transition-all ${isOn ? 'bg-lime-400' : 'bg-zinc-700'}`}
+            >
+                <div className={`w-4 h-4 rounded-full bg-white transition-all shadow-md ${isOn ? 'translate-x-6' : 'translate-x-0'}`} />
+            </button>
+        </div>
+    );
+};
 
 const AdminSettings = () => {
     const { user } = useAuth();
@@ -25,10 +42,32 @@ const AdminSettings = () => {
     });
 
     const [testEmail, setTestEmail] = useState('');
+    const [services, setServices] = useState({});
 
     useEffect(() => {
         fetchConfig();
+        fetchServices();
     }, []);
+
+    const fetchServices = async () => {
+        try {
+            const { data } = await api.get('/admin/services');
+            setServices(data || {});
+        } catch (error) {
+            console.error(error);
+        }
+    };
+
+    const toggleService = async (key) => {
+        try {
+            const newValue = !services[key];
+            await api.put('/admin/services', { key, value: newValue });
+            setServices(prev => ({ ...prev, [key]: newValue }));
+            toast.success(`Service ${newValue ? 'Enabled' : 'Disabled'}`);
+        } catch (err) {
+            toast.error('Failed to update service');
+        }
+    };
 
     const fetchConfig = async () => {
         try {
@@ -99,9 +138,31 @@ const AdminSettings = () => {
     return (
         <div className="space-y-6">
             <header>
-                <h1 className="text-3xl font-black text-white mb-1">System Settings</h1>
+                <h1 className="text-3xl font-black text-white mb-1">Email Settings</h1>
                 <p className="text-zinc-400 text-sm">Configure global system parameters and integrations.</p>
             </header>
+
+            {/* System Services Control */}
+            <div className="glass-card p-6 border border-zinc-800">
+                <div className="flex items-center gap-2 mb-6">
+                    <Zap className="text-yellow-400" />
+                    <h2 className="text-xl font-bold text-white">System Services</h2>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <ServiceToggle
+                        label="Daily Morning Brief"
+                        description="Automated email summary at 08:00 AM"
+                        isOn={services['daily_email']}
+                        onToggle={() => toggleService('daily_email')}
+                    />
+                    <ServiceToggle
+                        label="Monthly Payday Invoice"
+                        description="Automated invoice email on the 28th"
+                        isOn={services['monthly_email']}
+                        onToggle={() => toggleService('monthly_email')}
+                    />
+                </div>
+            </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                 {/* SMTP Configuration Card */}
