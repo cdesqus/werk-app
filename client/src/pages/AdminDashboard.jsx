@@ -10,6 +10,7 @@ const AdminDashboard = () => {
     const [currentDate, setCurrentDate] = useState(new Date());
     const [summary, setSummary] = useState([]);
     const [pendingItems, setPendingItems] = useState([]);
+    const [services, setServices] = useState({});
 
     // Forms
     const [showVibeModal, setShowVibeModal] = useState(false);
@@ -27,13 +28,16 @@ const AdminDashboard = () => {
         const year = currentDate.getFullYear();
         console.log(`[Frontend Debug] Fetching Admin Summary for: ${month}/${year}`);
         try {
-            const [summaryRes, otRes, claimRes, leaveRes] = await Promise.all([
+            const [summaryRes, otRes, claimRes, leaveRes, servicesRes] = await Promise.all([
                 api.get(`/admin/summary?month=${month}&year=${year}`),
                 api.get(`/overtimes?status=Pending`),
                 api.get(`/claims?status=Pending`),
-                api.get(`/leaves?status=Pending`)
+                api.get(`/leaves?status=Pending`),
+                api.get('/admin/services')
             ]);
             setSummary(summaryRes.data);
+            setServices(servicesRes.data || {});
+
             console.log('[Frontend Debug] Summary Response:', summaryRes.data);
 
             const pending = [
@@ -43,6 +47,17 @@ const AdminDashboard = () => {
             ];
             setPendingItems(pending);
         } catch (err) { console.error(err); }
+    };
+
+    const toggleService = async (key) => {
+        try {
+            const newValue = !services[key];
+            await api.put('/admin/services', { key, value: newValue });
+            setServices(prev => ({ ...prev, [key]: newValue }));
+            toast.success(`Service ${newValue ? 'Enabled' : 'Disabled'}`);
+        } catch (err) {
+            toast.error('Failed to update service');
+        }
     };
 
     const handleAction = async (dataType, id, status) => {
@@ -138,6 +153,28 @@ const AdminDashboard = () => {
                         <Users className="text-blue-400" />
                     </div>
                     <span className="text-4xl font-black text-white tracking-tight">{summary.length}</span>
+                </div>
+            </div>
+
+            {/* System Services Control */}
+            <div className="glass-card p-6 border-zinc-800">
+                <div className="flex items-center gap-2 mb-6">
+                    <Zap className="text-yellow-400" />
+                    <h2 className="text-xl font-bold text-white">System Services</h2>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <ServiceToggle
+                        label="Daily Morning Brief"
+                        description="Automated email summary at 08:00 AM"
+                        isOn={services['daily_email']}
+                        onToggle={() => toggleService('daily_email')}
+                    />
+                    <ServiceToggle
+                        label="Monthly Payday Invoice"
+                        description="Automated invoice email on the 28th"
+                        isOn={services['monthly_email']}
+                        onToggle={() => toggleService('monthly_email')}
+                    />
                 </div>
             </div>
 
@@ -307,6 +344,23 @@ const AdminDashboard = () => {
                     </div>
                 </div>
             )}
+        </div>
+    );
+};
+
+const ServiceToggle = ({ label, description, isOn, onToggle }) => {
+    return (
+        <div className="bg-zinc-900 rounded-xl p-4 flex items-center justify-between border border-zinc-800">
+            <div>
+                <h3 className="font-bold text-white">{label}</h3>
+                <p className="text-zinc-400 text-sm mt-1">{description}</p>
+            </div>
+            <button
+                onClick={onToggle}
+                className={`w-12 h-6 rounded-full p-1 transition-all ${isOn ? 'bg-lime-400' : 'bg-zinc-700'}`}
+            >
+                <div className={`w-4 h-4 rounded-full bg-white transition-all shadow-md ${isOn ? 'translate-x-6' : 'translate-x-0'}`} />
+            </button>
         </div>
     );
 };

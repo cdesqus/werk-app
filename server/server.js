@@ -22,7 +22,7 @@ const SECRET_KEY = process.env.SECRET_KEY || 'werk-secret-key-gen-z';
 // --- CONFIGURATION & DEFINITIONS ---
 
 // 1. Security: Rate Limiters (Define first)
-const { startDailyBrief } = require('./services/cronService');
+const { initCronJobs } = require('./services/cronService');
 const generalLimiter = rateLimit({
     windowMs: 15 * 60 * 1000,
     max: 300,
@@ -252,6 +252,12 @@ const Quest = sequelize.define('Quest', {
     difficulty: { type: DataTypes.STRING, defaultValue: 'Medium' },
     status: { type: DataTypes.STRING, defaultValue: 'Open' },
     assignedTo: { type: DataTypes.INTEGER } // Foreign key manually handled or via association
+});
+
+// New Setting model for System Services
+const Setting = sequelize.define('Setting', {
+    key: { type: DataTypes.STRING, primaryKey: true },
+    value: { type: DataTypes.BOOLEAN, defaultValue: true }
 });
 
 // Relationships
@@ -1401,6 +1407,36 @@ app.get('/api/admin/summary', authenticateToken, isAdmin, async (req, res, next)
     }
 });
 
+// --- SYSTEM SERVICES SETTINGS API ---
+app.get('/api/admin/services', authenticateToken, isAdmin, async (req, res) => {
+    try {
+        const settings = await Setting.findAll();
+        // Convert to object for easier frontend consumption { 'daily_email': true, ... }
+        const result = settings.reduce((acc, curr) => ({ ...acc, [curr.key]: curr.value }), {});
+        res.json(result);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+app.put('/api/admin/services', authenticateToken, isAdmin, async (req, res) => {
+    try {
+        const { key, value } = req.body;
+        if (typeof value !== 'boolean') return res.status(400).json({ error: 'Value must be boolean' });
+
+        const setting = await Setting.findByPk(key);
+        if (!setting) return res.status(404).json({ error: 'Setting not found' });
+
+        setting.value = value;
+        await setting.save();
+
+        await logAudit(req.user.id, 'System Config', `Updated Service ${key} to ${value}`, req);
+        res.json({ message: 'Service updated', key, value });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
 
 // Global Error Handler
 app.use((err, req, res, next) => {
@@ -1453,6 +1489,20 @@ sequelize.sync().then(async () => {
         }
     } else {
         console.log('Super Admin already exists');
+    }
+
+    // Seed System Settings
+    const defaultSettings = [
+        { key: 'daily_email', value: true },
+        { key: 'monthly_email', value: true }
+    ];
+
+    for (const s of defaultSettings) {
+        const exists = await Setting.findByPk(s.key);
+        if (!exists) {
+            await Setting.create(s);
+            console.log(`[System] Initialized Setting: ${s.key} = ${s.value}`);
+        }
     }
 
 
@@ -1561,7 +1611,7 @@ sequelize.sync().then(async () => {
     });
 
     // --- CRON JOBS ---
-    startDailyBrief({ User, Overtime, Claim, Leave }, transporter);
+    initCronJobs({ User, Overtime, Claim, Leave, Quest, Setting }, transporter);
 
     // --- SERVER START ---
     // Sync Database and Start Server
