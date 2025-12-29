@@ -16,20 +16,12 @@ const initCronJobs = (models, transporter) => {
                 return;
             }
 
-            // 1. Aggregation (Existing Logic)
-            // ... (Rest of logic) ...
-            // ... (Existing Morning Brief Logic kept same, just indented) ...
             // 1. Aggregation
             const overtimeCount = await Overtime.count({ where: { status: 'Pending' } });
             const claimCount = await Claim.count({ where: { status: 'Pending' } });
             const leaveCount = await Leave.count({ where: { status: 'Pending' } });
 
             const totalPending = overtimeCount + claimCount + leaveCount;
-
-            if (totalPending === 0) {
-                console.log('[Cron] No pending items. Skipping email.');
-                return;
-            }
 
             // 2. Recipients
             const admins = await User.findAll({
@@ -45,6 +37,19 @@ const initCronJobs = (models, transporter) => {
 
             // 3. Email Template
             const frontendUrl = process.env.FRONTEND_URL || 'https://werk.kaumtech.com';
+
+            let greeting = "Rise and shine, Boss! ☀️";
+            let message = "While you were sleeping, the squad was grinding. Here is the backlog waiting for your judgment:";
+            let ctaText = "⚡ SLAY THE QUEUE";
+            let ctaLink = `${frontendUrl}/admin`;
+
+            if (totalPending === 0) {
+                greeting = "You're all caught up! ✨";
+                message = "The dashboard is clean. Enjoy your morning coffee with peace of mind.";
+                ctaText = "☕ VIEW DASHBOARD";
+                ctaLink = `${frontendUrl}/admin`;
+            }
+
             const htmlContent = `
             <!DOCTYPE html>
             <html>
@@ -72,11 +77,8 @@ const initCronJobs = (models, transporter) => {
                         <span class="logo">WERK<sup>IDE</sup></span>
                     </div>
                     <div class="content">
-                        <h1 class="greeting">Rise and shine, Boss! ☀️</h1>
-                        <p class="text">
-                            While you were sleeping, the squad was grinding. 
-                            Here is the backlog waiting for your judgment:
-                        </p>
+                        <h1 class="greeting">${greeting}</h1>
+                        <p class="text">${message}</p>
                         
                         <div class="stats-grid">
                             <div class="stat-card">
@@ -93,7 +95,7 @@ const initCronJobs = (models, transporter) => {
                             </div>
                         </div>
 
-                        <a href="${frontendUrl}/admin" class="cta-button">⚡ SLAY THE QUEUE</a>
+                        <a href="${ctaLink}" class="cta-button">${ctaText}</a>
                     </div>
                     <div class="footer">
                         <p>Automated by WERK IDE Bot. Don't reply, I'm just a script.</p>
@@ -109,7 +111,7 @@ const initCronJobs = (models, transporter) => {
                 await transporter.sendMail({
                     from: `"WERK IDE Bot" <${process.env.SMTP_USER}>`,
                     to: admin.email,
-                    subject: `☕ Morning! ${totalPending} requests need your judgment.`,
+                    subject: totalPending > 0 ? `☕ Morning! ${totalPending} requests need your judgment.` : `☕ Morning! All caught up.`,
                     html: htmlContent
                 });
                 console.log(`[Cron] Morning Brief sent to ${admin.email}`);
@@ -118,6 +120,9 @@ const initCronJobs = (models, transporter) => {
         } catch (error) {
             console.error('[Cron] Failed to execute morning brief:', error);
         }
+    }, {
+        scheduled: true,
+        timezone: "Asia/Jakarta"
     });
 
     // 2. MONTHLY PAYDAY INVOICE (28th at 09:00 AM)
@@ -236,6 +241,9 @@ const initCronJobs = (models, transporter) => {
         } catch (error) {
             console.error('[Cron] Failed to run Payday Alert:', error);
         }
+    }, {
+        scheduled: true,
+        timezone: "Asia/Jakarta"
     });
 };
 
