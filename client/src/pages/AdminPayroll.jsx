@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useToast } from '../context/ToastContext';
 import api from '../utils/api';
 import ConfirmModal from '../components/ui/ConfirmModal';
-import { DollarSign, Calendar, ChevronLeft, ChevronRight, Download, CheckCircle, Loader, CheckCircle2, ChevronDown, ChevronUp, Clock, FileText, AlertTriangle, Filter } from 'lucide-react';
+import { DollarSign, Calendar, ChevronLeft, ChevronRight, Download, CheckCircle, Loader, CheckCircle2, ChevronDown, ChevronUp, Clock, FileText, AlertTriangle, Filter, Search } from 'lucide-react';
 import { format, subMonths, addMonths, differenceInDays } from 'date-fns';
 import * as XLSX from 'xlsx';
 import clsx from 'clsx';
@@ -15,6 +15,7 @@ const AdminPayroll = () => {
     const [isProcessing, setIsProcessing] = useState(false);
     const [confirmModal, setConfirmModal] = useState({ isOpen: false });
     const [expandedRows, setExpandedRows] = useState(new Set());
+    const [searchTerm, setSearchTerm] = useState('');
     const [filterMode, setFilterMode] = useState('submission'); // 'submission' or 'activity'
 
     const toggleRow = (id) => {
@@ -161,6 +162,16 @@ const AdminPayroll = () => {
                     <p className="text-zinc-400 text-sm">Review and process staff salaries.</p>
                 </div>
                 <div className="flex flex-wrap items-center gap-4">
+                    <div className="relative flex-1 w-full md:w-64">
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500" size={16} />
+                        <input
+                            type="text"
+                            placeholder="Search staff..."
+                            className="w-full bg-zinc-900 border border-white/10 rounded-xl px-4 py-2 pl-9 focus:ring-2 focus:ring-lime-400 outline-none text-white placeholder-zinc-500 transition-all text-sm"
+                            value={searchTerm}
+                            onChange={e => setSearchTerm(e.target.value)}
+                        />
+                    </div>
                     {/* Filter Toggle */}
                     <div className="flex items-center bg-zinc-900 rounded-xl p-1 border border-zinc-700">
                         <button
@@ -235,7 +246,10 @@ const AdminPayroll = () => {
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-white/5">
-                            {summary.map((user) => (
+                            {summary.filter(user =>
+                                user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                                (user.staffId && user.staffId.toLowerCase().includes(searchTerm.toLowerCase()))
+                            ).map((user) => (
                                 <>
                                     <tr key={user.id} className="hover:bg-white/5 transition-colors group">
                                         <td className="p-4 text-center">

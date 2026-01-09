@@ -1,56 +1,49 @@
 const cron = require('node-cron');
 const { Op } = require('sequelize');
 
-const initCronJobs = (models, transporter) => {
-    const { User, Overtime, Claim, Leave, Quest, Setting } = models; // Added Setting model for toggle checks
+const sendMorningBrief = async (models, transporter) => {
+    const { User, Overtime, Claim, Leave, Quest, Setting } = models;
+    console.log('[Cron] Running Daily Morning Brief...');
 
-    // 1. DAILY MORNING BRIEF (08:00 AM)
-    cron.schedule('0 8 * * *', async () => {
-        console.log('[Cron] Running Daily Morning Brief...');
+    try {
+        const enabled = await Setting.findByPk('daily_email');
+        if (enabled && enabled.value === false) {
+            console.log('[Cron] Daily Morning Brief is disabled by settings. Skipping.');
+            return { success: false, message: 'Disabled by settings' };
+        }
 
-        try {
-            // Check Setting
-            const enabled = await Setting.findByPk('daily_email');
-            if (enabled && enabled.value === false) {
-                console.log('[Cron] Daily Morning Brief is disabled by settings. Skipping.');
-                return;
+        const overtimeCount = await Overtime.count({ where: { status: 'Pending' } });
+        const claimCount = await Claim.count({ where: { status: 'Pending' } });
+        const leaveCount = await Leave.count({ where: { status: 'Pending' } });
+
+        const totalPending = overtimeCount + claimCount + leaveCount;
+
+        const admins = await User.findAll({
+            where: {
+                role: { [Op.in]: ['admin', 'super_admin'] }
             }
+        });
 
-            // 1. Aggregation
-            const overtimeCount = await Overtime.count({ where: { status: 'Pending' } });
-            const claimCount = await Claim.count({ where: { status: 'Pending' } });
-            const leaveCount = await Leave.count({ where: { status: 'Pending' } });
+        if (admins.length === 0) {
+            console.log('[Cron] No admins found to send email to.');
+            return { success: false, message: 'No admins found' };
+        }
 
-            const totalPending = overtimeCount + claimCount + leaveCount;
+        const frontendUrl = process.env.FRONTEND_URL || 'https://werk.kaumtech.com';
 
-            // 2. Recipients
-            const admins = await User.findAll({
-                where: {
-                    role: { [Op.in]: ['admin', 'super_admin'] }
-                }
-            });
+        let greeting = "Rise and shine, Boss! ☀️";
+        let message = "While you were sleeping, the squad was grinding. Here is the backlog waiting for your judgment:";
+        let ctaText = "⚡ SLAY THE QUEUE";
+        let ctaLink = `${frontendUrl}/admin`;
 
-            if (admins.length === 0) {
-                console.log('[Cron] No admins found to send email to.');
-                return;
-            }
+        if (totalPending === 0) {
+            greeting = "You're all caught up! ✨";
+            message = "The dashboard is clean. Enjoy your morning coffee with peace of mind.";
+            ctaText = "☕ VIEW DASHBOARD";
+            ctaLink = `${frontendUrl}/admin`;
+        }
 
-            // 3. Email Template
-            const frontendUrl = process.env.FRONTEND_URL || 'https://werk.kaumtech.com';
-
-            let greeting = "Rise and shine, Boss! ☀️";
-            let message = "While you were sleeping, the squad was grinding. Here is the backlog waiting for your judgment:";
-            let ctaText = "⚡ SLAY THE QUEUE";
-            let ctaLink = `${frontendUrl}/admin`;
-
-            if (totalPending === 0) {
-                greeting = "You're all caught up! ✨";
-                message = "The dashboard is clean. Enjoy your morning coffee with peace of mind.";
-                ctaText = "☕ VIEW DASHBOARD";
-                ctaLink = `${frontendUrl}/admin`;
-            }
-
-            const htmlContent = `
+        const htmlContent = `
             <!DOCTYPE html>
             <html>
             <head>
@@ -106,82 +99,74 @@ const initCronJobs = (models, transporter) => {
             </html>
             `;
 
-            // Send Email
-            for (const admin of admins) {
-                await transporter.sendMail({
-                    from: `"WERK IDE Bot" <${process.env.SMTP_USER}>`,
-                    to: admin.email,
-                    subject: totalPending > 0 ? `☕ Morning! ${totalPending} requests need your judgment.` : `☕ Morning! All caught up.`,
-                    html: htmlContent
-                });
-                console.log(`[Cron] Morning Brief sent to ${admin.email}`);
-            }
-
-        } catch (error) {
-            console.error('[Cron] Failed to execute morning brief:', error);
-        }
-    }, {
-        scheduled: true,
-        timezone: "Asia/Jakarta"
-    });
-
-    // 2. MONTHLY PAYDAY INVOICE (28th at 09:00 AM)
-    cron.schedule('0 9 28 * *', async () => {
-        console.log('[Cron] Running Monthly Payday Alert...');
-
-        try {
-            // Check Setting
-            const enabled = await Setting.findByPk('monthly_email');
-            if (enabled && enabled.value === false) {
-                console.log('[Cron] Monthly Payday Alert is disabled by settings. Skipping.');
-                return;
-            }
-
-            const today = new Date();
-            // ... (Rest of Payday logic)
-            // ...
-            /* (Existing Payday Logic) */
-            // Re-pasting standard logic to avoid deletion errors
-            const year = today.getFullYear();
-            const month = today.getMonth(); // 0-indexed (Current Month)
-
-            // Calculate Period: 28th Previous Month to 27th Current Month
-            const startDate = new Date(year, month - 1, 28);
-            startDate.setHours(0, 0, 0, 0);
-
-            const endDate = new Date(year, month, 27);
-            endDate.setHours(23, 59, 59, 999);
-
-            const timestampFilter = { [Op.between]: [startDate, endDate] };
-
-            console.log(`[Cron] Payday Window: ${startDate.toISOString()} - ${endDate.toISOString()}`);
-
-            const approvedOvertimes = await Overtime.findAll({ where: { status: 'Approved', createdAt: timestampFilter } });
-            const approvedClaims = await Claim.findAll({ where: { status: 'Approved', createdAt: timestampFilter } });
-            const completedQuests = await Quest.findAll({ where: { status: 'Completed', createdAt: timestampFilter } });
-
-            const otTotal = approvedOvertimes.reduce((sum, o) => sum + (o.payableAmount || 0), 0);
-            const claimTotal = approvedClaims.reduce((sum, c) => sum + (c.amount || 0), 0);
-            const questTotal = completedQuests.reduce((sum, q) => {
-                const val = parseInt(q.reward.replace(/\D/g, ''));
-                return sum + (isNaN(val) ? 0 : val);
-            }, 0);
-
-            const totalBill = otTotal + claimTotal + questTotal;
-
-            if (totalBill === 0) {
-                console.log('[Cron] Total bill is 0. Skipping Payday Alert.');
-                return;
-            }
-
-            const admins = await User.findAll({
-                where: { role: { [Op.in]: ['admin', 'super_admin'] } }
+        for (const admin of admins) {
+            await transporter.sendMail({
+                from: `"WERK IDE Bot" <${process.env.SMTP_USER}>`,
+                to: admin.email,
+                subject: totalPending > 0 ? `☕ Morning! ${totalPending} requests need your judgment.` : `☕ Morning! All caught up.`,
+                html: htmlContent
             });
+            console.log(`[Cron] Morning Brief sent to ${admin.email}`);
+        }
+        return { success: true, message: `Sent to ${admins.length} admins` };
 
-            const frontendUrl = process.env.FRONTEND_URL || 'https://werk.kaumtech.com';
-            const formattedTotal = totalBill.toLocaleString('id-ID');
+    } catch (error) {
+        console.error('[Cron] Failed to execute morning brief:', error);
+        return { success: false, message: error.message };
+    }
+};
 
-            const htmlContent = `
+const sendPaydayAlert = async (models, transporter) => {
+    const { User, Overtime, Claim, Quest, Setting } = models;
+    console.log('[Cron] Running Monthly Payday Alert...');
+
+    try {
+        const enabled = await Setting.findByPk('monthly_email');
+        if (enabled && enabled.value === false) {
+            console.log('[Cron] Monthly Payday Alert is disabled by settings. Skipping.');
+            return { success: false, message: 'Disabled by settings' };
+        }
+
+        const today = new Date();
+        const year = today.getFullYear();
+        const month = today.getMonth();
+
+        const startDate = new Date(year, month - 1, 28);
+        startDate.setHours(0, 0, 0, 0);
+
+        const endDate = new Date(year, month, 27);
+        endDate.setHours(23, 59, 59, 999);
+
+        const timestampFilter = { [Op.between]: [startDate, endDate] };
+
+        console.log(`[Cron] Payday Window: ${startDate.toISOString()} - ${endDate.toISOString()}`);
+
+        const approvedOvertimes = await Overtime.findAll({ where: { status: 'Approved', createdAt: timestampFilter } });
+        const approvedClaims = await Claim.findAll({ where: { status: 'Approved', createdAt: timestampFilter } });
+        const completedQuests = await Quest.findAll({ where: { status: 'Completed', createdAt: timestampFilter } });
+
+        const otTotal = approvedOvertimes.reduce((sum, o) => sum + (o.payableAmount || 0), 0);
+        const claimTotal = approvedClaims.reduce((sum, c) => sum + (c.amount || 0), 0);
+        const questTotal = completedQuests.reduce((sum, q) => {
+            const val = parseInt(q.reward.replace(/\D/g, ''));
+            return sum + (isNaN(val) ? 0 : val);
+        }, 0);
+
+        const totalBill = otTotal + claimTotal + questTotal;
+
+        if (totalBill === 0) {
+            console.log('[Cron] Total bill is 0. Skipping Payday Alert.');
+            return { success: false, message: 'Total bill is 0' };
+        }
+
+        const admins = await User.findAll({
+            where: { role: { [Op.in]: ['admin', 'super_admin'] } }
+        });
+
+        const frontendUrl = process.env.FRONTEND_URL || 'https://werk.kaumtech.com';
+        const formattedTotal = totalBill.toLocaleString('id-ID');
+
+        const htmlContent = `
             <!DOCTYPE html>
             <html>
             <head>
@@ -228,23 +213,34 @@ const initCronJobs = (models, transporter) => {
             </html>
             `;
 
-            for (const admin of admins) {
-                await transporter.sendMail({
-                    from: `"WERK IDE Bot" <${process.env.SMTP_USER}>`,
-                    to: admin.email,
-                    subject: `💸 PAYDAY ALERT! Total bill: Rp ${formattedTotal}`,
-                    html: htmlContent
-                });
-                console.log(`[Cron] Payday Alert sent to ${admin.email}`);
-            }
-
-        } catch (error) {
-            console.error('[Cron] Failed to run Payday Alert:', error);
+        for (const admin of admins) {
+            await transporter.sendMail({
+                from: `"WERK IDE Bot" <${process.env.SMTP_USER}>`,
+                to: admin.email,
+                subject: `💸 PAYDAY ALERT! Total bill: Rp ${formattedTotal}`,
+                html: htmlContent
+            });
+            console.log(`[Cron] Payday Alert sent to ${admin.email}`);
         }
-    }, {
+        return { success: true, message: `Sent to ${admins.length} admins` };
+    } catch (error) {
+        console.error('[Cron] Failed to run Payday Alert:', error);
+        return { success: false, message: error.message };
+    }
+};
+
+const initCronJobs = (models, transporter) => {
+    // 1. DAILY MORNING BRIEF (08:00 AM)
+    cron.schedule('0 8 * * *', () => sendMorningBrief(models, transporter), {
+        scheduled: true,
+        timezone: "Asia/Jakarta"
+    });
+
+    // 2. MONTHLY PAYDAY INVOICE (28th at 09:00 AM)
+    cron.schedule('0 9 28 * *', () => sendPaydayAlert(models, transporter), {
         scheduled: true,
         timezone: "Asia/Jakarta"
     });
 };
 
-module.exports = { initCronJobs };
+module.exports = { initCronJobs, sendMorningBrief, sendPaydayAlert };

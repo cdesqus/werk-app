@@ -114,7 +114,7 @@ const AdminUsers = () => {
                         <input
                             type="text"
                             placeholder="Search users..."
-                            className="input-field w-full pl-10"
+                            className="w-full bg-zinc-900 border border-white/10 rounded-xl px-4 py-2 pl-10 focus:ring-2 focus:ring-lime-400 outline-none text-white placeholder-zinc-500 transition-all text-sm"
                             value={searchTerm}
                             onChange={e => setSearchTerm(e.target.value)}
                         />

@@ -26,6 +26,7 @@ WERK IDE is a modern, Gen-Z styled internal tool for managing staff activities, 
 *   **Security Profile**: Change password securely (requires current password verification).
 
 ### 3. Admin Features (The Boss)
+*   **Daily Morning Brief**: Automated email at **08:00 AM** summarizing all pending tasks (Overtimes, Claims, Leaves) so you can start the day knowing exactly what needs attention.
 *   **Dashboard Overview**: Quick stats on pending requests, payroll, and active users.
 *   **User Management**:
     *   **Bento Grid Interface**: Modern UI for editing user profiles.
@@ -35,6 +36,9 @@ WERK IDE is a modern, Gen-Z styled internal tool for managing staff activities, 
     *   **Drill-Down Details**: Expand staff rows to see exact breakdown of approved Overtimes and Claims.
     *   **Visibility Control**: Only "Approved" items appear in the payment view.
     *   **Bulk Processing**: "Mark as Paid" action updates status for all selected items.
+    *   **Cycle Rules**: 
+        *   The payroll cycle runs from the **28th of the previous month** to the **27th of the current month**.
+        *   On the **28th at 09:00 AM**, an automated "PAYDAY ALERT" email is sent to all admins summarizing the total due.
 *   **Audit Logs**:
     *   View chronological history of all security-critical events.
     *   Tracks: Timestamp, User, Action Type, Details, and Origin IP Address.
@@ -96,7 +100,14 @@ graph TD
     H --> I[Update Status in DB];
     I --> J[Log Audit Event];
     J --> K[Re-fetch Updated Data];
+    
+    subgraph Periodic [Automated Cycle]
+        L[28th of Month] --> M{Check 28th Prev - 27th Curr};
+        M --> N[Send Payday Email to Admin];
+    end
 ```
+
+**Note**: The system automatically generates a comprehensive invoice email on the **28th of every month**, covering approved activities from the 28th of the prior month to the 27th of the current month.
 
 1.  **View**: Navigate to **Finance > Payroll**.
 2.  **Filter**: Select Month/Year.
