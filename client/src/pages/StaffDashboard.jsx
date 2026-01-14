@@ -82,6 +82,8 @@ const TimePicker = ({ label, value, onChange }) => {
 };
 
 const StaffDashboard = () => {
+    // Force re-render verification
+    console.log("StaffDashboard Rendering");
     const { user } = useAuth();
     const { theme, setTheme } = useTheme();
     const toast = useToast();
