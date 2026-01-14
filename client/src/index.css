@@ -6,24 +6,49 @@
   --color-card: rgb(var(--card));
   --color-card-foreground: rgb(var(--card-foreground));
   --color-border: rgb(var(--border));
-  --color-zinc-950: #0A0A0A;
+  --color-muted: rgb(var(--muted));
+  --color-muted-foreground: rgb(var(--muted-foreground));
+  --color-accent: rgb(var(--accent));
+  --color-accent-foreground: rgb(var(--accent-foreground));
+  --color-slate-950: #020617;
 }
 
 @layer base {
   :root {
-    --background: 255 255 255;
-    --foreground: 9 9 11;
+    --background: 248 250 252;
+    /* Slate 50 */
+    --foreground: 15 23 42;
+    /* Slate 900 */
     --card: 255 255 255;
-    --card-foreground: 9 9 11;
-    --border: 228 228 231;
+    /* White */
+    --card-foreground: 15 23 42;
+    --border: 226 232 240;
+    /* Slate 200 */
+    --muted: 241 245 249;
+    /* Slate 100 */
+    --muted-foreground: 100 116 139;
+    /* Slate 500 */
+    --accent: 255 255 255;
+    --accent-foreground: 15 23 42;
   }
 
   .dark {
-    --background: 10 10 10;
-    --foreground: 250 250 250;
-    --card: 24 24 27;
-    --card-foreground: 250 250 250;
-    --border: 39 39 42;
+    --background: 2 6 23;
+    /* Slate 950 */
+    --foreground: 248 250 252;
+    /* Slate 50 */
+    --card: 15 23 42;
+    /* Slate 900 */
+    --card-foreground: 248 250 252;
+    --border: 30 41 59;
+    /* Slate 800 */
+    --muted: 15 23 42;
+    /* Slate 900 */
+    --muted-foreground: 148 163 184;
+    /* Slate 400 */
+    --accent: 30 41 59;
+    /* Slate 800 */
+    --accent-foreground: 248 250 252;
   }
 
   body {
@@ -33,35 +58,36 @@
 }
 
 @layer utilities {
+  .saas-card {
+    @apply bg-card text-card-foreground border border-border shadow-sm rounded-xl transition-all duration-200;
+  }
+
   .glass-card {
-    @apply bg-card text-card-foreground border border-border shadow-sm rounded-3xl transition-colors duration-300;
-    @apply dark:bg-white/5 dark:backdrop-blur-2xl dark:border-white/10 dark:shadow-none;
+    /* Legacy override - map to saas-card for backward compatibility during refactor */
+    @apply saas-card;
   }
 
   .premium-bg {
-    @apply min-h-screen transition-colors duration-300 bg-background text-foreground;
-    @apply dark:from-zinc-900 dark:via-[#0A0A0A] dark:to-black;
+    /* Legacy override - map to standard background */
+    @apply bg-background text-foreground min-h-screen transition-colors duration-300;
   }
 
   .input-field {
-    @apply w-full rounded-xl px-4 py-3 focus:outline-none focus:border-lime-400 focus:ring-1 focus:ring-lime-400 transition-all font-medium;
-    @apply bg-white border border-border text-foreground placeholder-zinc-400;
-    @apply dark:bg-black/50 dark:border-white/10 dark:text-foreground dark:placeholder-zinc-600;
+    @apply w-full rounded-lg px-4 py-3 font-medium transition-all;
+    @apply bg-white border border-slate-300 text-slate-900 placeholder-slate-400;
+    @apply focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500;
+    @apply dark:bg-slate-900 dark:border-slate-700 dark:text-slate-50 dark:placeholder-slate-500;
+    @apply dark:focus:border-blue-400 dark:focus:ring-blue-400;
   }
 
   .btn-primary {
-    @apply bg-lime-400 text-black font-black px-6 py-3 rounded-xl hover:bg-lime-300 active:scale-95 transition-all;
-    box-shadow: 0 0 20px rgba(163, 230, 53, 0.3);
-  }
-
-  .btn-primary:hover {
-    box-shadow: 0 0 30px rgba(163, 230, 53, 0.5);
+    @apply bg-blue-600 text-white font-bold px-6 py-3 rounded-lg hover:bg-blue-700 active:scale-95 transition-all shadow-sm;
   }
 
   .btn-secondary {
-    @apply font-bold px-6 py-3 rounded-xl active:scale-95 transition-all border;
-    @apply bg-card text-card-foreground border-border hover:bg-zinc-50;
-    @apply dark:bg-white/5 dark:text-white dark:border-white/5 dark:hover:bg-white/10;
+    @apply font-bold px-6 py-3 rounded-lg active:scale-95 transition-all border;
+    @apply bg-white text-slate-900 border-slate-200 hover:bg-slate-50;
+    @apply dark:bg-slate-800 dark:text-slate-200 dark:border-slate-700 dark:hover:bg-slate-700;
   }
 
   /* Custom Scrollbar */
@@ -74,10 +100,10 @@
   }
 
   .custom-scrollbar::-webkit-scrollbar-thumb {
-    @apply bg-zinc-300 dark:bg-zinc-800 rounded-full;
+    @apply bg-slate-300 dark:bg-slate-700 rounded-full;
   }
 
   .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-    @apply bg-zinc-400 dark:bg-zinc-700;
+    @apply bg-slate-400 dark:bg-slate-600;
   }
 }

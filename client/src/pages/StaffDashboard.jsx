@@ -418,57 +418,63 @@ const StaffDashboard = () => {
         const filtered = history.filter(i => i.dataType === type);
         if (filtered.length === 0) {
             return (
-                <div className="flex flex-col items-center justify-center py-20 text-center animate-in fade-in zoom-in">
-                    <div className="w-20 h-20 bg-zinc-100 dark:bg-zinc-900 rounded-full flex items-center justify-center mb-4">
-                        <Sparkles className="text-zinc-400 dark:text-zinc-600" size={32} />
+                <div className="flex flex-col items-center justify-center py-20 text-center animate-in fade-in zoom-in border-2 border-dashed border-slate-200 dark:border-slate-800 rounded-2xl bg-slate-50/50 dark:bg-slate-900/20">
+                    <div className="w-16 h-16 bg-white dark:bg-slate-800 rounded-full flex items-center justify-center mb-4 shadow-sm border border-slate-100 dark:border-slate-700">
+                        <Sparkles className="text-slate-400" size={24} />
                     </div>
-                    <h3 className="text-xl font-bold text-zinc-900 dark:text-white mb-2">No hustles yet.</h3>
-                    <p className="text-zinc-500">Start grinding to see your history here.</p>
+                    <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-1">No activity used</h3>
+                    <p className="text-slate-500 text-sm">Start your hustle to see history here.</p>
                 </div>
             );
         }
         return (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 animate-in fade-in slide-in-from-bottom-4">
                 {filtered.map((item, idx) => (
-                    <div key={idx} className="glass-card p-0 overflow-hidden group hover:border-lime-400/50 transition-all relative">
-                        <div className="p-6">
-                            <p className="text-xs font-bold text-zinc-500 uppercase tracking-wider mb-1">
-                                {format(new Date(item.date || item.startDate), 'EEEE, MMM d')}
-                            </p>
-                            <h3 className="text-2xl font-black text-zinc-900 dark:text-white mb-2 break-words pr-16 bg-transparent">
-                                {item.dataType === 'overtime' ? item.activity : item.dataType === 'claim' ? item.title : 'Leave Request'}
-                            </h3>
-                            <div className="flex flex-wrap items-center gap-2 text-sm font-medium text-zinc-400">
+                    <div key={idx} className="saas-card relative group hover:border-blue-400 dark:hover:border-blue-500 transition-all duration-200">
+                        <div className="p-5">
+                            <div className="flex justify-between items-start mb-3">
+                                <div>
+                                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">
+                                        {format(new Date(item.date || item.startDate), 'EEEE, MMM d')}
+                                    </p>
+                                    <h3 className="text-lg font-bold text-slate-900 dark:text-white leading-tight break-words pr-8">
+                                        {item.dataType === 'overtime' ? item.activity : item.dataType === 'claim' ? item.title : 'Leave Request'}
+                                    </h3>
+                                </div>
+                                <StatusBadge status={item.status} />
+                            </div>
+
+                            <div className="flex flex-wrap items-center gap-3 text-sm font-medium text-slate-500 dark:text-slate-400 mt-2">
                                 {item.dataType === 'overtime' && (
-                                    <>
-                                        <Clock size={16} className="text-lime-400 shrink-0" />
+                                    <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-orange-50 dark:bg-orange-900/20 text-orange-700 dark:text-orange-400 border border-orange-100 dark:border-orange-900/30">
+                                        <Clock size={14} />
                                         <span>{item.startTime} - {item.endTime} ({formatDuration(item.hours)})</span>
-                                    </>
+                                    </div>
                                 )}
                                 {item.dataType === 'claim' && (
-                                    <>
-                                        <FileText size={16} className="text-purple-400 shrink-0" />
+                                    <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-400 border border-emerald-100 dark:border-emerald-900/30">
+                                        <FileText size={14} />
                                         <span>Rp {item.amount.toLocaleString('id-ID')}</span>
-                                    </>
+                                    </div>
                                 )}
                                 {item.dataType === 'leave' && (
-                                    <>
-                                        <Palmtree size={16} className="text-emerald-400 shrink-0" />
+                                    <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-pink-50 dark:bg-pink-900/20 text-pink-700 dark:text-pink-400 border border-pink-100 dark:border-pink-900/30">
+                                        <Palmtree size={14} />
                                         <span>{item.days} Days ({item.type})</span>
-                                    </>
+                                    </div>
                                 )}
                             </div>
                             {item.dataType === 'claim' && item.proof && (
-                                <div className="mt-4 pt-4 border-t border-white/5">
-                                    <p className="text-xs font-bold text-zinc-500 uppercase tracking-wider mb-2">Proof Attached</p>
+                                <div className="mt-4 pt-4 border-t border-slate-100 dark:border-slate-800">
+                                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">Proof Attached</p>
                                     <div
-                                        className="relative w-full h-32 bg-zinc-100 dark:bg-zinc-900 rounded-lg overflow-hidden cursor-zoom-in group/img"
+                                        className="relative w-full h-32 bg-slate-100 dark:bg-slate-900 rounded-lg overflow-hidden cursor-zoom-in group/img border border-slate-200 dark:border-slate-700"
                                         onClick={() => setViewingImage(`${api.defaults.baseURL}${item.proof}`)}
                                     >
                                         <img
                                             src={`${api.defaults.baseURL}${item.proof}`}
                                             alt="Proof of Payment"
-                                            className="w-full h-full object-cover opacity-70 group-hover/img:opacity-100 transition-all duration-300"
+                                            className="w-full h-full object-cover group-hover/img:scale-105 transition-transform duration-500"
                                         />
                                         <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover/img:opacity-100 bg-black/40 transition-opacity backdrop-blur-[2px]">
                                             <span className="text-xs font-bold text-white flex items-center gap-2 bg-black/50 px-3 py-1.5 rounded-full border border-white/20">
@@ -501,26 +507,51 @@ const StaffDashboard = () => {
     return (
         <div className="space-y-8">
             {/* Bento Grid Stats */}
+            {/* Bento Grid Stats */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div className="glass-card p-6 flex flex-col justify-between h-32">
-                    <span className="text-zinc-500 font-bold text-xs uppercase tracking-wider">Total Earned (OT)</span>
-                    <span className="text-3xl font-black text-lime-600 dark:text-lime-400">Rp {stats.earned.toLocaleString('id-ID')}</span>
+                <div className="saas-card p-5 flex flex-col justify-between h-32 relative overflow-hidden group">
+                    <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
+                        <DollarSign size={64} className="text-emerald-500" />
+                    </div>
+                    <div className="flex items-center gap-3 mb-2">
+                        <div className="p-2 bg-emerald-100 dark:bg-emerald-500/10 rounded-lg text-emerald-600 dark:text-emerald-400">
+                            <DollarSign size={20} />
+                        </div>
+                        <span className="text-slate-500 font-bold text-xs uppercase tracking-wider">Total Earned</span>
+                    </div>
+                    <span className="text-3xl font-bold text-slate-900 dark:text-white tracking-tight">Rp {stats.earned.toLocaleString('id-ID')}</span>
                 </div>
-                <div className="glass-card p-6 flex flex-col justify-between h-32">
-                    <span className="text-zinc-500 font-bold text-xs uppercase tracking-wider">Pending Claims</span>
-                    <span className="text-3xl font-black text-purple-600 dark:text-purple-400">{stats.pendingClaims}</span>
+
+                <div className="saas-card p-5 flex flex-col justify-between h-32 relative overflow-hidden group">
+                    <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
+                        <FileText size={64} className="text-blue-500" />
+                    </div>
+                    <div className="flex items-center gap-3 mb-2">
+                        <div className="p-2 bg-blue-100 dark:bg-blue-500/10 rounded-lg text-blue-600 dark:text-blue-400">
+                            <FileText size={20} />
+                        </div>
+                        <span className="text-slate-500 font-bold text-xs uppercase tracking-wider">Pending Claims</span>
+                    </div>
+                    <span className="text-3xl font-bold text-slate-900 dark:text-white tracking-tight">{stats.pendingClaims}</span>
                 </div>
-                <div className="glass-card p-6 flex items-center justify-between h-32">
-                    <div className="flex flex-col justify-between h-full">
-                        <span className="text-zinc-500 font-bold text-xs uppercase tracking-wider">Leave Quota</span>
-                        <span className="text-3xl font-black text-zinc-900 dark:text-white">{leaveQuota} <span className="text-sm text-zinc-500">Days</span></span>
+
+                <div className="saas-card p-5 flex items-center justify-between h-32 relative overflow-hidden">
+                    <div className="flex flex-col justify-between h-full z-10">
+                        <div className="flex items-center gap-3 mb-2">
+                            <div className="p-2 bg-pink-100 dark:bg-pink-500/10 rounded-lg text-pink-600 dark:text-pink-400">
+                                <Palmtree size={20} />
+                            </div>
+                            <span className="text-slate-500 font-bold text-xs uppercase tracking-wider">Leave Quota</span>
+                        </div>
+                        <span className="text-3xl font-bold text-slate-900 dark:text-white tracking-tight">{leaveQuota} <span className="text-sm text-slate-400 font-medium">Days</span></span>
                     </div>
                     <div className="relative w-16 h-16">
                         <svg className="w-full h-full transform -rotate-90">
-                            <circle cx="32" cy="32" r="28" stroke="currentColor" strokeWidth="4" fill="transparent" className="text-zinc-200 dark:text-zinc-800" />
-                            <circle cx="32" cy="32" r="28" stroke="currentColor" strokeWidth="4" fill="transparent" className="text-lime-500 dark:text-lime-400"
+                            <circle cx="32" cy="32" r="28" stroke="currentColor" strokeWidth="4" fill="transparent" className="text-slate-100 dark:text-slate-800" />
+                            <circle cx="32" cy="32" r="28" stroke="currentColor" strokeWidth="4" fill="transparent" className="text-pink-500"
                                 strokeDasharray={2 * Math.PI * 28}
                                 strokeDashoffset={2 * Math.PI * 28 * (1 - (leaveQuota / 12))}
+                                strokeLinecap="round"
                             />
                         </svg>
                     </div>
@@ -528,22 +559,36 @@ const StaffDashboard = () => {
             </div>
 
             {/* Tabs */}
-            <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
-                {tabs.map(tab => (
-                    <button
-                        key={tab.id}
-                        onClick={() => setActiveTab(tab.id)}
-                        className={clsx(
-                            "flex items-center gap-2 px-5 py-3 rounded-xl font-bold transition-all whitespace-nowrap text-sm border",
-                            activeTab === tab.id
-                                ? "bg-zinc-900 dark:bg-white text-white dark:text-black border-zinc-900 dark:border-white shadow-lg shadow-zinc-900/10 dark:shadow-white/10"
-                                : "bg-white dark:bg-zinc-900/50 text-zinc-500 dark:text-zinc-400 border-zinc-200 dark:border-zinc-800 hover:bg-zinc-50 dark:hover:bg-zinc-800 hover:text-black dark:hover:text-white"
-                        )}
-                    >
-                        <tab.icon size={16} />
-                        {tab.label}
-                    </button>
-                ))}
+            <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide border-b border-slate-200 dark:border-slate-800">
+                {tabs.map(tab => {
+                    const isActive = activeTab === tab.id;
+                    let activeStyle = "text-slate-900 dark:text-white border-b-2 border-slate-900 dark:border-white";
+                    let iconColor = "text-slate-400";
+
+                    if (isActive) {
+                        if (tab.id === 'overtime') { activeStyle = "text-orange-600 dark:text-orange-400 border-b-2 border-orange-500"; iconColor = "text-orange-500"; }
+                        if (tab.id === 'claim') { activeStyle = "text-emerald-600 dark:text-emerald-400 border-b-2 border-emerald-500"; iconColor = "text-emerald-500"; }
+                        if (tab.id === 'leave') { activeStyle = "text-pink-600 dark:text-pink-400 border-b-2 border-pink-500"; iconColor = "text-pink-500"; }
+                        if (tab.id === 'quests') { activeStyle = "text-amber-600 dark:text-amber-400 border-b-2 border-amber-500"; iconColor = "text-amber-500"; }
+                        if (tab.id === 'vibe') { activeStyle = "text-violet-600 dark:text-violet-400 border-b-2 border-violet-500"; iconColor = "text-violet-500"; }
+                    }
+
+                    return (
+                        <button
+                            key={tab.id}
+                            onClick={() => setActiveTab(tab.id)}
+                            className={clsx(
+                                "flex items-center gap-2 px-4 py-3 font-bold transition-all whitespace-nowrap text-sm mb-[-1px]",
+                                isActive
+                                    ? activeStyle
+                                    : "text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200 border-b-2 border-transparent"
+                            )}
+                        >
+                            <tab.icon size={16} className={clsx(isActive ? iconColor : "text-slate-400 group-hover:text-slate-600")} />
+                            {tab.label}
+                        </button>
+                    );
+                })}
             </div>
 
             <div className="min-h-[400px]">
@@ -551,7 +596,7 @@ const StaffDashboard = () => {
                 {activeTab === 'overtime' && (
                     <div>
                         <div className="flex justify-between items-center mb-6">
-                            <h2 className="text-2xl font-black text-zinc-900 dark:text-white">My Hustle History</h2>
+                            <h2 className="text-2xl font-bold text-slate-900 dark:text-white">My Hustle</h2>
                             <button onClick={() => { resetForms(); setShowOtModal(true); }} className="btn-primary flex items-center gap-2 shadow-lg shadow-lime-400/20">
                                 <Plus size={20} /> New Hustle
                             </button>
@@ -564,7 +609,7 @@ const StaffDashboard = () => {
                 {activeTab === 'claim' && (
                     <div>
                         <div className="flex justify-between items-center mb-6">
-                            <h2 className="text-2xl font-black text-zinc-900 dark:text-white">Claims History</h2>
+                            <h2 className="text-2xl font-bold text-slate-900 dark:text-white">My Claims</h2>
                             <button onClick={() => { resetForms(); setShowClaimModal(true); }} className="btn-secondary flex items-center gap-2 shadow-lg shadow-purple-500/20">
                                 <Plus size={20} /> New Claim
                             </button>
@@ -577,7 +622,7 @@ const StaffDashboard = () => {
                 {activeTab === 'leave' && (
                     <div>
                         <div className="flex justify-between items-center mb-6">
-                            <h2 className="text-2xl font-black text-zinc-900 dark:text-white">Leave History</h2>
+                            <h2 className="text-2xl font-bold text-slate-900 dark:text-white">Leave History</h2>
                             <button onClick={() => { resetForms(); setShowLeaveModal(true); }} className="bg-emerald-500 text-black font-bold py-3 px-6 rounded-xl hover:bg-emerald-400 transition-colors flex items-center gap-2 shadow-lg shadow-emerald-500/20">
                                 <Plus size={20} /> Request Leave
                             </button>
@@ -1032,15 +1077,15 @@ const StaffDashboard = () => {
 };
 
 const StatusBadge = ({ status }) => {
-    const colors = {
-        Pending: 'text-yellow-600 dark:text-yellow-400 bg-yellow-400/10 border-yellow-400/20',
-        Approved: 'text-lime-600 dark:text-lime-400 bg-lime-400/10 border-lime-400/20',
-        Rejected: 'text-red-600 dark:text-red-400 bg-red-400/10 border-red-400/20',
-        Assigned: 'text-blue-600 dark:text-blue-400 bg-blue-400/10 border-blue-400/20',
-        Completed: 'text-emerald-600 dark:text-emerald-400 bg-emerald-400/10 border-emerald-400/20',
+    const styles = {
+        Pending: 'bg-amber-100 text-amber-700 dark:bg-amber-500/20 dark:text-amber-400',
+        Approved: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-400',
+        Rejected: 'bg-red-100 text-red-700 dark:bg-red-500/20 dark:text-red-400',
+        Assigned: 'bg-blue-100 text-blue-700 dark:bg-blue-500/20 dark:text-blue-400',
+        Completed: 'bg-slate-100 text-slate-700 dark:bg-slate-700 dark:text-slate-300',
     };
     return (
-        <span className={clsx("px-3 py-1 rounded-full text-xs font-bold border uppercase tracking-wider", colors[status] || colors.Pending)}>
+        <span className={clsx("px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider", styles[status] || styles.Pending)}>
             {status}
         </span>
     );

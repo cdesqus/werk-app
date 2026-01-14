@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { Sparkles } from 'lucide-react';
 
 const Login = () => {
     const [email, setEmail] = useState('');
@@ -25,7 +26,7 @@ const Login = () => {
         const num1 = Math.floor(Math.random() * 10) + 1;
         const num2 = Math.floor(Math.random() * 10) + 1;
         setCaptcha({ num1, num2, answer: num1 + num2 });
-        setCaptchaInput(''); // Optional: Clear input on refresh? Maybe better to keep it if user is typing. Let's keep it for security.
+        setCaptchaInput('');
     };
 
     const handleSubmit = async (e) => {
@@ -50,39 +51,39 @@ const Login = () => {
     };
 
     return (
-        <div className="premium-bg flex items-center justify-center p-4">
-            <div className="glass-card w-full max-w-md p-8 relative overflow-hidden">
-                {/* Decorative Elements */}
-                <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-lime-400 to-transparent opacity-50"></div>
+        <div className="min-h-screen flex items-center justify-center p-4 transition-colors duration-300 bg-slate-50 dark:bg-slate-950 relative overflow-hidden">
+            {/* Mesh Gradient Background (Light Mode) */}
+            <div className="absolute inset-0 bg-[radial-gradient(at_0%_0%,rgba(59,130,246,0.1)_0px,transparent_50%),radial-gradient(at_100%_0%,rgba(139,92,246,0.1)_0px,transparent_50%)] dark:hidden pointer-events-none"></div>
 
+            <div className="saas-card w-full max-w-md p-10 relative z-10 bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 shadow-xl">
                 <div className="text-center mb-10">
-                    <div className="font-black tracking-tighter text-white flex items-start select-none justify-center mb-2">
-                        <span className="text-6xl">WERK</span>
-                        <sup className="text-lime-400 ml-1 mt-2 text-2xl">IDE</sup>
+                    <div className="font-black tracking-tighter text-slate-900 dark:text-white flex items-center justify-center gap-1 mb-2 select-none">
+                        <span className="text-4xl">WERK</span>
+                        <sup className="bg-gradient-to-r from-blue-600 to-violet-600 bg-clip-text text-transparent text-lg font-bold mt-2">IDE</sup>
                     </div>
-                    <p className="text-zinc-500 font-medium tracking-wide">ENTER THE PORTAL</p>
+                    <p className="text-slate-500 font-medium text-sm">Sign in to your workspace</p>
                 </div>
 
                 {error && (
-                    <div className="bg-red-500/10 border border-red-500/20 text-red-400 p-4 rounded-xl mb-6 text-sm font-bold text-center animate-in fade-in slide-in-from-top-2">
+                    <div className="bg-red-50 text-red-600 border border-red-200 p-3 rounded-lg mb-6 text-sm font-bold text-center animate-in fade-in slide-in-from-top-2 dark:bg-red-900/20 dark:text-red-400 dark:border-red-900/50">
                         {error}
                     </div>
                 )}
 
-                <form onSubmit={handleSubmit} className="space-y-6">
-                    <div className="space-y-2">
-                        <label className="text-xs font-bold text-zinc-500 uppercase tracking-wider ml-1">Email</label>
+                <form onSubmit={handleSubmit} className="space-y-5">
+                    <div className="space-y-1.5">
+                        <label className="text-xs font-bold text-slate-500 uppercase tracking-wider ml-1">Email</label>
                         <input
                             type="email"
                             value={email}
                             onChange={(e) => setEmail(e.target.value)}
                             className="input-field"
-                            placeholder="you@werk.com"
+                            placeholder="name@company.com"
                             required
                         />
                     </div>
-                    <div className="space-y-2">
-                        <label className="text-xs font-bold text-zinc-500 uppercase tracking-wider ml-1">Password</label>
+                    <div className="space-y-1.5">
+                        <label className="text-xs font-bold text-slate-500 uppercase tracking-wider ml-1">Password</label>
                         <input
                             type="password"
                             value={password}
@@ -95,33 +96,33 @@ const Login = () => {
 
                     {/* Captcha */}
                     <div className="pt-2">
-                        <div className="bg-white/5 p-4 rounded-2xl border border-white/10 flex flex-col items-center gap-3">
-                            <label className="text-xs font-bold text-zinc-500 uppercase tracking-wider">Human Verification</label>
-                            <div className="flex items-center gap-4 w-full">
-                                <div className="flex-1 h-12 bg-zinc-900 rounded-xl flex items-center justify-center font-mono text-xl text-white font-black tracking-widest select-none border border-zinc-700 shadow-inner relative overflow-hidden">
-                                    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent animate-pulse"></div>
-                                    {captcha.num1} + {captcha.num2} = ?
+                        <div className="bg-slate-50 dark:bg-slate-800/50 p-4 rounded-xl border border-slate-200 dark:border-slate-700 flex flex-col items-center gap-3">
+                            <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Security Check</label>
+                            <div className="flex items-center gap-3 w-full">
+                                <div className="flex-1 h-11 bg-slate-200 dark:bg-slate-700 rounded-lg flex items-center justify-center font-mono text-lg text-slate-700 dark:text-slate-200 font-bold tracking-widest select-none border border-slate-300 dark:border-slate-600 relative overflow-hidden">
+                                    <div className="absolute inset-0 bg-white/20 dark:bg-black/20" style={{ backgroundImage: 'repeating-linear-gradient(45deg, transparent, transparent 10px, rgba(0,0,0,0.05) 10px, rgba(0,0,0,0.05) 20px)' }}></div>
+                                    <span className="relative z-10">{captcha.num1} + {captcha.num2} = ?</span>
                                 </div>
                                 <input
                                     type="number"
                                     value={captchaInput}
                                     onChange={(e) => setCaptchaInput(e.target.value)}
-                                    className="h-12 w-20 bg-zinc-800 border border-zinc-600 rounded-xl text-center text-xl font-bold text-lime-400 focus:outline-none focus:border-lime-400 focus:ring-1 focus:ring-lime-400 transition-all placeholder-zinc-600"
+                                    className="h-11 w-20 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-600 rounded-lg text-center text-lg font-bold text-blue-600 dark:text-blue-400 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all placeholder-slate-400"
                                     placeholder="?"
                                     required
                                 />
                             </div>
-                            <p className="text-[10px] text-zinc-600 font-mono">Refreshes in 20s</p>
                         </div>
                     </div>
 
-                    <button type="submit" className="w-full btn-primary uppercase tracking-wide text-lg mt-4">
-                        Login
+                    <button type="submit" className="w-full btn-primary text-base font-bold shadow-blue-500/20 shadow-lg hover:shadow-blue-500/30">
+                        Enter Workspace
                     </button>
                 </form>
-                {/* <p className="mt-8 text-center text-zinc-600 text-sm font-medium">
-                    New player? <Link to="/register" className="text-lime-400 hover:text-lime-300 transition-colors">Create account</Link>
-                </p> */}
+            </div>
+
+            <div className="absolute bottom-6 text-center text-xs text-slate-400 font-medium">
+                &copy; {new Date().getFullYear()} WERK IDE. All systems nominal.
             </div>
         </div>
     );

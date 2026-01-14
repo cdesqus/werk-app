@@ -32,15 +32,15 @@ const DateInput = ({ value, onChange, required, placeholder, className }) => {
         <div
             className={clsx(
                 "relative cursor-pointer group input-field flex items-center justify-between",
-                "focus-within:border-lime-400/50 focus-within:ring-1 focus-within:ring-lime-400/50",
+                "focus-within:border-blue-500 focus-within:ring-1 focus-within:ring-blue-500/20",
                 className
             )}
             onClick={handleDivClick}
         >
-            <span className={clsx("pointer-events-none select-none truncate", value ? 'text-white' : 'text-zinc-600')}>
+            <span className={clsx("pointer-events-none select-none truncate font-medium", value ? 'text-slate-900 dark:text-white' : 'text-slate-400')}>
                 {displayValue || placeholder || 'dd/mm/yyyy'}
             </span>
-            <Calendar size={16} className="text-zinc-500 group-hover:text-lime-400 transition-colors pointer-events-none shrink-0 ml-2" />
+            <Calendar size={18} className="text-slate-400 group-hover:text-blue-500 transition-colors pointer-events-none shrink-0 ml-2" />
 
             <input
                 ref={dateInputRef}
