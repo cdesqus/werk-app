@@ -8,10 +8,12 @@ export default {
     theme: {
         extend: {
             colors: {
-                background: '#09090b', // zinc-950
+                background: "rgba(var(--background), <alpha-value>)",
+                foreground: "rgba(var(--foreground), <alpha-value>)",
+                card: "rgba(var(--card), <alpha-value>)",
+                'card-foreground': "rgba(var(--card-foreground), <alpha-value>)",
+                border: "rgba(var(--border), <alpha-value>)",
                 primary: '#a3e635', // lime-400
-                secondary: '#a855f7', // purple-500
-                surface: '#18181b', // zinc-900
             },
             fontFamily: {
                 sans: ['Inter', 'sans-serif'],

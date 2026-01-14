@@ -1,24 +1,52 @@
-@import "tailwindcss";
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
-@theme {
-  --color-zinc-950: #0A0A0A;
+@layer base {
+  :root {
+    --background: 255 255 255;
+    /* White */
+    --foreground: 9 9 11;
+    /* Zinc 950 */
+    --card: 255 255 255;
+    --card-foreground: 9 9 11;
+    --border: 228 228 231;
+    /* Zinc 200 */
+  }
+
+  .dark {
+    --background: 10 10 10;
+    /* #0A0A0A */
+    --foreground: 250 250 250;
+    /* Zinc 50 */
+    --card: 24 24 27;
+    /* Zinc 900 */
+    --card-foreground: 250 250 250;
+    --border: 39 39 42;
+    /* Zinc 800 */
+  }
+
+  body {
+    @apply bg-background text-foreground transition-colors duration-300 antialiased;
+    font-family: 'Inter', sans-serif;
+  }
 }
 
 @layer utilities {
   .glass-card {
-    @apply bg-white border border-zinc-200 shadow-sm dark:bg-white/5 dark:backdrop-blur-2xl dark:border-white/10 dark:shadow-none rounded-3xl transition-colors duration-300;
+    @apply bg-card text-card-foreground border border-border shadow-sm rounded-3xl transition-colors duration-300;
+    @apply dark:bg-white/5 dark:backdrop-blur-2xl dark:border-white/10 dark:shadow-none;
   }
 
   .premium-bg {
-    @apply min-h-screen transition-colors duration-300;
-    @apply bg-zinc-50 text-zinc-900;
-    @apply dark:bg-[#0A0A0A] dark:from-zinc-900 dark:via-[#0A0A0A] dark:to-black dark:text-white;
+    @apply min-h-screen transition-colors duration-300 bg-background text-foreground;
+    @apply dark:from-zinc-900 dark:via-[#0A0A0A] dark:to-black;
   }
 
   .input-field {
     @apply w-full rounded-xl px-4 py-3 focus:outline-none focus:border-lime-400 focus:ring-1 focus:ring-lime-400 transition-all font-medium;
-    @apply bg-white border border-zinc-300 text-zinc-900 placeholder-zinc-400;
-    @apply dark:bg-black/50 dark:border-white/10 dark:text-white dark:placeholder-zinc-600;
+    @apply bg-white border border-border text-foreground placeholder-zinc-400;
+    @apply dark:bg-black/50 dark:border-white/10 dark:text-foreground dark:placeholder-zinc-600;
   }
 
   .btn-primary {
@@ -32,7 +60,7 @@
 
   .btn-secondary {
     @apply font-bold px-6 py-3 rounded-xl active:scale-95 transition-all border;
-    @apply bg-white text-zinc-900 border-zinc-200 hover:bg-zinc-50;
+    @apply bg-card text-card-foreground border-border hover:bg-zinc-50;
     @apply dark:bg-white/5 dark:text-white dark:border-white/5 dark:hover:bg-white/10;
   }
 
@@ -52,11 +80,4 @@
   .custom-scrollbar::-webkit-scrollbar-thumb:hover {
     @apply bg-zinc-400 dark:bg-zinc-700;
   }
-}
-
-body {
-  @apply antialiased selection:bg-lime-400/30 selection:text-lime-400 transition-colors duration-300;
-  @apply bg-zinc-50 text-zinc-900;
-  @apply dark:bg-[#0A0A0A] dark:text-white;
-  font-family: 'Inter', sans-serif;
 }
