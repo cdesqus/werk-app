@@ -4,6 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import api from '../utils/api';
 import ConfirmModal from '../components/ui/ConfirmModal';
 import { Edit2, X, Shield, User, Phone, Calendar, Search, Plus, Trash2, Mail, Lock, Palmtree } from 'lucide-react';
+import clsx from 'clsx';
 
 const AdminUsers = () => {
     const toast = useToast();
