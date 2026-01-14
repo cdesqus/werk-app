@@ -63,8 +63,8 @@
   }
 
   .glass-card {
-    /* Legacy override - map to saas-card for backward compatibility during refactor */
-    @apply saas-card;
+    /* Legacy override - map to saas-card styles for backward compatibility */
+    @apply bg-card text-card-foreground border border-border shadow-sm rounded-xl transition-all duration-200;
   }
 
   .premium-bg {
