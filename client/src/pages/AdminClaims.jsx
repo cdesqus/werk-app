@@ -50,10 +50,10 @@ const AdminClaims = () => {
 
     const StatusBadge = ({ status }) => {
         const colors = {
-            Pending: 'text-yellow-400 bg-yellow-400/10 border-yellow-400/20',
-            Approved: 'text-lime-400 bg-lime-400/10 border-lime-400/20',
-            Rejected: 'text-red-400 bg-red-400/10 border-red-400/20',
-            Paid: 'text-emerald-400 bg-emerald-400/10 border-emerald-400/20',
+            Pending: 'text-yellow-700 bg-yellow-100 border-yellow-200 dark:text-yellow-400 dark:bg-yellow-400/10 dark:border-yellow-400/20',
+            Approved: 'text-emerald-700 bg-emerald-100 border-emerald-200 dark:text-emerald-400 dark:bg-emerald-400/10 dark:border-emerald-400/20',
+            Rejected: 'text-red-700 bg-red-100 border-red-200 dark:text-red-400 dark:bg-red-400/10 dark:border-red-400/20',
+            Paid: 'text-emerald-700 bg-emerald-100 border-emerald-200 dark:text-emerald-400 dark:bg-emerald-400/10 dark:border-emerald-400/20',
         };
         return (
             <span className={clsx("px-2 py-0.5 rounded text-xs font-bold uppercase tracking-wider border", colors[status] || colors.Pending)}>
@@ -75,17 +75,17 @@ const AdminClaims = () => {
             {/* ... header ... */}
             <header className="flex flex-col xl:flex-row justify-between items-start xl:items-center gap-4">
                 <div>
-                    <h1 className="text-3xl font-black text-white mb-1">Reimbursement Claims</h1>
-                    <p className="text-zinc-400 text-sm">Process staff expenses and receipts.</p>
+                    <h1 className="text-3xl font-black text-foreground mb-1">Reimbursement Claims</h1>
+                    <p className="text-muted-foreground text-sm">Process staff expenses and receipts.</p>
                 </div>
                 <div className="flex flex-wrap items-center gap-4 w-full xl:w-auto flex-1 justify-end">
 
                     {/* Filter Toggle */}
-                    <div className="flex items-center bg-zinc-900 rounded-xl p-1 border border-zinc-700">
+                    <div className="flex items-center bg-muted/30 rounded-xl p-1 border border-border">
                         <button
                             onClick={() => setCalculateSortBy('submission')}
                             className={clsx("px-3 py-2 text-xs font-bold rounded-lg transition-colors flex items-center gap-2",
-                                calculateSortBy === 'submission' ? "bg-lime-400 text-zinc-900" : "text-zinc-400 hover:text-white hover:bg-zinc-800"
+                                calculateSortBy === 'submission' ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground hover:text-foreground hover:bg-muted"
                             )}
                         >
                             <Calendar size={14} /> Submitted
@@ -93,7 +93,7 @@ const AdminClaims = () => {
                         <button
                             onClick={() => setCalculateSortBy('activity')}
                             className={clsx("px-3 py-2 text-xs font-bold rounded-lg transition-colors flex items-center gap-2",
-                                calculateSortBy === 'activity' ? "bg-lime-400 text-zinc-900" : "text-zinc-400 hover:text-white hover:bg-zinc-800"
+                                calculateSortBy === 'activity' ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground hover:text-foreground hover:bg-muted"
                             )}
                         >
                             <Clock size={14} /> Activity
@@ -101,17 +101,17 @@ const AdminClaims = () => {
                     </div>
 
                     <div className="relative flex-1 w-full max-w-xs">
-                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500" size={16} />
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={16} />
                         <input
                             type="text"
                             placeholder="Search..."
-                            className="flex-1 w-full bg-zinc-900 border border-white/10 rounded-xl px-4 py-2 pl-9 focus:ring-2 focus:ring-lime-400 outline-none text-white placeholder-zinc-500 transition-all text-sm"
+                            className="flex-1 w-full bg-background border border-input rounded-xl px-4 py-2 pl-9 focus:ring-2 focus:ring-primary outline-none text-foreground placeholder-muted-foreground transition-all text-sm"
                             value={searchTerm}
                             onChange={e => setSearchTerm(e.target.value)}
                         />
                     </div>
                     <select
-                        className="bg-zinc-900 border border-zinc-700 text-white text-sm rounded-xl px-4 py-2 outline-none focus:border-lime-400 font-bold"
+                        className="bg-background border border-input text-foreground text-sm rounded-xl px-4 py-2 outline-none focus:ring-2 focus:ring-primary font-bold"
                         value={filterStatus}
                         onChange={e => setFilterStatus(e.target.value)}
                     >
@@ -127,8 +127,8 @@ const AdminClaims = () => {
                 {loading ? (
                     // Skeleton Loading State
                     Array.from({ length: 3 }).map((_, i) => (
-                        <div key={i} className="glass-card p-5 flex flex-col gap-4">
-                            <div className="flex justify-between items-center border-b border-white/5 pb-3">
+                        <div key={i} className="bg-card p-5 flex flex-col gap-4 border border-border rounded-xl">
+                            <div className="flex justify-between items-center border-b border-border pb-3">
                                 <div className="flex items-center gap-3">
                                     <Skeleton className="w-8 h-8 rounded-full" />
                                     <div className="space-y-1">
@@ -154,23 +154,23 @@ const AdminClaims = () => {
                         </div>
                     ))
                 ) : filteredItems.length === 0 ? (
-                    <div className="text-center py-12 text-zinc-500 border-2 border-dashed border-zinc-800 rounded-2xl">
+                    <div className="text-center py-12 text-muted-foreground border-2 border-dashed border-border rounded-2xl">
                         No claims found matching your filters.
                     </div>
                 ) : (
                     filteredItems.map((item) => {
                         const late = isLate(item.date, item.createdAt);
                         return (
-                            <div key={item.id} className="glass-card p-5 flex flex-col gap-4 group hover:border-lime-400/30 transition-all">
+                            <div key={item.id} className="bg-card text-card-foreground border border-border rounded-xl p-5 flex flex-col gap-4 group hover:border-primary/50 transition-all shadow-sm">
                                 {/* User Identity Header */}
-                                <div className="flex items-center justify-between border-b border-white/5 pb-3 mb-1">
+                                <div className="flex items-center justify-between border-b border-border pb-3 mb-1">
                                     <div className="flex items-center gap-3">
-                                        <div className="w-8 h-8 rounded-full bg-gradient-to-br from-lime-400 to-emerald-500 flex items-center justify-center text-black font-bold text-xs shadow-lg shadow-lime-400/20">
+                                        <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-xs">
                                             {item.User?.name?.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase()}
                                         </div>
                                         <div>
-                                            <h4 className="text-white font-bold text-sm leading-tight">{item.User?.name}</h4>
-                                            <p className="text-zinc-500 text-xs font-medium">{item.User?.role} • {item.User?.email}</p>
+                                            <h4 className="text-foreground font-bold text-sm leading-tight">{item.User?.name}</h4>
+                                            <p className="text-muted-foreground text-xs font-medium">{item.User?.role} • {item.User?.email}</p>
                                         </div>
                                     </div>
                                     <StatusBadge status={item.status} />
@@ -178,37 +178,37 @@ const AdminClaims = () => {
 
                                 <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                                     <div className="flex items-start gap-4">
-                                        <div className="w-10 h-10 rounded-full bg-zinc-800 flex items-center justify-center text-zinc-400 shrink-0 mt-1">
+                                        <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center text-muted-foreground shrink-0 mt-1">
                                             <FileText size={20} />
                                         </div>
                                         <div>
-                                            <h4 className="text-zinc-300 font-bold text-lg">{item.title}</h4>
+                                            <h4 className="text-card-foreground font-bold text-lg">{item.title}</h4>
 
                                             {/* Date & Amount Row */}
-                                            <div className="flex flex-wrap items-center gap-4 text-xs text-zinc-500 mt-1 font-mono">
+                                            <div className="flex flex-wrap items-center gap-4 text-xs text-muted-foreground mt-1 font-mono">
                                                 <div className="flex flex-col">
-                                                    <span className="flex items-center gap-1 text-zinc-300 font-bold"><Calendar size={12} /> {format(new Date(item.date), 'dd MMM yyyy')}</span>
+                                                    <span className="flex items-center gap-1 text-foreground font-bold"><Calendar size={12} /> {format(new Date(item.date), 'dd MMM yyyy')}</span>
                                                     {item.createdAt && (
-                                                        <span className="text-[10px] text-zinc-600">
+                                                        <span className="text-[10px] text-muted-foreground">
                                                             Submitted: {format(new Date(item.createdAt), 'dd MMM HH:mm')}
                                                         </span>
                                                     )}
                                                 </div>
 
                                                 {late && (
-                                                    <div className="flex items-center gap-1 text-yellow-500 text-[10px] font-bold border border-yellow-500/30 bg-yellow-500/10 px-2 py-0.5 rounded-full" title="Submitted > 7 days after activity">
+                                                    <div className="flex items-center gap-1 text-yellow-600 dark:text-yellow-500 text-[10px] font-bold border border-yellow-200 dark:border-yellow-500/30 bg-yellow-50 dark:bg-yellow-500/10 px-2 py-0.5 rounded-full" title="Submitted > 7 days after activity">
                                                         <AlertTriangle size={10} /> Late Submission
                                                     </div>
                                                 )}
 
-                                                <span className="text-zinc-700">|</span>
-                                                <span className="text-lime-400 font-bold text-sm">Rp {item.amount.toLocaleString('id-ID')}</span>
+                                                <span className="text-muted-foreground/50">|</span>
+                                                <span className="text-primary font-bold text-sm">Rp {item.amount.toLocaleString('id-ID')}</span>
                                             </div>
 
                                             {item.description && (
-                                                <p className="text-zinc-500 text-xs mt-2 italic max-w-xl border-l-2 border-zinc-800 pl-3 line-clamp-1">"{item.description}"</p>
+                                                <p className="text-muted-foreground text-xs mt-2 italic max-w-xl border-l-2 border-border pl-3 line-clamp-1">"{item.description}"</p>
                                             )}
-                                            <button onClick={() => setSelectedClaim(item)} className="inline-flex items-center gap-1 text-xs font-bold text-blue-400 hover:text-blue-300 mt-2">
+                                            <button onClick={() => setSelectedClaim(item)} className="inline-flex items-center gap-1 text-xs font-bold text-primary hover:text-primary/80 mt-2">
                                                 <ExternalLink size={12} /> View Details & Proof
                                             </button>
                                         </div>
@@ -216,7 +216,7 @@ const AdminClaims = () => {
                                     {item.proof && (
                                         <div className="hidden sm:block ml-4 shrink-0">
                                             <div
-                                                className="w-16 h-16 rounded-lg border border-white/10 overflow-hidden cursor-pointer hover:ring-2 hover:ring-lime-400 transition-all bg-black/50 group/img relative"
+                                                className="w-16 h-16 rounded-lg border border-border overflow-hidden cursor-pointer hover:ring-2 hover:ring-primary transition-all bg-muted group/img relative"
                                                 onClick={() => setViewingImage(`${api.defaults.baseURL}${item.proof}`)}
                                             >
                                                 <img
@@ -234,10 +234,10 @@ const AdminClaims = () => {
 
                                 {item.status === 'Pending' && (
                                     <div className="flex gap-2 w-full md:w-auto mt-2 md:mt-0">
-                                        <button onClick={() => handleAction(item.id, 'Approved')} className="flex-1 md:flex-none px-4 py-2 bg-lime-400 text-black font-bold rounded-xl hover:bg-lime-300 transition-colors flex items-center justify-center gap-2 shadow-lg shadow-lime-400/10">
+                                        <button onClick={() => handleAction(item.id, 'Approved')} className="flex-1 md:flex-none px-4 py-2 bg-primary text-primary-foreground font-bold rounded-xl hover:bg-primary/90 transition-colors flex items-center justify-center gap-2 shadow-sm">
                                             <Check size={16} /> Approve
                                         </button>
-                                        <button onClick={() => handleAction(item.id, 'Rejected')} className="flex-1 md:flex-none px-4 py-2 bg-zinc-800 text-red-400 font-bold rounded-xl hover:bg-red-400/10 transition-colors flex items-center justify-center gap-2">
+                                        <button onClick={() => handleAction(item.id, 'Rejected')} className="flex-1 md:flex-none px-4 py-2 bg-muted text-muted-foreground font-bold rounded-xl hover:bg-destructive hover:text-destructive-foreground transition-colors flex items-center justify-center gap-2">
                                             <X size={16} /> Reject
                                         </button>
                                     </div>
@@ -250,44 +250,44 @@ const AdminClaims = () => {
 
             {/* Claim Details Modal */}
             {selectedClaim && (
-                <div className="fixed inset-0 bg-black/90 backdrop-blur-md flex items-center justify-center z-50 p-4" onClick={() => setSelectedClaim(null)}>
-                    <div className="glass-card w-full max-w-2xl p-0 overflow-hidden animate-in fade-in zoom-in duration-200 border border-zinc-700" onClick={e => e.stopPropagation()}>
-                        <div className="p-6 border-b border-white/10 flex justify-between items-start bg-zinc-900/50">
+                <div className="fixed inset-0 bg-background/80 backdrop-blur-sm flex items-center justify-center z-50 p-4" onClick={() => setSelectedClaim(null)}>
+                    <div className="bg-card text-card-foreground w-full max-w-2xl p-0 overflow-hidden animate-in fade-in zoom-in duration-200 border border-border rounded-xl shadow-2xl" onClick={e => e.stopPropagation()}>
+                        <div className="p-6 border-b border-border flex justify-between items-start bg-muted/30">
                             <div>
-                                <h2 className="text-2xl font-black text-white mb-1">Claim Details</h2>
-                                <div className="flex items-center gap-2 text-zinc-400 text-sm">
+                                <h2 className="text-2xl font-black text-foreground mb-1">Claim Details</h2>
+                                <div className="flex items-center gap-2 text-muted-foreground text-sm">
                                     <span>{selectedClaim.User?.name}</span>
                                     <span>•</span>
                                     <span>{selectedClaim.date}</span>
                                 </div>
                             </div>
-                            <button onClick={() => setSelectedClaim(null)} className="p-2 hover:bg-white/10 rounded-full transition-colors"><X size={20} /></button>
+                            <button onClick={() => setSelectedClaim(null)} className="p-2 hover:bg-muted rounded-full transition-colors text-muted-foreground hover:text-foreground"><X size={20} /></button>
                         </div>
 
                         <div className="p-6 space-y-6 max-h-[70vh] overflow-y-auto custom-scrollbar">
                             <div className="grid grid-cols-2 gap-4">
-                                <div className="p-4 bg-zinc-900/50 rounded-xl border border-white/5">
-                                    <span className="text-xs font-bold text-zinc-500 uppercase tracking-wider">Amount</span>
-                                    <p className="text-2xl font-black text-lime-400">Rp {selectedClaim.amount.toLocaleString('id-ID')}</p>
+                                <div className="p-4 bg-muted/30 rounded-xl border border-border">
+                                    <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Amount</span>
+                                    <p className="text-2xl font-black text-primary">Rp {selectedClaim.amount.toLocaleString('id-ID')}</p>
                                 </div>
-                                <div className="p-4 bg-zinc-900/50 rounded-xl border border-white/5">
-                                    <span className="text-xs font-bold text-zinc-500 uppercase tracking-wider">Category</span>
-                                    <p className="text-lg font-bold text-white">{selectedClaim.category}</p>
+                                <div className="p-4 bg-muted/30 rounded-xl border border-border">
+                                    <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Category</span>
+                                    <p className="text-lg font-bold text-foreground">{selectedClaim.category}</p>
                                 </div>
                             </div>
 
                             <div>
-                                <span className="text-xs font-bold text-zinc-500 uppercase tracking-wider block mb-2">Description</span>
-                                <p className="text-zinc-300 bg-zinc-900/30 p-4 rounded-xl border border-white/5 italic">
+                                <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider block mb-2">Description</span>
+                                <p className="text-foreground bg-muted/50 p-4 rounded-xl border border-border italic">
                                     "{selectedClaim.description || 'No description provided.'}"
                                 </p>
                             </div>
 
                             <div>
-                                <span className="text-xs font-bold text-zinc-500 uppercase tracking-wider block mb-2">Proof of Payment</span>
+                                <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider block mb-2">Proof of Payment</span>
                                 {selectedClaim.proof ? (
                                     <div
-                                        className="rounded-xl overflow-hidden border border-white/10 bg-black/50 cursor-zoom-in relative group/proof"
+                                        className="rounded-xl overflow-hidden border border-border bg-muted cursor-zoom-in relative group/proof"
                                         onClick={() => setViewingImage(`${api.defaults.baseURL}${selectedClaim.proof}`)}
                                     >
                                         <img
@@ -302,25 +302,25 @@ const AdminClaims = () => {
                                         </div>
                                     </div>
                                 ) : (
-                                    <div className="p-8 text-center text-zinc-500 border-2 border-dashed border-zinc-800 rounded-xl">
+                                    <div className="p-8 text-center text-muted-foreground border-2 border-dashed border-border rounded-xl">
                                         No proof image attached.
                                     </div>
                                 )}
                             </div>
                         </div>
 
-                        <div className="p-4 border-t border-white/10 bg-zinc-900/50 flex justify-end gap-3">
+                        <div className="p-4 border-t border-border bg-muted/30 flex justify-end gap-3">
                             {selectedClaim.status === 'Pending' && (
                                 <>
-                                    <button onClick={() => { handleAction(selectedClaim.id, 'Rejected'); setSelectedClaim(null); }} className="px-4 py-2 bg-zinc-800 text-red-400 font-bold rounded-xl hover:bg-red-400/10 transition-colors">
+                                    <button onClick={() => { handleAction(selectedClaim.id, 'Rejected'); setSelectedClaim(null); }} className="px-4 py-2 bg-muted text-muted-foreground font-bold rounded-xl hover:bg-destructive hover:text-destructive-foreground transition-colors">
                                         Reject Claim
                                     </button>
-                                    <button onClick={() => { handleAction(selectedClaim.id, 'Approved'); setSelectedClaim(null); }} className="px-6 py-2 bg-lime-400 text-black font-bold rounded-xl hover:bg-lime-300 transition-colors shadow-lg shadow-lime-400/20">
+                                    <button onClick={() => { handleAction(selectedClaim.id, 'Approved'); setSelectedClaim(null); }} className="px-6 py-2 bg-primary text-primary-foreground font-bold rounded-xl hover:bg-primary/90 transition-colors shadow-lg shadow-primary/20">
                                         Approve Claim
                                     </button>
                                 </>
                             )}
-                            <button onClick={() => setSelectedClaim(null)} className="px-4 py-2 text-zinc-400 font-bold hover:text-white transition-colors">
+                            <button onClick={() => setSelectedClaim(null)} className="px-4 py-2 text-muted-foreground font-bold hover:text-foreground transition-colors">
                                 Close
                             </button>
                         </div>
@@ -331,11 +331,11 @@ const AdminClaims = () => {
             {/* Lightbox */}
             {viewingImage && (
                 <div
-                    className="fixed inset-0 bg-black/95 backdrop-blur-lg z-[60] flex items-center justify-center p-4 animate-in fade-in duration-200"
+                    className="fixed inset-0 bg-background/95 backdrop-blur-lg z-[60] flex items-center justify-center p-4 animate-in fade-in duration-200"
                     onClick={() => setViewingImage(null)}
                 >
                     <button
-                        className="absolute top-4 right-4 text-zinc-500 hover:text-white transition-colors p-2 bg-black/50 rounded-full"
+                        className="absolute top-4 right-4 text-muted-foreground hover:text-foreground transition-colors p-2 bg-muted rounded-full"
                         onClick={() => setViewingImage(null)}
                     >
                         <X size={24} />
