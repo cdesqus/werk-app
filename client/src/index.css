@@ -1,109 +1,71 @@
 @import "tailwindcss";
 
-@theme {
-  --color-background: rgb(var(--background));
-  --color-foreground: rgb(var(--foreground));
-  --color-card: rgb(var(--card));
-  --color-card-foreground: rgb(var(--card-foreground));
-  --color-border: rgb(var(--border));
-  --color-muted: rgb(var(--muted));
-  --color-muted-foreground: rgb(var(--muted-foreground));
-  --color-accent: rgb(var(--accent));
-  --color-accent-foreground: rgb(var(--accent-foreground));
-  --color-slate-950: #020617;
-}
-
 @layer base {
   :root {
-    --background: 248 250 252;
-    /* Slate 50 */
-    --foreground: 15 23 42;
-    /* Slate 900 */
-    --card: 255 255 255;
-    /* White */
-    --card-foreground: 15 23 42;
-    --border: 226 232 240;
-    /* Slate 200 */
-    --muted: 241 245 249;
-    /* Slate 100 */
-    --muted-foreground: 100 116 139;
-    /* Slate 500 */
-    --accent: 255 255 255;
-    --accent-foreground: 15 23 42;
+    /* LIGHT MODE VARIABLES (Clean White Theme) */
+    --background: 0 0% 100%;
+    /* Pure White */
+    --foreground: 222.2 84% 4.9%;
+    /* Dark Blue-Grey Text */
+
+    --card: 0 0% 100%;
+    /* White Card */
+    --card-foreground: 222.2 84% 4.9%;
+
+    --muted: 210 40% 96.1%;
+    /* Very Light Gray for Sidebars */
+    --muted-foreground: 215.4 16.3% 46.9%;
+
+    --border: 214.3 31.8% 91.4%;
+    /* Light Border */
+    --input: 214.3 31.8% 91.4%;
   }
 
   .dark {
-    --background: 2 6 23;
-    /* Slate 950 */
-    --foreground: 248 250 252;
-    /* Slate 50 */
-    --card: 15 23 42;
-    /* Slate 900 */
-    --card-foreground: 248 250 252;
-    --border: 30 41 59;
-    /* Slate 800 */
-    --muted: 15 23 42;
-    /* Slate 900 */
-    --muted-foreground: 148 163 184;
-    /* Slate 400 */
-    --accent: 30 41 59;
-    /* Slate 800 */
-    --accent-foreground: 248 250 252;
+    /* DARK MODE VARIABLES (Deep Slate Theme) */
+    --background: 222.2 84% 4.9%;
+    /* Deep Slate 950 */
+    --foreground: 210 40% 98%;
+    /* White Text */
+
+    --card: 222.2 84% 4.9%;
+    /* Slate 950 Card */
+    --card-foreground: 210 40% 98%;
+
+    --muted: 217.2 32.6% 17.5%;
+    /* Darker Slate for Sidebars */
+    --muted-foreground: 215 20.2% 65.1%;
+
+    --border: 217.2 32.6% 17.5%;
+    /* Dark Border */
+    --input: 217.2 32.6% 17.5%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
   }
 
   body {
-    @apply bg-background text-foreground transition-colors duration-300 antialiased;
-    font-family: 'Inter', sans-serif;
+    @apply bg-background text-foreground transition-colors duration-300;
   }
 }
 
 @layer utilities {
   .saas-card {
-    @apply bg-card text-card-foreground border border-border shadow-sm rounded-xl transition-all duration-200;
-  }
-
-  .glass-card {
-    /* Legacy override - map to saas-card styles for backward compatibility */
-    @apply bg-card text-card-foreground border border-border shadow-sm rounded-xl transition-all duration-200;
-  }
-
-  .premium-bg {
-    /* Legacy override - map to standard background */
-    @apply bg-background text-foreground min-h-screen transition-colors duration-300;
+    @apply bg-card text-card-foreground border rounded-xl shadow-sm hover:shadow-md transition-all duration-200;
   }
 
   .input-field {
-    @apply w-full rounded-lg px-4 py-3 font-medium transition-all;
-    @apply bg-white border border-slate-300 text-slate-900 placeholder-slate-400;
-    @apply focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500;
-    @apply dark:bg-slate-900 dark:border-slate-700 dark:text-slate-50 dark:placeholder-slate-500;
-    @apply dark:focus:border-blue-400 dark:focus:ring-blue-400;
+    @apply flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50;
   }
 
   .btn-primary {
-    @apply bg-blue-600 text-white font-bold px-6 py-3 rounded-lg hover:bg-blue-700 active:scale-95 transition-all shadow-sm;
+    @apply inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 bg-primary text-primary-foreground shadow hover:bg-primary/90 h-9 px-4 py-2;
   }
 
   .btn-secondary {
-    @apply font-bold px-6 py-3 rounded-lg active:scale-95 transition-all border;
-    @apply bg-white text-slate-900 border-slate-200 hover:bg-slate-50;
-    @apply dark:bg-slate-800 dark:text-slate-200 dark:border-slate-700 dark:hover:bg-slate-700;
-  }
-
-  /* Custom Scrollbar */
-  .custom-scrollbar::-webkit-scrollbar {
-    width: 6px;
-  }
-
-  .custom-scrollbar::-webkit-scrollbar-track {
-    background: transparent;
-  }
-
-  .custom-scrollbar::-webkit-scrollbar-thumb {
-    @apply bg-slate-300 dark:bg-slate-700 rounded-full;
-  }
-
-  .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-    @apply bg-slate-400 dark:bg-slate-600;
+    @apply inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 bg-secondary text-secondary-foreground shadow-sm hover:bg-secondary/80 h-9 px-4 py-2;
   }
 }

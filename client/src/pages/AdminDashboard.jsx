@@ -129,8 +129,8 @@ const AdminDashboard = () => {
         <div className="space-y-8">
             <header className="flex flex-col md:flex-row justify-between items-center gap-4 mb-8">
                 <div>
-                    <h1 className="text-3xl font-bold text-slate-900 dark:text-white tracking-tight">HQ Dashboard</h1>
-                    <p className="text-slate-500 font-medium">Command Center & Overview</p>
+                    <h1 className="text-3xl font-bold text-foreground tracking-tight">HQ Dashboard</h1>
+                    <p className="text-muted-foreground font-medium">Command Center & Overview</p>
                 </div>
 
                 <div className="flex items-center gap-3">
@@ -140,10 +140,10 @@ const AdminDashboard = () => {
                     <button onClick={() => setShowVibeModal(true)} className="btn-primary flex items-center gap-2 text-sm shadow-blue-500/20">
                         <Sparkles size={16} /> Post Vibe
                     </button>
-                    <div className="flex items-center bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg p-1">
-                        <button onClick={prevMonth} className="p-1.5 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-md transition-colors text-slate-500"><ChevronLeft size={16} /></button>
-                        <span className="font-bold text-sm min-w-[120px] text-center text-slate-900 dark:text-white">{format(currentDate, 'MMMM yyyy')}</span>
-                        <button onClick={nextMonth} disabled={currentDate >= new Date()} className="p-1.5 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-md transition-colors text-slate-500 disabled:opacity-30"><ChevronRight size={16} /></button>
+                    <div className="flex items-center bg-card border border-border rounded-lg p-1">
+                        <button onClick={prevMonth} className="p-1.5 hover:bg-muted rounded-md transition-colors text-muted-foreground"><ChevronLeft size={16} /></button>
+                        <span className="font-bold text-sm min-w-[120px] text-center text-foreground">{format(currentDate, 'MMMM yyyy')}</span>
+                        <button onClick={nextMonth} disabled={currentDate >= new Date()} className="p-1.5 hover:bg-muted rounded-md transition-colors text-muted-foreground disabled:opacity-30"><ChevronRight size={16} /></button>
                     </div>
                 </div>
             </header>
@@ -152,30 +152,30 @@ const AdminDashboard = () => {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
                 <div className="saas-card p-6 flex flex-col justify-between h-32">
                     <div className="flex justify-between items-start">
-                        <span className="text-slate-500 font-bold text-xs uppercase tracking-wider">Total Payroll</span>
+                        <span className="text-muted-foreground font-bold text-xs uppercase tracking-wider">Total Payroll</span>
                         <div className="p-1.5 bg-emerald-100 dark:bg-emerald-500/10 rounded text-emerald-600 dark:text-emerald-400">
                             <DollarSign size={16} />
                         </div>
                     </div>
-                    <span className="text-3xl font-bold text-slate-900 dark:text-white tracking-tight">Rp {totalPayable.toLocaleString('id-ID')}</span>
+                    <span className="text-3xl font-bold text-foreground tracking-tight">Rp {totalPayable.toLocaleString('id-ID')}</span>
                 </div>
                 <div className="saas-card p-6 flex flex-col justify-between h-32">
                     <div className="flex justify-between items-start">
-                        <span className="text-slate-500 font-bold text-xs uppercase tracking-wider">Pending Approvals</span>
+                        <span className="text-muted-foreground font-bold text-xs uppercase tracking-wider">Pending Approvals</span>
                         <div className="p-1.5 bg-violet-100 dark:bg-violet-500/10 rounded text-violet-600 dark:text-violet-400">
                             <Shield size={16} />
                         </div>
                     </div>
-                    <span className="text-3xl font-bold text-slate-900 dark:text-white tracking-tight">{pendingItems.length}</span>
+                    <span className="text-3xl font-bold text-foreground tracking-tight">{pendingItems.length}</span>
                 </div>
                 <div className="saas-card p-6 flex flex-col justify-between h-32">
                     <div className="flex justify-between items-start">
-                        <span className="text-slate-500 font-bold text-xs uppercase tracking-wider">Active Staff</span>
+                        <span className="text-muted-foreground font-bold text-xs uppercase tracking-wider">Active Staff</span>
                         <div className="p-1.5 bg-blue-100 dark:bg-blue-500/10 rounded text-blue-600 dark:text-blue-400">
                             <Users size={16} />
                         </div>
                     </div>
-                    <span className="text-3xl font-bold text-slate-900 dark:text-white tracking-tight">{summary.length}</span>
+                    <span className="text-3xl font-bold text-foreground tracking-tight">{summary.length}</span>
                 </div>
             </div>
 

@@ -89,28 +89,28 @@ const AdminLayout = () => {
 
             {/* Sidebar */}
             <aside className={clsx(
-                "fixed inset-y-0 left-0 bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 flex flex-col z-50 transition-all duration-300 shadow-sm",
+                "fixed inset-y-0 left-0 bg-muted/30 border-r border-border flex flex-col z-50 transition-all duration-300 shadow-sm backdrop-blur-xl h-screen",
                 isMobileOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0",
                 isCollapsed ? "md:w-16" : "md:w-64",
                 "w-64"
             )}>
                 {/* Header */}
-                <div className={clsx("h-16 border-b border-slate-100 dark:border-slate-800 flex items-center px-4", isCollapsed ? "justify-center" : "justify-between")}>
+                <div className={clsx("h-16 border-b flex items-center px-4 shrink-0 bg-background/50 backdrop-blur-md", isCollapsed ? "justify-center" : "justify-between")}>
                     {!isCollapsed && (
-                        <div className="font-bold text-slate-900 dark:text-white flex items-center gap-2 select-none">
+                        <div className="font-bold text-foreground flex items-center gap-2 select-none">
                             <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center text-white font-black text-sm">W</div>
-                            <span className="text-lg tracking-tight">WERK<span className="text-slate-400 font-normal">IDE</span></span>
+                            <span className="text-lg tracking-tight">WERK<span className="text-muted-foreground font-normal">IDE</span></span>
                         </div>
                     )}
                     <button
                         onClick={() => setIsCollapsed(!isCollapsed)}
-                        className="hidden md:flex p-1.5 hover:bg-slate-100 dark:hover:bg-slate-800 rounded text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors"
+                        className="hidden md:flex p-1.5 hover:bg-muted rounded text-muted-foreground hover:text-foreground transition-colors"
                     >
                         {isCollapsed ? <ChevronRight size={16} /> : <ChevronLeft size={16} />}
                     </button>
                     <button
                         onClick={() => setIsMobileOpen(false)}
-                        className="md:hidden p-1.5 text-slate-500 hover:text-slate-900"
+                        className="md:hidden p-1.5 text-muted-foreground hover:text-foreground"
                     >
                         <ChevronLeft size={20} />
                     </button>
@@ -138,21 +138,21 @@ const AdminLayout = () => {
                     <NavItem to="/admin/logs" icon={ShieldAlert} label="Audit" />
                     <NavItem to="/admin/settings" icon={Settings} label="Settings" />
 
-                    <div className="my-4 border-t border-slate-100 dark:border-slate-800"></div>
+                    <div className="my-4 border-t"></div>
                     <NavItem to="/staff" icon={Briefcase} label="My View" />
                 </div>
 
                 {/* User Footer */}
-                <div className="p-3 border-t border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/50">
-                    <div className={clsx("flex items-center gap-3 p-2 rounded-lg hover:bg-white dark:hover:bg-slate-800 transition-all border border-transparent hover:border-slate-200 dark:hover:border-slate-700 cursor-pointer", isCollapsed && "justify-center p-0 hover:bg-transparent border-0")}>
+                <div className="p-3 border-t bg-muted/20 backdrop-blur-sm shrink-0">
+                    <div className={clsx("flex items-center gap-3 p-2 rounded-lg hover:bg-background transition-all border border-transparent hover:border-border cursor-pointer", isCollapsed && "justify-center p-0 hover:bg-transparent border-0")}>
                         <div className="w-8 h-8 rounded bg-gradient-to-br from-indigo-500 to-violet-500 flex items-center justify-center font-bold text-white text-xs shrink-0 shadow-sm">
                             {user?.name?.charAt(0)}
                         </div>
                         <div className={clsx("flex-1 overflow-hidden min-w-0 transition-all duration-300", isCollapsed ? "w-0 opacity-0 hidden" : "w-auto opacity-100")}>
-                            <p className="text-sm font-semibold text-slate-700 dark:text-slate-200 truncate leading-tight">{user?.name}</p>
-                            <p className="text-[10px] text-slate-500 truncate capitalize">{user?.role?.replace('_', ' ')}</p>
+                            <p className="text-sm font-semibold text-foreground truncate leading-tight">{user?.name}</p>
+                            <p className="text-[10px] text-muted-foreground truncate capitalize">{user?.role?.replace('_', ' ')}</p>
                         </div>
-                        <button onClick={handleLogout} className={clsx("text-slate-400 hover:text-red-500 transition-colors", isCollapsed && "hidden")}>
+                        <button onClick={handleLogout} className={clsx("text-muted-foreground hover:text-red-500 transition-colors", isCollapsed && "hidden")}>
                             <LogOut size={16} />
                         </button>
                     </div>
@@ -161,37 +161,37 @@ const AdminLayout = () => {
 
             {/* Main Content */}
             <main className={clsx(
-                "flex-1 min-h-screen transition-all duration-300 bg-slate-50 dark:bg-slate-950",
+                "flex-1 min-h-screen transition-all duration-300 bg-background",
                 isCollapsed ? "md:ml-16" : "md:ml-64"
             )}>
                 {/* Header */}
-                <header className="h-16 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 sticky top-0 z-40 flex items-center justify-between px-4 md:px-8 shadow-sm">
+                <header className="h-16 border-b bg-background/80 backdrop-blur-md sticky top-0 z-40 flex items-center justify-between px-4 md:px-8 shadow-sm">
                     <div className="flex items-center gap-4">
                         <button
                             onClick={() => setIsMobileOpen(true)}
-                            className="md:hidden text-slate-500 hover:text-slate-700"
+                            className="md:hidden text-muted-foreground hover:text-foreground"
                         >
                             <Menu size={24} />
                         </button>
-                        <div className="flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400">
-                            <Briefcase size={16} className="text-slate-400" />
+                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                            <Briefcase size={16} className="text-muted-foreground" />
                             <span>/</span>
-                            <span className="font-semibold text-slate-900 dark:text-white">{getBreadcrumb()}</span>
+                            <span className="font-semibold text-foreground">{getBreadcrumb()}</span>
                         </div>
                     </div>
 
                     <div className="flex items-center gap-4">
                         <div className="relative hidden md:block">
-                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={14} />
+                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={14} />
                             <input
                                 type="text"
                                 placeholder="Search..."
-                                className="pl-9 pr-4 py-1.5 bg-slate-100 dark:bg-slate-800 border-transparent focus:bg-white dark:focus:bg-slate-900 border focus:border-blue-500 rounded-md text-sm text-slate-900 dark:text-white w-64 transition-all outline-none"
+                                className="pl-9 pr-4 py-1.5 bg-muted/50 border-transparent focus:bg-background border focus:border-blue-500 rounded-md text-sm text-foreground w-64 transition-all outline-none"
                             />
                         </div>
-                        <button className="relative p-2 text-slate-400 hover:text-slate-700 dark:hover:text-white transition-colors">
+                        <button className="relative p-2 text-muted-foreground hover:text-foreground transition-colors">
                             <Bell size={18} />
-                            <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full border-2 border-white dark:border-slate-900"></span>
+                            <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full border-2 border-background"></span>
                         </button>
                     </div>
                 </header>

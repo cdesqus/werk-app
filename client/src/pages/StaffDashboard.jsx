@@ -508,6 +508,7 @@ const StaffDashboard = () => {
         <div className="space-y-8">
             {/* Bento Grid Stats */}
             {/* Bento Grid Stats */}
+            {/* Bento Grid Stats */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div className="saas-card p-5 flex flex-col justify-between h-32 relative overflow-hidden group">
                     <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
@@ -517,9 +518,9 @@ const StaffDashboard = () => {
                         <div className="p-2 bg-emerald-100 dark:bg-emerald-500/10 rounded-lg text-emerald-600 dark:text-emerald-400">
                             <DollarSign size={20} />
                         </div>
-                        <span className="text-slate-500 font-bold text-xs uppercase tracking-wider">Total Earned</span>
+                        <span className="text-muted-foreground font-bold text-xs uppercase tracking-wider">Total Earned</span>
                     </div>
-                    <span className="text-3xl font-bold text-slate-900 dark:text-white tracking-tight">Rp {stats.earned.toLocaleString('id-ID')}</span>
+                    <span className="text-3xl font-bold text-foreground tracking-tight">Rp {stats.earned.toLocaleString('id-ID')}</span>
                 </div>
 
                 <div className="saas-card p-5 flex flex-col justify-between h-32 relative overflow-hidden group">
@@ -530,9 +531,9 @@ const StaffDashboard = () => {
                         <div className="p-2 bg-blue-100 dark:bg-blue-500/10 rounded-lg text-blue-600 dark:text-blue-400">
                             <FileText size={20} />
                         </div>
-                        <span className="text-slate-500 font-bold text-xs uppercase tracking-wider">Pending Claims</span>
+                        <span className="text-muted-foreground font-bold text-xs uppercase tracking-wider">Pending Claims</span>
                     </div>
-                    <span className="text-3xl font-bold text-slate-900 dark:text-white tracking-tight">{stats.pendingClaims}</span>
+                    <span className="text-3xl font-bold text-foreground tracking-tight">{stats.pendingClaims}</span>
                 </div>
 
                 <div className="saas-card p-5 flex items-center justify-between h-32 relative overflow-hidden">
@@ -541,13 +542,13 @@ const StaffDashboard = () => {
                             <div className="p-2 bg-pink-100 dark:bg-pink-500/10 rounded-lg text-pink-600 dark:text-pink-400">
                                 <Palmtree size={20} />
                             </div>
-                            <span className="text-slate-500 font-bold text-xs uppercase tracking-wider">Leave Quota</span>
+                            <span className="text-muted-foreground font-bold text-xs uppercase tracking-wider">Leave Quota</span>
                         </div>
-                        <span className="text-3xl font-bold text-slate-900 dark:text-white tracking-tight">{leaveQuota} <span className="text-sm text-slate-400 font-medium">Days</span></span>
+                        <span className="text-3xl font-bold text-foreground tracking-tight">{leaveQuota} <span className="text-sm text-muted-foreground font-medium">Days</span></span>
                     </div>
                     <div className="relative w-16 h-16">
                         <svg className="w-full h-full transform -rotate-90">
-                            <circle cx="32" cy="32" r="28" stroke="currentColor" strokeWidth="4" fill="transparent" className="text-slate-100 dark:text-slate-800" />
+                            <circle cx="32" cy="32" r="28" stroke="currentColor" strokeWidth="4" fill="transparent" className="text-muted/30" />
                             <circle cx="32" cy="32" r="28" stroke="currentColor" strokeWidth="4" fill="transparent" className="text-pink-500"
                                 strokeDasharray={2 * Math.PI * 28}
                                 strokeDashoffset={2 * Math.PI * 28 * (1 - (leaveQuota / 12))}
@@ -559,11 +560,11 @@ const StaffDashboard = () => {
             </div>
 
             {/* Tabs */}
-            <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide border-b border-slate-200 dark:border-slate-800">
+            <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide border-b">
                 {tabs.map(tab => {
                     const isActive = activeTab === tab.id;
-                    let activeStyle = "text-slate-900 dark:text-white border-b-2 border-slate-900 dark:border-white";
-                    let iconColor = "text-slate-400";
+                    let activeStyle = "text-foreground border-b-2 border-primary";
+                    let iconColor = "text-muted-foreground";
 
                     if (isActive) {
                         if (tab.id === 'overtime') { activeStyle = "text-orange-600 dark:text-orange-400 border-b-2 border-orange-500"; iconColor = "text-orange-500"; }
@@ -581,10 +582,10 @@ const StaffDashboard = () => {
                                 "flex items-center gap-2 px-4 py-3 font-bold transition-all whitespace-nowrap text-sm mb-[-1px]",
                                 isActive
                                     ? activeStyle
-                                    : "text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200 border-b-2 border-transparent"
+                                    : "text-muted-foreground hover:text-foreground border-b-2 border-transparent"
                             )}
                         >
-                            <tab.icon size={16} className={clsx(isActive ? iconColor : "text-slate-400 group-hover:text-slate-600")} />
+                            <tab.icon size={16} className={clsx(isActive ? iconColor : "text-muted-foreground group-hover:text-foreground")} />
                             {tab.label}
                         </button>
                     );
