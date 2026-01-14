@@ -105,29 +105,29 @@ const AdminUsers = () => {
         <div className="space-y-8">
             <header className="flex flex-col md:flex-row justify-between items-center gap-4">
                 <div>
-                    <h1 className="text-4xl font-black mb-2 text-white">User Management</h1>
-                    <p className="text-zinc-400 font-medium">Control system access.</p>
+                    <h1 className="text-4xl font-black mb-2 text-foreground">User Management</h1>
+                    <p className="text-muted-foreground font-medium">Control system access.</p>
                 </div>
                 <div className="flex items-center gap-4 w-full md:w-auto">
                     <div className="relative flex-1 md:w-64">
-                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500" size={18} />
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={18} />
                         <input
                             type="text"
                             placeholder="Search users..."
-                            className="w-full bg-zinc-900 border border-white/10 rounded-xl px-4 py-2 pl-10 focus:ring-2 focus:ring-lime-400 outline-none text-white placeholder-zinc-500 transition-all text-sm"
+                            className="w-full bg-background border border-input rounded-xl px-4 py-2 pl-10 focus:ring-2 focus:ring-primary outline-none text-foreground placeholder-muted-foreground transition-all text-sm"
                             value={searchTerm}
                             onChange={e => setSearchTerm(e.target.value)}
                         />
                     </div>
-                    <button onClick={handleAddClick} className="btn-primary flex items-center gap-2 px-4 py-2 rounded-xl font-bold bg-lime-400 text-black hover:bg-lime-300 transition-all shrink-0">
+                    <button onClick={handleAddClick} className="btn-primary flex items-center gap-2 px-4 py-2 rounded-xl font-bold bg-primary text-primary-foreground hover:bg-primary/90 transition-all shrink-0">
                         <Plus size={20} /> Add User
                     </button>
                 </div>
             </header>
 
-            <div className="glass-card overflow-x-auto">
+            <div className="bg-card border border-border rounded-xl overflow-hidden shadow-sm">
                 <table className="w-full text-left">
-                    <thead className="bg-zinc-900/50 text-zinc-500 text-xs uppercase tracking-wider">
+                    <thead className="bg-muted/50 text-muted-foreground text-xs uppercase tracking-wider border-b border-border">
                         <tr>
                             <th className="p-4 font-bold">Name</th>
                             <th className="p-4 font-bold">Email</th>
@@ -138,36 +138,37 @@ const AdminUsers = () => {
                             <th className="p-4 font-bold text-right">Action</th>
                         </tr>
                     </thead>
-                    <tbody className="divide-y divide-white/5">
+                    <tbody className="divide-y divide-border">
                         {filteredUsers.map(user => (
-                            <tr key={user.id} className="hover:bg-white/5 transition-colors group">
-                                <td className="p-4 font-bold text-white flex items-center gap-3">
-                                    <div className="w-8 h-8 rounded-full bg-gradient-to-br from-lime-400 to-emerald-400 flex items-center justify-center text-black font-black text-xs">
+                            <tr key={user.id} className="hover:bg-muted/30 transition-colors group">
+                                <td className="p-4 font-bold text-foreground flex items-center gap-3">
+                                    <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary font-black text-xs">
                                         {user.name.charAt(0)}
                                     </div>
                                     {user.name}
                                 </td>
-                                <td className="p-4 text-zinc-400 font-medium">{user.email}</td>
-                                <td className="p-4 text-zinc-400 font-medium">{user.phone}</td>
-                                <td className="p-4 text-zinc-400 font-medium">{user.birthDate || '-'}</td>
+                                <td className="p-4 text-muted-foreground font-medium">{user.email}</td>
+                                <td className="p-4 text-muted-foreground font-medium">{user.phone}</td>
+                                <td className="p-4 text-muted-foreground font-medium">{user.birthDate || '-'}</td>
                                 <td className="p-4">
-                                    <span className="bg-emerald-500/10 text-emerald-400 px-2 py-1 rounded-lg font-bold text-xs">
+                                    <span className="bg-emerald-100 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400 px-2 py-1 rounded-lg font-bold text-xs">
                                         {user.leaveQuota} Days
                                     </span>
                                 </td>
                                 <td className="p-4">
-                                    <span className={`px-2 py-1 rounded text-xs uppercase font-bold tracking-wider ${user.role === 'super_admin' ? 'bg-amber-500/20 text-amber-400' :
-                                        user.role === 'admin' ? 'bg-purple-500/20 text-purple-400' :
-                                            'bg-zinc-800 text-zinc-400'
-                                        }`}>
+                                    <span className={clsx("px-2 py-1 rounded text-xs uppercase font-bold tracking-wider",
+                                        user.role === 'super_admin' ? "bg-amber-100 text-amber-700 dark:bg-amber-500/20 dark:text-amber-400" :
+                                            user.role === 'admin' ? "bg-purple-100 text-purple-700 dark:bg-purple-500/20 dark:text-purple-400" :
+                                                "bg-muted text-muted-foreground"
+                                    )}>
                                         {user.role.replace('_', ' ')}
                                     </span>
                                 </td>
                                 <td className="p-4 text-right flex justify-end gap-2">
-                                    <button onClick={() => handleEditClick(user)} className="p-2 bg-zinc-800 hover:bg-white hover:text-black rounded-lg transition-colors opacity-0 group-hover:opacity-100">
+                                    <button onClick={() => handleEditClick(user)} className="p-2 text-muted-foreground hover:bg-muted hover:text-foreground rounded-lg transition-colors opacity-0 group-hover:opacity-100">
                                         <Edit2 size={16} />
                                     </button>
-                                    <button onClick={() => handleDelete(user.id)} className="p-2 bg-zinc-800 hover:bg-red-500 hover:text-white rounded-lg transition-colors opacity-0 group-hover:opacity-100">
+                                    <button onClick={() => handleDelete(user.id)} className="p-2 text-muted-foreground hover:bg-red-500 hover:text-white rounded-lg transition-colors opacity-0 group-hover:opacity-100">
                                         <Trash2 size={16} />
                                     </button>
                                 </td>
@@ -179,14 +180,14 @@ const AdminUsers = () => {
 
             {/* Edit Modal */}
             {editingUser && (
-                <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-                    <div className="glass-card w-full max-w-5xl p-0 relative animate-in fade-in zoom-in duration-200 border border-zinc-800 flex flex-col max-h-[90vh] overflow-hidden">
-                        <div className="flex items-center justify-between p-6 border-b border-white/5">
+                <div className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+                    <div className="bg-card text-card-foreground w-full max-w-5xl p-0 relative animate-in fade-in zoom-in duration-200 border border-border rounded-xl flex flex-col max-h-[90vh] overflow-hidden shadow-2xl">
+                        <div className="flex items-center justify-between p-6 border-b border-border">
                             <div>
-                                <h2 className="text-2xl font-black text-white">Edit User</h2>
-                                <p className="text-zinc-500 text-sm">Manage profile and security settings.</p>
+                                <h2 className="text-2xl font-black text-foreground">Edit User</h2>
+                                <p className="text-muted-foreground text-sm">Manage profile and security settings.</p>
                             </div>
-                            <button onClick={() => setEditingUser(null)} className="text-zinc-500 hover:text-white transition-colors">
+                            <button onClick={() => setEditingUser(null)} className="text-muted-foreground hover:text-foreground transition-colors">
                                 <X size={24} />
                             </button>
                         </div>
@@ -197,28 +198,28 @@ const AdminUsers = () => {
                                 <div className="md:col-span-7 space-y-6">
                                     <div className="space-y-4">
                                         <div className="flex items-center gap-4">
-                                            <div className="w-16 h-16 rounded-full bg-gradient-to-br from-lime-400 to-emerald-400 flex items-center justify-center text-black font-black text-2xl shadow-lg shadow-lime-400/20">
+                                            <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center text-primary font-black text-2xl shadow-lg shadow-primary/20">
                                                 {formData.name.charAt(0)}
                                             </div>
                                             <div>
-                                                <h3 className="text-lg font-bold text-white">{formData.name}</h3>
-                                                <p className="text-zinc-400 text-sm">{formData.email}</p>
+                                                <h3 className="text-lg font-bold text-foreground">{formData.name}</h3>
+                                                <p className="text-muted-foreground text-sm">{formData.email}</p>
                                             </div>
                                         </div>
 
                                         <div className="grid grid-cols-1 gap-4">
                                             <div className="space-y-2">
-                                                <label className="text-xs font-bold text-zinc-500 uppercase tracking-wider flex items-center gap-2"><Mail size={14} /> Email</label>
+                                                <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-2"><Mail size={14} /> Email</label>
                                                 <input
                                                     type="email"
                                                     value={formData.email}
                                                     readOnly
-                                                    className="input-field w-full opacity-60 cursor-not-allowed"
+                                                    className="input-field w-full opacity-60 cursor-not-allowed bg-muted"
                                                 />
                                             </div>
 
                                             <div className="space-y-2">
-                                                <label className="text-xs font-bold text-zinc-500 uppercase tracking-wider flex items-center gap-2"><User size={14} /> Full Name</label>
+                                                <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-2"><User size={14} /> Full Name</label>
                                                 <input
                                                     type="text"
                                                     value={formData.name}
@@ -229,7 +230,7 @@ const AdminUsers = () => {
                                             </div>
 
                                             <div className="space-y-2">
-                                                <label className="text-xs font-bold text-zinc-500 uppercase tracking-wider flex items-center gap-2"><Phone size={14} /> Phone</label>
+                                                <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-2"><Phone size={14} /> Phone</label>
                                                 <input
                                                     type="text"
                                                     value={formData.phone}
@@ -241,7 +242,7 @@ const AdminUsers = () => {
 
                                             <div className="grid grid-cols-2 gap-4">
                                                 <div className="space-y-2">
-                                                    <label className="text-xs font-bold text-zinc-500 uppercase tracking-wider flex items-center gap-2"><Shield size={14} /> Role</label>
+                                                    <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-2"><Shield size={14} /> Role</label>
                                                     <select
                                                         value={formData.role}
                                                         onChange={e => setFormData({ ...formData, role: e.target.value })}
@@ -254,7 +255,7 @@ const AdminUsers = () => {
                                                     </select>
                                                 </div>
                                                 <div className="space-y-2">
-                                                    <label className="text-xs font-bold text-zinc-500 uppercase tracking-wider flex items-center gap-2"><Calendar size={14} /> Birth Date</label>
+                                                    <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-2"><Calendar size={14} /> Birth Date</label>
                                                     <input
                                                         type="date"
                                                         value={formData.birthDate}
@@ -265,7 +266,7 @@ const AdminUsers = () => {
                                             </div>
 
                                             <div className="space-y-2">
-                                                <label className="text-xs font-bold text-zinc-500 uppercase tracking-wider flex items-center gap-2"><Palmtree size={14} /> Leave Quota</label>
+                                                <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-2"><Palmtree size={14} /> Leave Quota</label>
                                                 <div className="flex items-center gap-4">
                                                     <input
                                                         type="number"
@@ -273,13 +274,13 @@ const AdminUsers = () => {
                                                         onChange={e => setFormData({ ...formData, leaveQuota: parseInt(e.target.value) || 0 })}
                                                         className="input-field w-full"
                                                     />
-                                                    <span className="text-zinc-500 text-sm whitespace-nowrap">Days / Year</span>
+                                                    <span className="text-muted-foreground text-sm whitespace-nowrap">Days / Year</span>
                                                 </div>
                                             </div>
                                         </div>
                                     </div>
 
-                                    <div className="pt-4 border-t border-white/5 flex justify-end">
+                                    <div className="pt-4 border-t border-border flex justify-end">
                                         <button type="submit" className="btn-primary w-full md:w-auto">
                                             Save Profile Changes
                                         </button>
@@ -290,19 +291,19 @@ const AdminUsers = () => {
                                 <div className="md:col-span-5 space-y-6">
                                     {/* Security Zone */}
                                     <div className="p-5 rounded-2xl bg-red-500/5 border border-red-500/20 space-y-4">
-                                        <div className="flex items-center gap-2 text-red-400 mb-2">
+                                        <div className="flex items-center gap-2 text-red-500 dark:text-red-400 mb-2">
                                             <div className="p-2 bg-red-500/10 rounded-lg">
                                                 <Lock size={18} />
                                             </div>
                                             <div>
                                                 <h3 className="font-bold text-sm">Security Zone</h3>
-                                                <p className="text-xs text-red-400/70">Update user password</p>
+                                                <p className="text-xs text-red-500/70 dark:text-red-400/70">Update user password</p>
                                             </div>
                                         </div>
 
                                         <div className="space-y-3">
                                             <div className="space-y-1">
-                                                <label className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider">New Password</label>
+                                                <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">New Password</label>
                                                 <input
                                                     type="password"
                                                     value={formData.password}
@@ -315,7 +316,7 @@ const AdminUsers = () => {
 
                                             <button
                                                 type="submit"
-                                                className="w-full py-2 bg-red-500/10 hover:bg-red-500 text-red-400 hover:text-white rounded-xl font-bold text-sm transition-all border border-red-500/20"
+                                                className="w-full py-2 bg-red-500/10 hover:bg-red-500 text-red-500 dark:text-red-400 hover:text-white rounded-xl font-bold text-sm transition-all border border-red-500/20"
                                             >
                                                 Update Password
                                             </button>
@@ -323,9 +324,9 @@ const AdminUsers = () => {
                                     </div>
 
                                     {/* Danger Zone */}
-                                    <div className="p-5 rounded-2xl bg-zinc-900/50 border border-zinc-800 space-y-4">
-                                        <h3 className="font-bold text-sm text-zinc-400">Danger Zone</h3>
-                                        <p className="text-xs text-zinc-500">
+                                    <div className="p-5 rounded-2xl bg-muted/30 border border-border space-y-4">
+                                        <h3 className="font-bold text-sm text-muted-foreground">Danger Zone</h3>
+                                        <p className="text-xs text-muted-foreground">
                                             Once you delete a user, there is no going back. Please be certain.
                                         </p>
                                         <button
@@ -334,7 +335,7 @@ const AdminUsers = () => {
                                                 setEditingUser(null);
                                                 handleDelete(editingUser.id);
                                             }}
-                                            className="w-full py-2 bg-zinc-800 hover:bg-red-600 hover:text-white text-zinc-400 rounded-xl font-bold text-sm transition-all flex items-center justify-center gap-2"
+                                            className="w-full py-2 bg-muted hover:bg-red-600 hover:text-white text-muted-foreground rounded-xl font-bold text-sm transition-all flex items-center justify-center gap-2"
                                         >
                                             <Trash2 size={16} /> Delete User
                                         </button>
@@ -349,19 +350,19 @@ const AdminUsers = () => {
             {/* Add User Modal */}
             {
                 showAddModal && (
-                    <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-                        <div className="glass-card w-full max-w-lg p-8 relative animate-in fade-in zoom-in duration-200 border border-zinc-800">
-                            <button onClick={() => setShowAddModal(false)} className="absolute top-4 right-4 text-zinc-500 hover:text-white"><X /></button>
-                            <h2 className="text-2xl font-black text-white mb-6">Add New User</h2>
+                    <div className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+                        <div className="bg-card text-card-foreground w-full max-w-lg p-8 relative animate-in fade-in zoom-in duration-200 border border-border rounded-xl shadow-2xl">
+                            <button onClick={() => setShowAddModal(false)} className="absolute top-4 right-4 text-muted-foreground hover:text-foreground"><X /></button>
+                            <h2 className="text-2xl font-black text-foreground mb-6">Add New User</h2>
 
                             <form onSubmit={handleCreate} className="space-y-4">
                                 <div className="grid grid-cols-2 gap-4">
                                     <div className="space-y-2">
-                                        <label className="text-xs font-bold text-zinc-500 uppercase tracking-wider flex items-center gap-2"><User size={14} /> Full Name</label>
+                                        <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-2"><User size={14} /> Full Name</label>
                                         <input type="text" value={formData.name} onChange={e => setFormData({ ...formData, name: e.target.value })} className="input-field w-full" required />
                                     </div>
                                     <div className="space-y-2">
-                                        <label className="text-xs font-bold text-zinc-500 uppercase tracking-wider flex items-center gap-2"><Shield size={14} /> Role</label>
+                                        <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-2"><Shield size={14} /> Role</label>
                                         <select value={formData.role} onChange={e => setFormData({ ...formData, role: e.target.value })} className="input-field w-full">
                                             <option value="staff">Staff</option>
                                             {(currentUser?.role === 'super_admin') && (
@@ -374,19 +375,19 @@ const AdminUsers = () => {
                                     </div>
                                 </div>
                                 <div className="space-y-2">
-                                    <label className="text-xs font-bold text-zinc-500 uppercase tracking-wider flex items-center gap-2"><Mail size={14} /> Email</label>
+                                    <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-2"><Mail size={14} /> Email</label>
                                     <input type="email" value={formData.email} onChange={e => setFormData({ ...formData, email: e.target.value })} className="input-field w-full" required />
                                 </div>
                                 <div className="space-y-2">
-                                    <label className="text-xs font-bold text-zinc-500 uppercase tracking-wider flex items-center gap-2"><Phone size={14} /> Phone</label>
+                                    <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-2"><Phone size={14} /> Phone</label>
                                     <input type="text" value={formData.phone} onChange={e => setFormData({ ...formData, phone: e.target.value })} className="input-field w-full" required />
                                 </div>
                                 <div className="space-y-2">
-                                    <label className="text-xs font-bold text-zinc-500 uppercase tracking-wider flex items-center gap-2"><Calendar size={14} /> Birth Date</label>
+                                    <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-2"><Calendar size={14} /> Birth Date</label>
                                     <input type="date" value={formData.birthDate} onChange={e => setFormData({ ...formData, birthDate: e.target.value })} className="input-field w-full" />
                                 </div>
                                 <div className="space-y-2">
-                                    <label className="text-xs font-bold text-zinc-500 uppercase tracking-wider flex items-center gap-2"><Palmtree size={14} /> Initial Leave Quota</label>
+                                    <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-2"><Palmtree size={14} /> Initial Leave Quota</label>
                                     <input
                                         type="number"
                                         value={formData.leaveQuota}
@@ -395,12 +396,12 @@ const AdminUsers = () => {
                                     />
                                 </div>
                                 <div className="space-y-2">
-                                    <label className="text-xs font-bold text-zinc-500 uppercase tracking-wider flex items-center gap-2"><Lock size={14} /> Password</label>
+                                    <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-2"><Lock size={14} /> Password</label>
                                     <input type="password" value={formData.password} onChange={e => setFormData({ ...formData, password: e.target.value })} className="input-field w-full" required />
                                 </div>
 
                                 <div className="flex justify-end gap-3 mt-6">
-                                    <button type="button" onClick={() => setShowAddModal(false)} className="px-4 py-2 rounded-xl font-bold hover:bg-white/10 transition-colors text-zinc-400">Cancel</button>
+                                    <button type="button" onClick={() => setShowAddModal(false)} className="px-4 py-2 rounded-xl font-bold hover:bg-muted transition-colors text-muted-foreground">Cancel</button>
                                     <button type="submit" className="btn-primary">Create User</button>
                                 </div>
                             </form>
