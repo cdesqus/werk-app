@@ -8,6 +8,78 @@ import { Clock, FileText, History, Palmtree, Sparkles, Upload, Megaphone, BarCha
 import { format, differenceInMinutes, parse, isSunday } from 'date-fns';
 import clsx from 'clsx';
 
+const TimePicker = ({ label, value, onChange }) => {
+    const parseTime = (timeStr) => {
+        if (!timeStr) return { hour: '12', minute: '00', period: 'AM' };
+        const [h, m] = timeStr.split(':').map(Number);
+        const period = h >= 12 ? 'PM' : 'AM';
+        let hour = h % 12;
+        if (hour === 0) hour = 12;
+        return {
+            hour: hour.toString().padStart(2, '0'),
+            minute: m.toString().padStart(2, '0'),
+            period
+        };
+    };
+
+    const { hour, minute, period } = parseTime(value);
+
+    const handleChange = (field, newVal) => {
+        let newHour = field === 'hour' ? newVal : hour;
+        let newMinute = field === 'minute' ? newVal : minute;
+        let newPeriod = field === 'period' ? newVal : period;
+
+        let h = parseInt(newHour, 10);
+        if (newPeriod === 'PM' && h !== 12) h += 12;
+        if (newPeriod === 'AM' && h === 12) h = 0;
+
+        const timeStr = `${h.toString().padStart(2, '0')}:${newMinute}`;
+        onChange(timeStr);
+    };
+
+    const hours = Array.from({ length: 12 }, (_, i) => (i + 1).toString().padStart(2, '0'));
+    const minutes = Array.from({ length: 12 }, (_, i) => (i * 5).toString().padStart(2, '0'));
+
+    return (
+        <div className="space-y-2">
+            <label className="text-xs font-bold text-zinc-500 uppercase tracking-wider">{label}</label>
+            <div className="flex gap-2">
+                <div className="relative flex-1">
+                    <select
+                        className="w-full appearance-none bg-zinc-900 border border-zinc-700 text-white rounded-xl px-2 py-3 focus:ring-2 focus:ring-lime-400 outline-none font-bold text-center"
+                        value={hour}
+                        onChange={(e) => handleChange('hour', e.target.value)}
+                    >
+                        {hours.map(h => <option key={h} value={h}>{h}</option>)}
+                    </select>
+                </div>
+                <span className="text-zinc-600 font-bold self-center">:</span>
+                <div className="relative flex-1">
+                    <select
+                        className="w-full appearance-none bg-zinc-900 border border-zinc-700 text-white rounded-xl px-2 py-3 focus:ring-2 focus:ring-lime-400 outline-none font-bold text-center"
+                        value={minute}
+                        onChange={(e) => handleChange('minute', e.target.value)}
+                    >
+                        {minutes.map(m => <option key={m} value={m}>{m}</option>)}
+                    </select>
+                </div>
+                <div className="relative flex-1">
+                    <select
+                        className={clsx("w-full appearance-none border border-zinc-700 rounded-xl px-2 py-3 focus:ring-2 focus:ring-lime-400 outline-none font-black text-center transition-colors",
+                            period === 'AM' ? "bg-zinc-800 text-white" : "bg-lime-400 text-black"
+                        )}
+                        value={period}
+                        onChange={(e) => handleChange('period', e.target.value)}
+                    >
+                        <option value="AM">AM</option>
+                        <option value="PM">PM</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+    );
+};
+
 const StaffDashboard = () => {
     const { user } = useAuth();
     const toast = useToast();
@@ -47,6 +119,26 @@ const StaffDashboard = () => {
         const date = new Date();
         setIsHoliday(isSunday(date));
     }, []);
+
+    // Calculate OT Duration
+    useEffect(() => {
+        if (otForm.startTime && otForm.endTime) {
+            const start = parse(otForm.startTime, 'HH:mm', new Date());
+            const end = parse(otForm.endTime, 'HH:mm', new Date());
+
+            // Calculate difference in minutes
+            const diff = differenceInMinutes(end, start);
+
+            // Update duration if valid (positive), otherwise 0
+            if (diff > 0) {
+                setOtDuration(diff / 60);
+            } else {
+                setOtDuration(0);
+            }
+        } else {
+            setOtDuration(0);
+        }
+    }, [otForm.startTime, otForm.endTime]);
 
     // FETCH DATA
     const fetchHistory = async () => {
@@ -675,16 +767,8 @@ const StaffDashboard = () => {
                                 )}
                             </div>
                             <div className="grid grid-cols-2 gap-4">
-                                <div className="space-y-2">
-                                    <label className="text-xs font-bold text-zinc-500 uppercase tracking-wider">Start Time</label>
-                                    <input type="time" required className="input-field w-full"
-                                        value={otForm.startTime} onChange={e => setOtForm({ ...otForm, startTime: e.target.value })} />
-                                </div>
-                                <div className="space-y-2">
-                                    <label className="text-xs font-bold text-zinc-500 uppercase tracking-wider">End Time</label>
-                                    <input type="time" required className="input-field w-full"
-                                        value={otForm.endTime} onChange={e => setOtForm({ ...otForm, endTime: e.target.value })} />
-                                </div>
+// ... (This tool call expects direct content replacement, but I need to split it).
+                            // I will switch to `multi_replace_file_content` to handle both adding the component and using it.
                             </div>
 
                             <div className="bg-zinc-900/50 border border-white/5 p-4 rounded-xl space-y-2">
