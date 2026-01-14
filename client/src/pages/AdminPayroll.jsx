@@ -137,9 +137,9 @@ const AdminPayroll = () => {
 
     const StatusBadge = ({ status }) => {
         const colors = {
-            Processing: 'text-yellow-400 bg-yellow-400/10 border-yellow-400/20',
-            Paid: 'text-emerald-400 bg-emerald-400/10 border-emerald-400/20',
-            'No Data': 'text-zinc-500 bg-zinc-500/10 border-zinc-500/20'
+            Processing: 'text-yellow-700 bg-yellow-100 border-yellow-200 dark:text-yellow-400 dark:bg-yellow-400/10 dark:border-yellow-400/20',
+            Paid: 'text-emerald-700 bg-emerald-100 border-emerald-200 dark:text-emerald-400 dark:bg-emerald-400/10 dark:border-emerald-400/20',
+            'No Data': 'text-muted-foreground bg-muted border-border'
         };
         return (
             <span className={`px-3 py-1 rounded-full text-xs font-bold uppercase border ${colors[status] || colors['No Data']}`}>
@@ -158,26 +158,26 @@ const AdminPayroll = () => {
         <div className="space-y-6">
             <header className="flex flex-col xl:flex-row justify-between items-start xl:items-center gap-4">
                 <div>
-                    <h1 className="text-3xl font-black text-white mb-1">Payroll Management</h1>
-                    <p className="text-zinc-400 text-sm">Review and process staff salaries.</p>
+                    <h1 className="text-3xl font-black text-foreground mb-1">Payroll Management</h1>
+                    <p className="text-muted-foreground text-sm">Review and process staff salaries.</p>
                 </div>
                 <div className="flex flex-wrap items-center gap-4">
                     <div className="relative flex-1 w-full md:w-64">
-                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500" size={16} />
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={16} />
                         <input
                             type="text"
                             placeholder="Search staff..."
-                            className="w-full bg-zinc-900 border border-white/10 rounded-xl px-4 py-2 pl-9 focus:ring-2 focus:ring-lime-400 outline-none text-white placeholder-zinc-500 transition-all text-sm"
+                            className="w-full bg-background border border-input rounded-xl px-4 py-2 pl-9 focus:ring-2 focus:ring-primary outline-none text-foreground placeholder-muted-foreground transition-all text-sm"
                             value={searchTerm}
                             onChange={e => setSearchTerm(e.target.value)}
                         />
                     </div>
                     {/* Filter Toggle */}
-                    <div className="flex items-center bg-zinc-900 rounded-xl p-1 border border-zinc-700">
+                    <div className="flex items-center bg-muted/30 rounded-xl p-1 border border-border">
                         <button
                             onClick={() => setFilterMode('submission')}
                             className={clsx("px-3 py-2 text-xs font-bold rounded-lg transition-colors flex items-center gap-2",
-                                filterMode === 'submission' ? "bg-lime-400 text-zinc-900" : "text-zinc-400 hover:text-white hover:bg-zinc-800"
+                                filterMode === 'submission' ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground hover:text-foreground hover:bg-muted"
                             )}
                         >
                             <Calendar size={14} /> Submission Date
@@ -185,19 +185,19 @@ const AdminPayroll = () => {
                         <button
                             onClick={() => setFilterMode('activity')}
                             className={clsx("px-3 py-2 text-xs font-bold rounded-lg transition-colors flex items-center gap-2",
-                                filterMode === 'activity' ? "bg-lime-400 text-zinc-900" : "text-zinc-400 hover:text-white hover:bg-zinc-800"
+                                filterMode === 'activity' ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground hover:text-foreground hover:bg-muted"
                             )}
                         >
                             <Clock size={14} /> Activity Date
                         </button>
                     </div>
 
-                    <div className="flex items-center bg-zinc-900 rounded-xl p-1 border border-zinc-700">
-                        <button onClick={() => setMonth(m => m === 1 ? 12 : m - 1)} className="p-2 hover:bg-zinc-800 rounded-lg text-zinc-400 hover:text-white transition-colors"><ChevronLeft size={16} /></button>
-                        <span className="w-32 text-center font-bold text-white text-sm">{new Date(year, month - 1).toLocaleString('default', { month: 'long', year: 'numeric' })}</span>
-                        <button onClick={() => setMonth(m => m === 12 ? 1 : m + 1)} className="p-2 hover:bg-zinc-800 rounded-lg text-zinc-400 hover:text-white transition-colors"><ChevronRight size={16} /></button>
+                    <div className="flex items-center bg-muted/30 rounded-xl p-1 border border-border">
+                        <button onClick={() => setMonth(m => m === 1 ? 12 : m - 1)} className="p-2 hover:bg-muted rounded-lg text-muted-foreground hover:text-foreground transition-colors"><ChevronLeft size={16} /></button>
+                        <span className="w-32 text-center font-bold text-foreground text-sm">{new Date(year, month - 1).toLocaleString('default', { month: 'long', year: 'numeric' })}</span>
+                        <button onClick={() => setMonth(m => m === 12 ? 1 : m + 1)} className="p-2 hover:bg-muted rounded-lg text-muted-foreground hover:text-foreground transition-colors"><ChevronRight size={16} /></button>
                     </div>
-                    <button onClick={handleExportExcel} className="flex items-center gap-2 px-4 py-2 bg-zinc-800 hover:bg-zinc-700 text-white text-sm font-bold rounded-xl transition-colors border border-zinc-700">
+                    <button onClick={handleExportExcel} className="flex items-center gap-2 px-4 py-2 bg-background hover:bg-muted text-foreground text-sm font-bold rounded-xl transition-colors border border-input">
                         <Download size={16} /> Export Excel
                     </button>
                 </div>
@@ -205,17 +205,17 @@ const AdminPayroll = () => {
 
             {/* Bulk Actions */}
             {selectedUserIds.length > 0 && (
-                <div className="bg-lime-400/10 border border-lime-400/20 p-4 rounded-xl flex items-center justify-between animate-in fade-in slide-in-from-top-2">
+                <div className="bg-primary/10 border border-primary/20 p-4 rounded-xl flex items-center justify-between animate-in fade-in slide-in-from-top-2">
                     <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 rounded-full bg-lime-400 flex items-center justify-center text-black font-bold">
+                        <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center text-primary-foreground font-bold">
                             {selectedUserIds.length}
                         </div>
-                        <span className="text-lime-400 font-bold text-sm">Staff Selected</span>
+                        <span className="text-primary font-bold text-sm">Staff Selected</span>
                     </div>
                     <button
                         onClick={handleMarkAsPaid}
                         disabled={isProcessing}
-                        className="px-6 py-2 bg-lime-400 text-black font-bold rounded-xl hover:bg-lime-300 transition-colors flex items-center gap-2 shadow-lg shadow-lime-400/20 disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="px-6 py-2 bg-primary text-primary-foreground font-bold rounded-xl hover:bg-primary/90 transition-colors flex items-center gap-2 shadow-lg shadow-primary/20 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                         {isProcessing ? <Loader className="animate-spin" size={18} /> : <CheckCircle2 size={18} />}
                         Mark as Paid
@@ -227,7 +227,7 @@ const AdminPayroll = () => {
                 <div className="overflow-x-auto">
                     <table className="w-full">
                         <thead>
-                            <tr className="border-b border-white/5 bg-white/5">
+                            <tr className="border-b border-border bg-muted/50">
                                 <th className="p-4 w-12 text-center">
                                     <input
                                         type="checkbox"
