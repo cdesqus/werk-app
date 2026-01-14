@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
+import { useTheme } from '../context/ThemeContext';
 import { useToast } from '../context/ToastContext';
 import api from '../utils/api';
 import ConfirmModal from '../components/ui/ConfirmModal';
 import DateInput from '../components/ui/DateInput';
-import { Clock, FileText, History, Palmtree, Sparkles, Upload, Megaphone, BarChart2, Zap, CheckCircle, Circle, Plus, X, Calendar, Pencil, Trash2, Camera, CheckCircle2, Lock } from 'lucide-react';
+import { Clock, FileText, History, Palmtree, Sparkles, Upload, Megaphone, BarChart2, Zap, CheckCircle, Circle, Plus, X, Calendar, Pencil, Trash2, Camera, CheckCircle2, Lock, Monitor, Moon, Sun, Settings } from 'lucide-react';
 import { format, differenceInMinutes, parse, isSunday } from 'date-fns';
 import clsx from 'clsx';
 
@@ -82,6 +83,7 @@ const TimePicker = ({ label, value, onChange }) => {
 
 const StaffDashboard = () => {
     const { user } = useAuth();
+    const { theme, setTheme } = useTheme();
     const toast = useToast();
     const [activeTab, setActiveTab] = useState('overtime');
 
@@ -398,7 +400,7 @@ const StaffDashboard = () => {
         { id: 'leave', label: 'Touch Grass', icon: Palmtree },
         { id: 'quests', label: 'Side Quests', icon: Zap },
         { id: 'vibe', label: 'Vibe Check', icon: Sparkles },
-        { id: 'security', label: 'Security', icon: Lock },
+        { id: 'settings', label: 'Settings', icon: Settings },
     ];
 
     const formatDuration = (decimalHours) => {
@@ -656,92 +658,134 @@ const StaffDashboard = () => {
                     </div>
                 )}
 
-                {/* Security Tab */}
-                {activeTab === 'security' && (
-                    <div className="max-w-xl mx-auto glass-card p-8 animate-in fade-in slide-in-from-bottom-4">
-                        <h2 className="text-2xl font-black text-white mb-6">Security Settings</h2>
+                {/* Settings Tab */}
+                {activeTab === 'settings' && (
+                    <div className="max-w-xl mx-auto glass-card p-8 animate-in fade-in slide-in-from-bottom-4 space-y-8">
 
-                        <form onSubmit={handlePasswordChange} className="space-y-6">
-                            <div className="space-y-2">
-                                <label className="text-xs font-bold text-zinc-500 uppercase tracking-wider">Current Password</label>
-                                <input
-                                    type="password"
-                                    className="input-field w-full"
-                                    value={passwordForm.current}
-                                    onChange={e => setPasswordForm({ ...passwordForm, current: e.target.value })}
-                                    required
-                                />
+                        <div>
+                            <h2 className="text-2xl font-black text-white mb-6">Appearance</h2>
+                            <div className="grid grid-cols-3 gap-3">
+                                <button
+                                    onClick={() => setTheme('system')}
+                                    className={clsx("flex flex-col items-center justify-center gap-2 p-4 rounded-xl border transition-all",
+                                        theme === 'system'
+                                            ? "bg-white text-black border-white shadow-lg shadow-white/10 ring-2 ring-white/50"
+                                            : "bg-zinc-900 border-zinc-800 text-zinc-400 hover:bg-zinc-800 hover:text-white"
+                                    )}
+                                >
+                                    <Monitor size={24} />
+                                    <span className="text-xs font-bold uppercase tracking-wider">System</span>
+                                </button>
+                                <button
+                                    onClick={() => setTheme('light')}
+                                    className={clsx("flex flex-col items-center justify-center gap-2 p-4 rounded-xl border transition-all",
+                                        theme === 'light'
+                                            ? "bg-white text-black border-white shadow-lg shadow-white/10 ring-2 ring-white/50"
+                                            : "bg-zinc-900 border-zinc-800 text-zinc-400 hover:bg-zinc-800 hover:text-white"
+                                    )}
+                                >
+                                    <Sun size={24} />
+                                    <span className="text-xs font-bold uppercase tracking-wider">Light</span>
+                                </button>
+                                <button
+                                    onClick={() => setTheme('dark')}
+                                    className={clsx("flex flex-col items-center justify-center gap-2 p-4 rounded-xl border transition-all",
+                                        theme === 'dark'
+                                            ? "bg-white text-black border-white shadow-lg shadow-white/10 ring-2 ring-white/50"
+                                            : "bg-zinc-900 border-zinc-800 text-zinc-400 hover:bg-zinc-800 hover:text-white"
+                                    )}
+                                >
+                                    <Moon size={24} />
+                                    <span className="text-xs font-bold uppercase tracking-wider">Dark</span>
+                                </button>
                             </div>
+                        </div>
 
-                            <div className="space-y-2">
-                                <label className="text-xs font-bold text-zinc-500 uppercase tracking-wider">New Password</label>
-                                <div className="relative">
+                        <div className="border-t border-white/5 pt-8">
+                            <h2 className="text-2xl font-black text-white mb-6">Security</h2>
+
+                            <form onSubmit={handlePasswordChange} className="space-y-6">
+                                <div className="space-y-2">
+                                    <label className="text-xs font-bold text-zinc-500 uppercase tracking-wider">Current Password</label>
                                     <input
-                                        type="text"
-                                        className={clsx("input-field w-full",
-                                            passwordStrength.level === 'High' ? 'border-lime-400 focus:ring-lime-400' :
-                                                passwordStrength.level === 'Medium' ? 'border-yellow-400 focus:ring-yellow-400' :
-                                                    passwordStrength.level === 'Low' && passwordForm.new.length > 0 ? 'border-red-400 focus:ring-red-400' : ''
-                                        )}
-                                        value={passwordForm.new}
-                                        onChange={e => {
-                                            setPasswordForm({ ...passwordForm, new: e.target.value });
-                                            calculateStrength(e.target.value);
-                                        }}
+                                        type="password"
+                                        className="input-field w-full"
+                                        value={passwordForm.current}
+                                        onChange={e => setPasswordForm({ ...passwordForm, current: e.target.value })}
                                         required
                                     />
-                                    <button
-                                        type="button"
-                                        onClick={generatePassword}
-                                        className="absolute right-2 top-1.5 p-1.5 bg-zinc-800 text-zinc-400 hover:text-white rounded-lg transition-colors text-xs font-bold flex items-center gap-1"
-                                        title="Generate Strong Password"
-                                    >
-                                        <Sparkles size={12} /> Generate
-                                    </button>
                                 </div>
 
-                                {/* Strength Meter */}
-                                {passwordForm.new && (
-                                    <div className="space-y-1">
-                                        <div className="flex gap-1 h-1 mt-2">
-                                            <div className={clsx("flex-1 rounded-full", passwordStrength.score >= 1 ? "bg-red-400" : "bg-zinc-800")}></div>
-                                            <div className={clsx("flex-1 rounded-full", passwordStrength.score >= 2 ? "bg-yellow-400" : "bg-zinc-800")}></div>
-                                            <div className={clsx("flex-1 rounded-full", passwordStrength.score >= 3 ? "bg-lime-400" : "bg-zinc-800")}></div>
-                                        </div>
-                                        <p className={clsx("text-xs font-bold text-right",
-                                            passwordStrength.level === 'High' ? "text-lime-400" :
-                                                passwordStrength.level === 'Medium' ? "text-yellow-400" : "text-red-400"
-                                        )}>
-                                            Strength: {passwordStrength.level}
-                                        </p>
-                                        {passwordStrength.level === 'Low' && (
-                                            <p className="text-[10px] text-red-400 mt-1">
-                                                Password must be at least 8 chars and contain letters & numbers.
-                                            </p>
-                                        )}
+                                <div className="space-y-2">
+                                    <label className="text-xs font-bold text-zinc-500 uppercase tracking-wider">New Password</label>
+                                    <div className="relative">
+                                        <input
+                                            type="text"
+                                            className={clsx("input-field w-full",
+                                                passwordStrength.level === 'High' ? 'border-lime-400 focus:ring-lime-400' :
+                                                    passwordStrength.level === 'Medium' ? 'border-yellow-400 focus:ring-yellow-400' :
+                                                        passwordStrength.level === 'Low' && passwordForm.new.length > 0 ? 'border-red-400 focus:ring-red-400' : ''
+                                            )}
+                                            value={passwordForm.new}
+                                            onChange={e => {
+                                                setPasswordForm({ ...passwordForm, new: e.target.value });
+                                                calculateStrength(e.target.value);
+                                            }}
+                                            required
+                                        />
+                                        <button
+                                            type="button"
+                                            onClick={generatePassword}
+                                            className="absolute right-2 top-1.5 p-1.5 bg-zinc-800 text-zinc-400 hover:text-white rounded-lg transition-colors text-xs font-bold flex items-center gap-1"
+                                            title="Generate Strong Password"
+                                        >
+                                            <Sparkles size={12} /> Generate
+                                        </button>
                                     </div>
-                                )}
-                            </div>
 
-                            <div className="space-y-2">
-                                <label className="text-xs font-bold text-zinc-500 uppercase tracking-wider">Confirm New Password</label>
-                                <input
-                                    type="password"
-                                    className="input-field w-full"
-                                    value={passwordForm.confirm}
-                                    onChange={e => setPasswordForm({ ...passwordForm, confirm: e.target.value })}
-                                    required
-                                />
-                            </div>
+                                    {/* Strength Meter */}
+                                    {passwordForm.new && (
+                                        <div className="space-y-1">
+                                            <div className="flex gap-1 h-1 mt-2">
+                                                <div className={clsx("flex-1 rounded-full", passwordStrength.score >= 1 ? "bg-red-400" : "bg-zinc-800")}></div>
+                                                <div className={clsx("flex-1 rounded-full", passwordStrength.score >= 2 ? "bg-yellow-400" : "bg-zinc-800")}></div>
+                                                <div className={clsx("flex-1 rounded-full", passwordStrength.score >= 3 ? "bg-lime-400" : "bg-zinc-800")}></div>
+                                            </div>
+                                            <p className={clsx("text-xs font-bold text-right",
+                                                passwordStrength.level === 'High' ? "text-lime-400" :
+                                                    passwordStrength.level === 'Medium' ? "text-yellow-400" : "text-red-400"
+                                            )}>
+                                                Strength: {passwordStrength.level}
+                                            </p>
+                                            {passwordStrength.level === 'Low' && (
+                                                <p className="text-[10px] text-red-400 mt-1">
+                                                    Password must be at least 8 chars and contain letters & numbers.
+                                                </p>
+                                            )}
+                                        </div>
+                                    )}
+                                </div>
 
-                            <button
-                                type="submit"
-                                disabled={loading || passwordStrength.score < 2}
-                                className="btn-primary w-full disabled:opacity-50 disabled:cursor-not-allowed"
-                            >
-                                {loading ? 'Updating...' : 'Update Password'}
-                            </button>
-                        </form>
+                                <div className="space-y-2">
+                                    <label className="text-xs font-bold text-zinc-500 uppercase tracking-wider">Confirm New Password</label>
+                                    <input
+                                        type="password"
+                                        className="input-field w-full"
+                                        value={passwordForm.confirm}
+                                        onChange={e => setPasswordForm({ ...passwordForm, confirm: e.target.value })}
+                                        required
+                                    />
+                                </div>
+
+                                <button
+                                    type="submit"
+                                    disabled={loading || passwordStrength.score < 2}
+                                    className="btn-primary w-full disabled:opacity-50 disabled:cursor-not-allowed"
+                                >
+                                    {loading ? 'Updating...' : 'Update Password'}
+                                </button>
+                            </form>
+                        </div>
                     </div>
                 )}
             </div>
@@ -767,8 +811,16 @@ const StaffDashboard = () => {
                                 )}
                             </div>
                             <div className="grid grid-cols-2 gap-4">
-// ... (This tool call expects direct content replacement, but I need to split it).
-                            // I will switch to `multi_replace_file_content` to handle both adding the component and using it.
+                                <TimePicker
+                                    label="Start Time"
+                                    value={otForm.startTime}
+                                    onChange={val => setOtForm(prev => ({ ...prev, startTime: val }))}
+                                />
+                                <TimePicker
+                                    label="End Time"
+                                    value={otForm.endTime}
+                                    onChange={val => setOtForm(prev => ({ ...prev, endTime: val }))}
+                                />
                             </div>
 
                             <div className="bg-zinc-900/50 border border-white/5 p-4 rounded-xl space-y-2">

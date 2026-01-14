@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react';
 import api from '../utils/api';
 import { useToast } from '../context/ToastContext';
-import { Mail, Save, Server, Shield, Globe, Send, CheckCircle, AlertTriangle, Zap } from 'lucide-react';
-import clsx from 'clsx';
 import { useAuth } from '../context/AuthContext';
+import { useTheme } from '../context/ThemeContext';
+import clsx from 'clsx';
+import { Mail, Save, Server, Shield, Globe, Send, CheckCircle, AlertTriangle, Zap, Monitor, Moon, Sun } from 'lucide-react';
 
 const ServiceToggle = ({ label, description, isOn, onToggle }) => {
     return (
@@ -24,6 +25,7 @@ const ServiceToggle = ({ label, description, isOn, onToggle }) => {
 
 const AdminSettings = () => {
     const { user } = useAuth();
+    const { theme, setTheme } = useTheme();
     const toast = useToast();
     const [loading, setLoading] = useState(false);
     const [testLoading, setTestLoading] = useState(false);
@@ -161,6 +163,50 @@ const AdminSettings = () => {
                         isOn={services['monthly_email']}
                         onToggle={() => toggleService('monthly_email')}
                     />
+                </div>
+            </div>
+
+
+            {/* Appearance Settings */}
+            <div className="glass-card p-6 border border-zinc-800">
+                <div className="flex items-center gap-2 mb-6">
+                    <Monitor className="text-blue-400" />
+                    <h2 className="text-xl font-bold text-white">Appearance</h2>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <button
+                        onClick={() => setTheme('system')}
+                        className={clsx("flex flex-col items-center justify-center gap-2 p-4 rounded-xl border transition-all",
+                            theme === 'system'
+                                ? "bg-white text-black border-white shadow-lg shadow-white/10 ring-2 ring-white/50"
+                                : "bg-zinc-900 border-zinc-800 text-zinc-400 hover:bg-zinc-800 hover:text-white"
+                        )}
+                    >
+                        <Monitor size={24} />
+                        <span className="text-xs font-bold uppercase tracking-wider">System</span>
+                    </button>
+                    <button
+                        onClick={() => setTheme('light')}
+                        className={clsx("flex flex-col items-center justify-center gap-2 p-4 rounded-xl border transition-all",
+                            theme === 'light'
+                                ? "bg-white text-black border-white shadow-lg shadow-white/10 ring-2 ring-white/50"
+                                : "bg-zinc-900 border-zinc-800 text-zinc-400 hover:bg-zinc-800 hover:text-white"
+                        )}
+                    >
+                        <Sun size={24} />
+                        <span className="text-xs font-bold uppercase tracking-wider">Light</span>
+                    </button>
+                    <button
+                        onClick={() => setTheme('dark')}
+                        className={clsx("flex flex-col items-center justify-center gap-2 p-4 rounded-xl border transition-all",
+                            theme === 'dark'
+                                ? "bg-white text-black border-white shadow-lg shadow-white/10 ring-2 ring-white/50"
+                                : "bg-zinc-900 border-zinc-800 text-zinc-400 hover:bg-zinc-800 hover:text-white"
+                        )}
+                    >
+                        <Moon size={24} />
+                        <span className="text-xs font-bold uppercase tracking-wider">Dark</span>
+                    </button>
                 </div>
             </div>
 
@@ -324,7 +370,7 @@ const AdminSettings = () => {
                     </div>
                 </div>
             </div>
-        </div>
+        </div >
     );
 };
 
