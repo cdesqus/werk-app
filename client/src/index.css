@@ -17,8 +17,8 @@
 
   .input-field {
     @apply w-full rounded-xl px-4 py-3 focus:outline-none focus:border-lime-400 focus:ring-1 focus:ring-lime-400 transition-all font-medium;
-    @apply bg-white border border-zinc-200 text-zinc-900 placeholder-zinc-400;
-    @apply dark:bg-black/20 dark:border-white/10 dark:text-white dark:placeholder-zinc-600;
+    @apply bg-white border border-zinc-300 text-zinc-900 placeholder-zinc-400;
+    @apply dark:bg-black/50 dark:border-white/10 dark:text-white dark:placeholder-zinc-600;
   }
 
   .btn-primary {

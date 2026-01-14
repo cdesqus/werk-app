@@ -29,8 +29,8 @@ const AdminLayout = () => {
         <NavLink to={to} end={to === '/admin'} title={isCollapsed ? label : ''} className={({ isActive }) => clsx(
             "flex items-center gap-3 px-4 py-3 rounded-xl transition-all font-bold text-sm mb-1",
             isActive
-                ? "bg-lime-400/10 text-lime-400 border-r-2 border-lime-400"
-                : "text-zinc-400 hover:bg-white/5 hover:text-white",
+                ? "bg-lime-400/10 text-lime-600 dark:text-lime-400 border-r-2 border-lime-400"
+                : "text-zinc-500 hover:bg-zinc-100 hover:text-zinc-900 dark:text-zinc-400 dark:hover:bg-white/5 dark:hover:text-white",
             isCollapsed && "justify-center px-2"
         )}>
             <Icon size={20} className="shrink-0" />
@@ -73,22 +73,22 @@ const AdminLayout = () => {
 
             {/* Sidebar */}
             <aside className={clsx(
-                "fixed inset-y-0 left-0 bg-zinc-900/95 backdrop-blur-3xl border-r border-white/5 flex flex-col z-50 transition-all duration-300",
+                "fixed inset-y-0 left-0 bg-white dark:bg-zinc-900/95 backdrop-blur-3xl border-r border-zinc-200 dark:border-white/5 flex flex-col z-50 transition-all duration-300",
                 isMobileOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0",
                 isCollapsed ? "md:w-20" : "md:w-[280px]",
                 "w-[280px]" // Always 280px on mobile when open
             )}>
                 {/* Header */}
-                <div className={clsx("p-6 border-b border-white/5 flex items-center", isCollapsed ? "justify-center" : "justify-between")}>
+                <div className={clsx("p-6 border-b border-zinc-200 dark:border-white/5 flex items-center", isCollapsed ? "justify-center" : "justify-between")}>
                     {!isCollapsed && (
-                        <div className="font-black tracking-tighter text-white flex items-start select-none animate-in fade-in duration-300">
+                        <div className="font-black tracking-tighter text-zinc-900 dark:text-white flex items-start select-none animate-in fade-in duration-300">
                             <span className="text-3xl">WERK</span>
-                            <sup className="text-lime-400 ml-1 mt-1 text-sm">IDE</sup>
+                            <sup className="text-lime-600 dark:text-lime-400 ml-1 mt-1 text-sm">IDE</sup>
                         </div>
                     )}
                     <button
                         onClick={() => setIsCollapsed(!isCollapsed)}
-                        className="hidden md:flex p-1.5 hover:bg-white/10 rounded-lg text-zinc-400 hover:text-white transition-colors"
+                        className="hidden md:flex p-1.5 hover:bg-zinc-100 dark:hover:bg-white/10 rounded-lg text-zinc-400 hover:text-zinc-900 dark:hover:text-white transition-colors"
                     >
                         {isCollapsed ? <ChevronRight size={18} /> : <ChevronLeft size={18} />}
                     </button>
@@ -127,16 +127,16 @@ const AdminLayout = () => {
                 </div>
 
                 {/* Footer */}
-                <div className="p-4 border-t border-white/5 bg-zinc-900/50">
-                    <div className={clsx("flex items-center gap-3 p-2 rounded-xl bg-zinc-950 border border-zinc-800 transition-all", isCollapsed && "justify-center p-0 border-0 bg-transparent")}>
+                <div className="p-4 border-t border-zinc-200 dark:border-white/5 bg-zinc-50 dark:bg-zinc-900/50">
+                    <div className={clsx("flex items-center gap-3 p-2 rounded-xl bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 transition-all", isCollapsed && "justify-center p-0 border-0 bg-transparent")}>
                         <div className="w-10 h-10 rounded-full bg-gradient-to-br from-purple-500 to-indigo-500 flex items-center justify-center font-bold text-white shrink-0">
                             {user?.name?.charAt(0)}
                         </div>
                         <div className={clsx("flex-1 overflow-hidden transition-all duration-300", isCollapsed ? "w-0 opacity-0 hidden" : "w-auto opacity-100")}>
-                            <p className="text-sm font-bold truncate">{user?.name}</p>
+                            <p className="text-sm font-bold text-zinc-900 dark:text-white truncate">{user?.name}</p>
                             <p className="text-xs text-zinc-500 truncate capitalize">{user?.role?.replace('_', ' ')}</p>
                         </div>
-                        <button onClick={handleLogout} className={clsx("p-2 hover:text-red-400 transition-colors", isCollapsed && "hidden")}>
+                        <button onClick={handleLogout} className={clsx("p-2 text-zinc-400 hover:text-red-500 dark:hover:text-red-400 transition-colors", isCollapsed && "hidden")}>
                             <LogOut size={18} />
                         </button>
                     </div>
@@ -149,30 +149,30 @@ const AdminLayout = () => {
                 isCollapsed ? "md:ml-20" : "md:ml-[280px]"
             )}>
                 {/* Top Bar */}
-                <header className="h-16 border-b border-white/5 bg-black/20 backdrop-blur-md sticky top-0 z-40 flex items-center justify-between px-4 md:px-8">
-                    <div className="flex items-center gap-4 text-sm font-medium text-zinc-400">
+                <header className="h-16 border-b border-zinc-200 dark:border-white/5 bg-white/80 dark:bg-black/20 backdrop-blur-md sticky top-0 z-40 flex items-center justify-between px-4 md:px-8">
+                    <div className="flex items-center gap-4 text-sm font-medium text-zinc-500 dark:text-zinc-400">
                         <button
                             onClick={() => setIsMobileOpen(true)}
-                            className="md:hidden p-2 -ml-2 text-zinc-400 hover:text-white"
+                            className="md:hidden p-2 -ml-2 text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white"
                         >
                             <Menu size={24} />
                         </button>
                         <div className="hidden md:flex items-center gap-2">
-                            <span className="text-lime-400 font-bold">WERK IDE</span>
-                            <span className="text-zinc-700">/</span>
-                            <span className="text-white">{getBreadcrumb()}</span>
+                            <span className="text-lime-600 dark:text-lime-400 font-bold">WERK IDE</span>
+                            <span className="text-zinc-400 dark:text-zinc-700">/</span>
+                            <span className="text-zinc-900 dark:text-white">{getBreadcrumb()}</span>
                         </div>
-                        <span className="md:hidden text-white font-bold">{getBreadcrumb().split('/').pop().trim()}</span>
+                        <span className="md:hidden text-zinc-900 dark:text-white font-bold">{getBreadcrumb().split('/').pop().trim()}</span>
                     </div>
 
                     <div className="flex items-center gap-4">
                         <div className="relative">
-                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500" size={14} />
-                            <input type="text" placeholder="Command + K" className="bg-zinc-950 border border-zinc-800 rounded-lg py-1.5 pl-9 pr-4 text-xs font-bold text-zinc-400 focus:border-lime-400 outline-none w-48" />
+                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400 dark:text-zinc-500" size={14} />
+                            <input type="text" placeholder="Command + K" className="bg-zinc-100 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-lg py-1.5 pl-9 pr-4 text-xs font-bold text-zinc-900 dark:text-zinc-400 focus:border-lime-500 dark:focus:border-lime-400 outline-none w-48 transition-colors" />
                         </div>
-                        <button className="p-2 text-zinc-400 hover:text-white transition-colors relative">
+                        <button className="p-2 text-zinc-400 hover:text-zinc-900 dark:hover:text-white transition-colors relative">
                             <Bell size={18} />
-                            <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-lime-400 rounded-full"></span>
+                            <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-lime-500 dark:bg-lime-400 rounded-full"></span>
                         </button>
                     </div>
                 </header>

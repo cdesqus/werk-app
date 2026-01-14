@@ -419,10 +419,10 @@ const StaffDashboard = () => {
         if (filtered.length === 0) {
             return (
                 <div className="flex flex-col items-center justify-center py-20 text-center animate-in fade-in zoom-in">
-                    <div className="w-20 h-20 bg-zinc-900 rounded-full flex items-center justify-center mb-4">
-                        <Sparkles className="text-zinc-600" size={32} />
+                    <div className="w-20 h-20 bg-zinc-100 dark:bg-zinc-900 rounded-full flex items-center justify-center mb-4">
+                        <Sparkles className="text-zinc-400 dark:text-zinc-600" size={32} />
                     </div>
-                    <h3 className="text-xl font-bold text-white mb-2">No hustles yet.</h3>
+                    <h3 className="text-xl font-bold text-zinc-900 dark:text-white mb-2">No hustles yet.</h3>
                     <p className="text-zinc-500">Start grinding to see your history here.</p>
                 </div>
             );
@@ -858,9 +858,9 @@ const StaffDashboard = () => {
             {/* Claim Modal */}
             {showClaimModal && (
                 <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-50 flex items-center justify-center p-4">
-                    <div className="glass-card w-full max-w-lg p-8 relative animate-in fade-in zoom-in duration-200 border border-zinc-800">
-                        <button onClick={() => setShowClaimModal(false)} className="absolute top-4 right-4 text-zinc-500 hover:text-white"><X /></button>
-                        <h2 className="text-2xl font-black text-white mb-6">{editingId ? 'Edit Claim' : 'Submit Claim'}</h2>
+                    <div className="glass-card w-full max-w-lg p-8 relative animate-in fade-in zoom-in duration-200">
+                        <button onClick={() => setShowClaimModal(false)} className="absolute top-4 right-4 text-zinc-500 hover:text-zinc-900 dark:hover:text-white"><X /></button>
+                        <h2 className="text-2xl font-black text-zinc-900 dark:text-white mb-6">{editingId ? 'Edit Claim' : 'Submit Claim'}</h2>
                         <form onSubmit={handleClaimSubmit} className="space-y-4">
                             <div className="grid grid-cols-2 gap-4">
                                 <div className="space-y-2">
@@ -897,7 +897,7 @@ const StaffDashboard = () => {
                             <div className="space-y-2">
                                 <label className="text-xs font-bold text-zinc-500 uppercase tracking-wider">Proof</label>
                                 <div className="grid grid-cols-2 gap-4">
-                                    <div className="border-2 border-dashed border-zinc-800 rounded-xl p-4 text-center hover:border-lime-400 transition-colors cursor-pointer relative bg-zinc-900/50 flex flex-col items-center justify-center gap-2">
+                                    <div className="border-2 border-dashed border-zinc-200 dark:border-zinc-800 rounded-xl p-4 text-center hover:border-lime-500 dark:hover:border-lime-400 transition-colors cursor-pointer relative bg-zinc-50 dark:bg-zinc-900/50 flex flex-col items-center justify-center gap-2">
                                         <input type="file" accept=".jpg, .jpeg, .png" capture="environment" className="absolute inset-0 opacity-0 cursor-pointer" onChange={e => {
                                             const file = e.target.files[0];
                                             if (file) {
@@ -918,7 +918,7 @@ const StaffDashboard = () => {
                                         <Camera className="text-zinc-400" />
                                         <span className="text-xs font-bold text-zinc-400">Take Photo</span>
                                     </div>
-                                    <div className="border-2 border-dashed border-zinc-800 rounded-xl p-4 text-center hover:border-lime-400 transition-colors cursor-pointer relative bg-zinc-900/50 flex flex-col items-center justify-center gap-2">
+                                    <div className="border-2 border-dashed border-zinc-200 dark:border-zinc-800 rounded-xl p-4 text-center hover:border-lime-500 dark:hover:border-lime-400 transition-colors cursor-pointer relative bg-zinc-50 dark:bg-zinc-900/50 flex flex-col items-center justify-center gap-2">
                                         <input type="file" accept=".jpg, .jpeg, .png" className="absolute inset-0 opacity-0 cursor-pointer" onChange={e => {
                                             const file = e.target.files[0];
                                             if (file) {
@@ -958,9 +958,9 @@ const StaffDashboard = () => {
             {/* Leave Modal */}
             {showLeaveModal && (
                 <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-50 flex items-center justify-center p-4">
-                    <div className="glass-card w-full max-w-lg p-8 relative animate-in fade-in zoom-in duration-200 border border-zinc-800">
-                        <button onClick={() => setShowLeaveModal(false)} className="absolute top-4 right-4 text-zinc-500 hover:text-white"><X /></button>
-                        <h2 className="text-2xl font-black text-white mb-6">{editingId ? 'Edit Leave' : 'Request Leave'}</h2>
+                    <div className="glass-card w-full max-w-lg p-8 relative animate-in fade-in zoom-in duration-200">
+                        <button onClick={() => setShowLeaveModal(false)} className="absolute top-4 right-4 text-zinc-500 hover:text-zinc-900 dark:hover:text-white"><X /></button>
+                        <h2 className="text-2xl font-black text-zinc-900 dark:text-white mb-6">{editingId ? 'Edit Leave' : 'Request Leave'}</h2>
                         <form onSubmit={handleLeaveSubmit} className="space-y-4">
                             <div className="space-y-2">
                                 <label className="text-xs font-bold text-zinc-500 uppercase tracking-wider">Type</label>
@@ -1033,11 +1033,11 @@ const StaffDashboard = () => {
 
 const StatusBadge = ({ status }) => {
     const colors = {
-        Pending: 'text-yellow-400 bg-yellow-400/10 border-yellow-400/20',
-        Approved: 'text-lime-400 bg-lime-400/10 border-lime-400/20',
-        Rejected: 'text-red-400 bg-red-400/10 border-red-400/20',
-        Assigned: 'text-blue-400 bg-blue-400/10 border-blue-400/20',
-        Completed: 'text-emerald-400 bg-emerald-400/10 border-emerald-400/20',
+        Pending: 'text-yellow-600 dark:text-yellow-400 bg-yellow-400/10 border-yellow-400/20',
+        Approved: 'text-lime-600 dark:text-lime-400 bg-lime-400/10 border-lime-400/20',
+        Rejected: 'text-red-600 dark:text-red-400 bg-red-400/10 border-red-400/20',
+        Assigned: 'text-blue-600 dark:text-blue-400 bg-blue-400/10 border-blue-400/20',
+        Completed: 'text-emerald-600 dark:text-emerald-400 bg-emerald-400/10 border-emerald-400/20',
     };
     return (
         <span className={clsx("px-3 py-1 rounded-full text-xs font-bold border uppercase tracking-wider", colors[status] || colors.Pending)}>
