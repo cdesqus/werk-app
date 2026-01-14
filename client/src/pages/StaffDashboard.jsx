@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { useTheme } from '../context/ThemeContext';
 import { useToast } from '../context/ToastContext';
 import api from '../utils/api';
 import ConfirmModal from '../components/ui/ConfirmModal';
@@ -47,17 +46,17 @@ const TimePicker = ({ label, value, onChange }) => {
             <div className="flex gap-2">
                 <div className="relative flex-1">
                     <select
-                        className="w-full appearance-none bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 text-zinc-900 dark:text-white rounded-xl px-2 py-2 focus:ring-2 focus:ring-lime-400 outline-none font-bold text-center text-sm"
+                        className="w-full appearance-none bg-zinc-900 border border-zinc-700 text-white rounded-xl px-2 py-2 focus:ring-2 focus:ring-lime-400 outline-none font-bold text-center text-sm"
                         value={hour}
                         onChange={(e) => handleChange('hour', e.target.value)}
                     >
                         {hours.map(h => <option key={h} value={h}>{h}</option>)}
                     </select>
                 </div>
-                <span className="text-zinc-400 dark:text-zinc-600 font-bold self-center">:</span>
+                <span className="text-zinc-600 font-bold self-center">:</span>
                 <div className="relative flex-1">
                     <select
-                        className="w-full appearance-none bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 text-zinc-900 dark:text-white rounded-xl px-2 py-2 focus:ring-2 focus:ring-lime-400 outline-none font-bold text-center text-sm"
+                        className="w-full appearance-none bg-zinc-900 border border-zinc-700 text-white rounded-xl px-2 py-2 focus:ring-2 focus:ring-lime-400 outline-none font-bold text-center text-sm"
                         value={minute}
                         onChange={(e) => handleChange('minute', e.target.value)}
                     >
@@ -66,8 +65,8 @@ const TimePicker = ({ label, value, onChange }) => {
                 </div>
                 <div className="relative flex-1">
                     <select
-                        className={clsx("w-full appearance-none border border-zinc-200 dark:border-zinc-700 rounded-xl px-2 py-2 focus:ring-2 focus:ring-lime-400 outline-none font-black text-center transition-colors text-sm",
-                            period === 'AM' ? "bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-white" : "bg-lime-400 text-black"
+                        className={clsx("w-full appearance-none border border-zinc-700 rounded-xl px-2 py-2 focus:ring-2 focus:ring-lime-400 outline-none font-black text-center transition-colors text-sm",
+                            period === 'AM' ? "bg-zinc-800 text-white" : "bg-lime-400 text-black"
                         )}
                         value={period}
                         onChange={(e) => handleChange('period', e.target.value)}
@@ -85,7 +84,6 @@ const StaffDashboard = () => {
     // Force re-render verification
     console.log("StaffDashboard Rendering");
     const { user } = useAuth();
-    const { theme, setTheme } = useTheme();
     const toast = useToast();
     const [activeTab, setActiveTab] = useState('overtime');
 
@@ -430,12 +428,12 @@ const StaffDashboard = () => {
         return (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 animate-in fade-in slide-in-from-bottom-4">
                 {filtered.map((item, idx) => (
-                    <div key={idx} className="glass-card p-0 overflow-hidden group hover:border-lime-400/50 transition-all relative dark:bg-black/40 bg-white border border-zinc-200 dark:border-zinc-800">
+                    <div key={idx} className="glass-card p-0 overflow-hidden group hover:border-lime-400/50 transition-all relative">
                         <div className="p-6">
                             <p className="text-xs font-bold text-zinc-500 uppercase tracking-wider mb-1">
                                 {format(new Date(item.date || item.startDate), 'EEEE, MMM d')}
                             </p>
-                            <h3 className="text-2xl font-black text-zinc-900 dark:text-white mb-2 break-words pr-16 bg-transparent">
+                            <h3 className="text-2xl font-black text-white mb-2 break-words pr-16">
                                 {item.dataType === 'overtime' ? item.activity : item.dataType === 'claim' ? item.title : 'Leave Request'}
                             </h3>
                             <div className="flex flex-wrap items-center gap-2 text-sm font-medium text-zinc-400">
@@ -462,7 +460,7 @@ const StaffDashboard = () => {
                                 <div className="mt-4 pt-4 border-t border-white/5">
                                     <p className="text-xs font-bold text-zinc-500 uppercase tracking-wider mb-2">Proof Attached</p>
                                     <div
-                                        className="relative w-full h-32 bg-zinc-100 dark:bg-zinc-900 rounded-lg overflow-hidden cursor-zoom-in group/img"
+                                        className="relative w-full h-32 bg-zinc-900 rounded-lg overflow-hidden cursor-zoom-in group/img"
                                         onClick={() => setViewingImage(`${api.defaults.baseURL}${item.proof}`)}
                                     >
                                         <img
@@ -482,10 +480,10 @@ const StaffDashboard = () => {
                         <div className="absolute top-0 right-0 p-4 flex gap-2 z-10">
                             {item.status === 'Pending' && (
                                 <>
-                                    <button onClick={(e) => { e.stopPropagation(); handleEdit(item); }} className="p-1.5 bg-zinc-100 dark:bg-zinc-800 text-zinc-400 rounded-lg hover:bg-zinc-200 dark:hover:bg-white hover:text-black transition-colors cursor-pointer">
+                                    <button onClick={(e) => { e.stopPropagation(); handleEdit(item); }} className="p-1.5 bg-zinc-800 text-zinc-400 rounded-lg hover:bg-white hover:text-black transition-colors cursor-pointer">
                                         <Pencil size={14} />
                                     </button>
-                                    <button onClick={(e) => { e.stopPropagation(); handleDelete(item.dataType, item.id); }} className="p-1.5 bg-zinc-100 dark:bg-zinc-800 text-zinc-400 rounded-lg hover:bg-red-500 hover:text-white transition-colors cursor-pointer">
+                                    <button onClick={(e) => { e.stopPropagation(); handleDelete(item.dataType, item.id); }} className="p-1.5 bg-zinc-800 text-zinc-400 rounded-lg hover:bg-red-500 hover:text-white transition-colors cursor-pointer">
                                         <Trash2 size={14} />
                                     </button>
                                 </>
@@ -502,18 +500,18 @@ const StaffDashboard = () => {
         <div className="space-y-8">
             {/* Bento Grid Stats */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div className="glass-card p-6 flex flex-col justify-between h-32 dark:bg-gradient-to-br dark:from-zinc-900 dark:to-zinc-950 bg-white border border-zinc-200 dark:border-zinc-800">
+                <div className="glass-card p-6 flex flex-col justify-between h-32 bg-gradient-to-br from-zinc-900 to-zinc-950 border-zinc-800">
                     <span className="text-zinc-500 font-bold text-xs uppercase tracking-wider">Total Earned (OT)</span>
-                    <span className="text-3xl font-black text-lime-600 dark:text-lime-400">Rp {stats.earned.toLocaleString('id-ID')}</span>
+                    <span className="text-3xl font-black text-lime-400">Rp {stats.earned.toLocaleString('id-ID')}</span>
                 </div>
-                <div className="glass-card p-6 flex flex-col justify-between h-32 dark:bg-gradient-to-br dark:from-zinc-900 dark:to-zinc-950 bg-white border border-zinc-200 dark:border-zinc-800">
+                <div className="glass-card p-6 flex flex-col justify-between h-32 bg-gradient-to-br from-zinc-900 to-zinc-950 border-zinc-800">
                     <span className="text-zinc-500 font-bold text-xs uppercase tracking-wider">Pending Claims</span>
-                    <span className="text-3xl font-black text-purple-600 dark:text-purple-400">{stats.pendingClaims}</span>
+                    <span className="text-3xl font-black text-purple-400">{stats.pendingClaims}</span>
                 </div>
-                <div className="glass-card p-6 flex items-center justify-between h-32 dark:bg-gradient-to-br dark:from-zinc-900 dark:to-zinc-950 bg-white border border-zinc-200 dark:border-zinc-800">
+                <div className="glass-card p-6 flex items-center justify-between h-32 bg-gradient-to-br from-zinc-900 to-zinc-950 border-zinc-800">
                     <div className="flex flex-col justify-between h-full">
                         <span className="text-zinc-500 font-bold text-xs uppercase tracking-wider">Leave Quota</span>
-                        <span className="text-3xl font-black text-zinc-900 dark:text-white">{leaveQuota} <span className="text-sm text-zinc-500">Days</span></span>
+                        <span className="text-3xl font-black text-white">{leaveQuota} <span className="text-sm text-zinc-500">Days</span></span>
                     </div>
                     <div className="relative w-16 h-16">
                         <svg className="w-full h-full transform -rotate-90">
@@ -536,8 +534,8 @@ const StaffDashboard = () => {
                         className={clsx(
                             "flex items-center gap-2 px-5 py-3 rounded-xl font-bold transition-all whitespace-nowrap text-sm border",
                             activeTab === tab.id
-                                ? "bg-zinc-900 dark:bg-white text-white dark:text-black border-zinc-900 dark:border-white shadow-lg shadow-zinc-900/10 dark:shadow-white/10"
-                                : "bg-zinc-100 dark:bg-zinc-900/50 text-zinc-500 dark:text-zinc-400 border-zinc-200 dark:border-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-800 hover:text-black dark:hover:text-white"
+                                ? "bg-white text-black border-white shadow-lg shadow-white/10"
+                                : "bg-zinc-900/50 text-zinc-400 border-zinc-800 hover:bg-zinc-800 hover:text-white"
                         )}
                     >
                         <tab.icon size={16} />
@@ -551,7 +549,7 @@ const StaffDashboard = () => {
                 {activeTab === 'overtime' && (
                     <div>
                         <div className="flex justify-between items-center mb-6">
-                            <h2 className="text-2xl font-black text-zinc-900 dark:text-white">My Hustle History</h2>
+                            <h2 className="text-2xl font-black text-white">My Hustle History</h2>
                             <button onClick={() => { resetForms(); setShowOtModal(true); }} className="btn-primary flex items-center gap-2 shadow-lg shadow-lime-400/20">
                                 <Plus size={20} /> New Hustle
                             </button>
