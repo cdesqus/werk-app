@@ -94,11 +94,11 @@ const AdminAuditLogs = () => {
                                             </div>
                                         </td>
                                         <td className="p-4">
-                                            <span className={clsx("px-2 py-1 rounded text-xs font-bold uppercase",
-                                                log.action.includes('Delete') ? "bg-red-500/20 text-red-500" :
-                                                    log.action.includes('Update') ? "bg-yellow-500/20 text-yellow-500" :
-                                                        log.action.includes('Create') ? "bg-green-500/20 text-green-500" :
-                                                            "bg-blue-500/20 text-blue-500"
+                                            <span className={clsx("px-2 py-1 rounded text-xs font-bold uppercase border",
+                                                log.action.includes('Delete') ? "text-red-700 bg-red-100 border-red-200 dark:text-red-400 dark:bg-red-500/20 dark:border-red-400/20" :
+                                                    log.action.includes('Update') ? "text-yellow-700 bg-yellow-100 border-yellow-200 dark:text-yellow-400 dark:bg-yellow-500/20 dark:border-yellow-400/20" :
+                                                        log.action.includes('Create') ? "text-emerald-700 bg-emerald-100 border-emerald-200 dark:text-emerald-400 dark:bg-emerald-500/20 dark:border-emerald-400/20" :
+                                                            "text-blue-700 bg-blue-100 border-blue-200 dark:text-blue-400 dark:bg-blue-500/20 dark:border-blue-400/20"
                                             )}>
                                                 {log.action}
                                             </span>
