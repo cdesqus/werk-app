@@ -43,7 +43,7 @@ const TimePicker = ({ label, value, onChange }) => {
 
     return (
         <div className="space-y-2">
-            <label className="text-xs font-bold text-zinc-500 uppercase tracking-wider">{label}</label>
+            <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">{label}</label>
             <div className="flex gap-2">
                 <div className="relative flex-1">
                     <select
@@ -843,12 +843,12 @@ const StaffDashboard = () => {
             {/* Overtime Modal */}
             {showOtModal && (
                 <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-50 flex items-center justify-center p-4">
-                    <div className="glass-card w-full max-w-lg p-8 relative animate-in fade-in zoom-in duration-200">
+                    <div className="bg-card border border-border shadow-2xl w-full max-w-lg p-8 relative animate-in fade-in zoom-in duration-200 rounded-xl">
                         <button onClick={() => setShowOtModal(false)} className="absolute top-4 right-4 text-zinc-500 hover:text-zinc-900 dark:hover:text-white"><X /></button>
                         <h2 className="text-2xl font-black text-zinc-900 dark:text-white mb-6">{editingId ? 'Edit Overtime' : 'Log Overtime'}</h2>
                         <form onSubmit={handleOtSubmit} className="space-y-4">
                             <div className="space-y-2">
-                                <label className="text-xs font-bold text-zinc-500 uppercase tracking-wider">Date</label>
+                                <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Date</label>
                                 <DateInput required className="w-full"
                                     value={otForm.date} onChange={e => setOtForm({ ...otForm, date: e.target.value })} />
                                 {isHoliday && (
@@ -879,17 +879,17 @@ const StaffDashboard = () => {
                             </div>
 
                             <div className="space-y-2">
-                                <label className="text-xs font-bold text-zinc-500 uppercase tracking-wider">Customer</label>
+                                <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Customer</label>
                                 <input type="text" required className="input-field w-full" placeholder="e.g. Client X"
                                     value={otForm.customer} onChange={e => setOtForm({ ...otForm, customer: e.target.value })} />
                             </div>
                             <div className="space-y-2">
-                                <label className="text-xs font-bold text-zinc-500 uppercase tracking-wider">Activity</label>
+                                <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Activity</label>
                                 <input type="text" required className="input-field w-full" placeholder="e.g. Bug Fixing"
                                     value={otForm.activity} onChange={e => setOtForm({ ...otForm, activity: e.target.value })} />
                             </div>
                             <div className="space-y-2">
-                                <label className="text-xs font-bold text-zinc-500 uppercase tracking-wider">Description</label>
+                                <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Description</label>
                                 <textarea className="input-field w-full h-24" placeholder="Details..."
                                     value={otForm.description} onChange={e => setOtForm({ ...otForm, description: e.target.value })} />
                             </div>
@@ -904,18 +904,18 @@ const StaffDashboard = () => {
             {/* Claim Modal */}
             {showClaimModal && (
                 <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-50 flex items-center justify-center p-4">
-                    <div className="glass-card w-full max-w-lg p-8 relative animate-in fade-in zoom-in duration-200">
+                    <div className="bg-card border border-border shadow-2xl w-full max-w-lg p-8 relative animate-in fade-in zoom-in duration-200 rounded-xl">
                         <button onClick={() => setShowClaimModal(false)} className="absolute top-4 right-4 text-zinc-500 hover:text-zinc-900 dark:hover:text-white"><X /></button>
                         <h2 className="text-2xl font-black text-zinc-900 dark:text-white mb-6">{editingId ? 'Edit Claim' : 'Submit Claim'}</h2>
                         <form onSubmit={handleClaimSubmit} className="space-y-4">
                             <div className="grid grid-cols-2 gap-4">
                                 <div className="space-y-2">
-                                    <label className="text-xs font-bold text-zinc-500 uppercase tracking-wider">Date</label>
+                                    <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Date</label>
                                     <DateInput required className="w-full"
                                         value={claimForm.date} onChange={e => setClaimForm({ ...claimForm, date: e.target.value })} />
                                 </div>
                                 <div className="space-y-2">
-                                    <label className="text-xs font-bold text-zinc-500 uppercase tracking-wider">Amount</label>
+                                    <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Amount</label>
                                     <input type="number" required className="input-field w-full"
                                         value={claimForm.amount} onChange={e => setClaimForm({ ...claimForm, amount: e.target.value })} />
                                     {claimForm.amount && (
@@ -926,7 +926,7 @@ const StaffDashboard = () => {
                                 </div>
                             </div>
                             <div className="space-y-2">
-                                <label className="text-xs font-bold text-zinc-500 uppercase tracking-wider">Category</label>
+                                <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Category</label>
                                 <select className="input-field w-full" value={claimForm.category} onChange={e => setClaimForm({ ...claimForm, category: e.target.value })}>
                                     <option value="Transport">Transport</option>
                                     <option value="Medical">Medical</option>
@@ -936,12 +936,12 @@ const StaffDashboard = () => {
                                 </select>
                             </div>
                             <div className="space-y-2">
-                                <label className="text-xs font-bold text-zinc-500 uppercase tracking-wider">Title</label>
+                                <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Title</label>
                                 <input type="text" required className="input-field w-full" placeholder="e.g. Grab to Client"
                                     value={claimForm.title} onChange={e => setClaimForm({ ...claimForm, title: e.target.value })} />
                             </div>
                             <div className="space-y-2">
-                                <label className="text-xs font-bold text-zinc-500 uppercase tracking-wider">Proof</label>
+                                <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Proof</label>
                                 <div className="grid grid-cols-2 gap-4">
                                     <div className="border-2 border-dashed border-zinc-200 dark:border-zinc-800 rounded-xl p-4 text-center hover:border-lime-500 dark:hover:border-lime-400 transition-colors cursor-pointer relative bg-zinc-50 dark:bg-zinc-900/50 flex flex-col items-center justify-center gap-2">
                                         <input type="file" accept=".jpg, .jpeg, .png" capture="environment" className="absolute inset-0 opacity-0 cursor-pointer" onChange={e => {
@@ -1004,12 +1004,12 @@ const StaffDashboard = () => {
             {/* Leave Modal */}
             {showLeaveModal && (
                 <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-50 flex items-center justify-center p-4">
-                    <div className="glass-card w-full max-w-lg p-8 relative animate-in fade-in zoom-in duration-200">
+                    <div className="bg-card border border-border shadow-2xl w-full max-w-lg p-8 relative animate-in fade-in zoom-in duration-200 rounded-xl">
                         <button onClick={() => setShowLeaveModal(false)} className="absolute top-4 right-4 text-zinc-500 hover:text-zinc-900 dark:hover:text-white"><X /></button>
                         <h2 className="text-2xl font-black text-zinc-900 dark:text-white mb-6">{editingId ? 'Edit Leave' : 'Request Leave'}</h2>
                         <form onSubmit={handleLeaveSubmit} className="space-y-4">
                             <div className="space-y-2">
-                                <label className="text-xs font-bold text-zinc-500 uppercase tracking-wider">Type</label>
+                                <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Type</label>
                                 <select className="input-field w-full" value={leaveForm.type} onChange={e => setLeaveForm({ ...leaveForm, type: e.target.value })}>
                                     <option value="annual">Annual Leave</option>
                                     <option value="sick">Sick Leave</option>
@@ -1018,18 +1018,18 @@ const StaffDashboard = () => {
                             </div>
                             <div className="grid grid-cols-2 gap-4">
                                 <div className="space-y-2">
-                                    <label className="text-xs font-bold text-zinc-500 uppercase tracking-wider">Start Date</label>
+                                    <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Start Date</label>
                                     <DateInput required className="w-full"
                                         value={leaveForm.startDate} onChange={e => setLeaveForm({ ...leaveForm, startDate: e.target.value })} />
                                 </div>
                                 <div className="space-y-2">
-                                    <label className="text-xs font-bold text-zinc-500 uppercase tracking-wider">End Date</label>
+                                    <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">End Date</label>
                                     <DateInput required className="w-full"
                                         value={leaveForm.endDate} onChange={e => setLeaveForm({ ...leaveForm, endDate: e.target.value })} />
                                 </div>
                             </div>
                             <div className="space-y-2">
-                                <label className="text-xs font-bold text-zinc-500 uppercase tracking-wider">Reason</label>
+                                <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Reason</label>
                                 <textarea className="input-field w-full h-24" placeholder="Why do you need to touch grass?"
                                     value={leaveForm.reason} onChange={e => setLeaveForm({ ...leaveForm, reason: e.target.value })} />
                             </div>
