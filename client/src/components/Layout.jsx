@@ -31,10 +31,10 @@ const Layout = () => {
                 </div>
 
                 <div className="flex items-center gap-4">
-                    <div className="flex items-center gap-2 px-4 py-2 bg-zinc-100 dark:bg-white/5 rounded-full border border-zinc-200 dark:border-white/5 transition-colors">
-                        <User size={16} className={user?.role === 'admin' ? 'text-purple-600 dark:text-purple-500' : 'text-lime-600 dark:text-lime-400'} />
-                        <span className="font-bold text-sm text-zinc-900 dark:text-white">{user?.name}</span>
-                        <span className="text-xs text-zinc-500 dark:text-zinc-400 uppercase bg-white dark:bg-zinc-900 px-2 py-0.5 rounded ml-2 border border-zinc-200 dark:border-zinc-800">
+                    <div className="flex items-center gap-2 px-3 py-1 bg-zinc-100 dark:bg-white/5 rounded-full border border-zinc-200 dark:border-white/5 transition-colors max-w-[180px] md:max-w-xs overflow-hidden">
+                        <User size={14} className={user?.role === 'admin' ? 'text-purple-600 dark:text-purple-500 shrink-0' : 'text-lime-600 dark:text-lime-400 shrink-0'} />
+                        <span className="font-bold text-xs md:text-sm text-zinc-900 dark:text-white truncate">{user?.name}</span>
+                        <span className="text-[10px] text-zinc-500 dark:text-zinc-400 uppercase bg-white dark:bg-zinc-900 px-1.5 py-0.5 rounded ml-1 border border-zinc-200 dark:border-zinc-800 shrink-0">
                             {user?.role}
                         </span>
                     </div>
