@@ -1501,7 +1501,7 @@ app.get('/api/admin/summary', authenticateToken, isAdmin, async (req, res, next)
         const overtimes = await Overtime.findAll({
             where: {
                 ...whereDate,
-                status: 'Approved'
+                status: { [Op.in]: ['Approved', 'Pending'] }
             }
             // Removed attributes to ensure no "column not found" errors
         });
@@ -1512,7 +1512,7 @@ app.get('/api/admin/summary', authenticateToken, isAdmin, async (req, res, next)
         const claims = await Claim.findAll({
             where: {
                 ...whereDate,
-                status: 'Approved'
+                status: { [Op.in]: ['Approved', 'Pending'] }
             }
         });
         console.log(`[Summary] Claims fetched: ${claims.length}`);
@@ -1534,6 +1534,7 @@ app.get('/api/admin/summary', authenticateToken, isAdmin, async (req, res, next)
                 claimTotal: 0,
                 totalPayable: 0,
                 status: 'Active',
+                hasPending: false, // Track pending state
                 details: { overtimes: [], claims: [] }
             };
         });
@@ -1544,17 +1545,24 @@ app.get('/api/admin/summary', authenticateToken, isAdmin, async (req, res, next)
             if (ot.UserId && summaryMap[ot.UserId]) {
                 const amount = parseFloat(ot.payableAmount) || 0;
                 const hours = parseFloat(ot.hours) || 0;
-                summaryMap[ot.UserId].overtimeTotal += amount;
-                summaryMap[ot.UserId].overtimeHours += hours;
 
-                // Add detail if needed
+                // Only add to Total if Approved
+                if (ot.status === 'Approved') {
+                    summaryMap[ot.UserId].overtimeTotal += amount;
+                    summaryMap[ot.UserId].overtimeHours += hours;
+                } else if (ot.status === 'Pending') {
+                    summaryMap[ot.UserId].hasPending = true;
+                }
+
+                // Add detail
                 summaryMap[ot.UserId].details.overtimes.push({
                     id: ot.id,
                     activity: ot.activity,
                     hours: ot.hours,
                     amount: ot.payableAmount,
                     date: ot.date,
-                    createdAt: ot.createdAt
+                    createdAt: ot.createdAt,
+                    status: ot.status
                 });
             }
         });
@@ -1563,7 +1571,13 @@ app.get('/api/admin/summary', authenticateToken, isAdmin, async (req, res, next)
         claims.forEach(cl => {
             if (cl.UserId && summaryMap[cl.UserId]) {
                 const amount = parseFloat(cl.amount) || 0;
-                summaryMap[cl.UserId].claimTotal += amount;
+
+                // Only add to Total if Approved
+                if (cl.status === 'Approved') {
+                    summaryMap[cl.UserId].claimTotal += amount;
+                } else if (cl.status === 'Pending') {
+                    summaryMap[cl.UserId].hasPending = true;
+                }
 
                 summaryMap[cl.UserId].details.claims.push({
                     id: cl.id,
@@ -1579,8 +1593,19 @@ app.get('/api/admin/summary', authenticateToken, isAdmin, async (req, res, next)
         // Finalize
         const summary = Object.values(summaryMap).map(u => {
             u.totalPayable = u.overtimeTotal + u.claimTotal;
+
+            // Infer Status for UI
+            if (u.totalPayable === 0 && u.hasPending) {
+                u.status = 'Processing';
+            } else if (u.totalPayable > 0) {
+                // Check if *all* are paid? No, for summary listing 'Active' or 'Processing' is fine.
+                // If we want to show 'Paid', we need to check if specific items are paid.
+                // For now, let's keep 'Active' unless strictly pending.
+                u.status = 'Active';
+            }
+
             return u;
-        }).filter(u => u.totalPayable > 0).sort((a, b) => b.totalPayable - a.totalPayable);
+        }).filter(u => u.totalPayable > 0 || u.hasPending).sort((a, b) => b.totalPayable - a.totalPayable);
 
         console.log('[Summary] Aggregation complete. Sending response.');
         res.json(summary);
