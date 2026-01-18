@@ -1577,7 +1577,7 @@ app.get('/api/admin/summary', authenticateToken, isAdmin, async (req, res, next)
     try {
         console.log("Accessing Admin Summary Endpoint");
         console.log("Op:", Op); // Log 'Op' to ensure it is defined
-        const { month, year } = req.query;
+        const { month, year, filterMode } = req.query; // filterMode: 'activity' (default) or 'submission'
         if (!month || !year) return res.status(400).json({ error: 'Month and Year required' });
 
         const m = parseInt(month);
@@ -1589,22 +1589,26 @@ app.get('/api/admin/summary', authenticateToken, isAdmin, async (req, res, next)
 
         // Month is 0-indexed in JS Date, but query is 1-indexed (1=Jan)
         const startDate = new Date(y, m - 1, 1).toISOString().split('T')[0];
-        const endDate = new Date(y, m, 0).toISOString().split('T')[0];
+        const endDate = new Date(y, m, 0).toISOString().split('T')[0] + ' 23:59:59'; // Include end of day for createdAt comparisons
 
-        console.log(`Summary Query: ${startDate} to ${endDate}`);
+        console.log(`Summary Query: ${month}/${year}, Mode: ${filterMode || 'activity'}`);
+
+        const dateFilter = (filterMode === 'submission')
+            ? { createdAt: { [Op.between]: [new Date(y, m - 1, 1), new Date(y, m, 0, 23, 59, 59)] } }
+            : { date: { [Op.between]: [startDate, endDate.split(' ')[0]] } };
 
         // Fetch all relevant data first
         const [users, overtimes, claims] = await Promise.all([
             User.findAll({ attributes: ['id', 'name', 'role'] }),
             Overtime.findAll({
                 where: {
-                    date: { [Op.between]: [startDate, endDate] },
+                    ...dateFilter,
                     status: { [Op.in]: ['Approved', 'Pending'] }
                 }
             }),
             Claim.findAll({
                 where: {
-                    date: { [Op.between]: [startDate, endDate] },
+                    ...dateFilter,
                     status: { [Op.in]: ['Approved', 'Pending'] }
                 }
             })
@@ -1623,7 +1627,8 @@ app.get('/api/admin/summary', authenticateToken, isAdmin, async (req, res, next)
                 overtimeTotal: 0,
                 claimTotal: 0,
                 totalPayable: 0,
-                status: 'Active'
+                status: 'Active',
+                details: { overtimes: [], claims: [] }
             };
         });
 
@@ -1639,10 +1644,20 @@ app.get('/api/admin/summary', authenticateToken, isAdmin, async (req, res, next)
                     overtimeTotal: 0,
                     claimTotal: 0,
                     totalPayable: 0,
-                    status: 'Deleted'
+                    status: 'Deleted',
+                    details: { overtimes: [], claims: [] }
                 };
             }
             summaryMap[uid].overtimeTotal += (ot.payableAmount || 0);
+            // Add detail for expansion
+            summaryMap[uid].details.overtimes.push({
+                id: ot.id,
+                date: ot.date,
+                createdAt: ot.createdAt,
+                activity: ot.activity,
+                hours: ot.hours,
+                amount: ot.payableAmount
+            });
         });
 
         // Aggregate Claims
@@ -1656,10 +1671,20 @@ app.get('/api/admin/summary', authenticateToken, isAdmin, async (req, res, next)
                     overtimeTotal: 0,
                     claimTotal: 0,
                     totalPayable: 0,
-                    status: 'Deleted'
+                    status: 'Deleted',
+                    details: { overtimes: [], claims: [] }
                 };
             }
             summaryMap[uid].claimTotal += (cl.amount || 0);
+            // Add detail for expansion
+            summaryMap[uid].details.claims.push({
+                id: cl.id,
+                date: cl.date,
+                createdAt: cl.createdAt,
+                title: cl.title,
+                status: cl.status,
+                amount: cl.amount
+            });
         });
 
         // Calculate Totals and cleanup
