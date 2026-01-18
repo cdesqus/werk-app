@@ -1591,155 +1591,96 @@ app.get('/api/admin/audit-logs', authenticateToken, isAdmin, async (req, res, ne
 });
 
 
-// Admin Payroll Summary (Postgres & Cutoff Logic)
+// Admin Payroll Summary (Robust Raw SQL & Jan Fix)
 app.get('/api/admin/summary', authenticateToken, isAdmin, async (req, res, next) => {
     try {
         const { month, year } = req.query;
         if (!month || !year) return res.status(400).json({ error: 'Month and Year required' });
 
-        const m = parseInt(month);
-        const y = parseInt(year);
+        // --- 1. ROBUST DATE LOGIC (Fixing the January/Year-End Bug) ---
+        const currentMonthIndex = parseInt(month) - 1; // JS months are 0-11
+        const currentYear = parseInt(year);
 
-        if (isNaN(m) || isNaN(y)) {
+        if (isNaN(currentMonthIndex) || isNaN(currentYear)) {
             return res.status(400).json({ error: 'Invalid Month or Year' });
         }
 
-        // PAYROLL CUTOFF LOGIC
-        // Start Date: 28th of Previous Month
-        // End Date: 27th of Current Month
-        // Example: For Jan 2026 (Month 1), Range is Dec 28, 2025 - Jan 27, 2026
+        // Calculate Previous Month (Start Date)
+        let prevMonthIndex = currentMonthIndex - 1;
+        let prevMonthYear = currentYear;
 
-        let startMonth = m - 2; // m is 1-based (Jan=1). Prev month index is 0-based: 1 - 2 = -1 (Dec of prev year)
-        let startYear = y;
+        if (prevMonthIndex < 0) {
+            prevMonthIndex = 11; // December
+            prevMonthYear = currentYear - 1; // Go back one year
+        }
 
-        const startDate = new Date(startYear, m - 1 - 1, 28); // Month is 0-indexed. m=1 -> Jan. m-1=0(Jan). m-1-1=-1(Dec)
+        // Start: 28th of Prev Month
+        const startDate = new Date(prevMonthYear, prevMonthIndex, 28);
         startDate.setHours(0, 0, 0, 0);
 
-        const endDate = new Date(y, m - 1, 27);
+        // End: 27th of Current Month (End of Day)
+        const endDate = new Date(currentYear, currentMonthIndex, 27);
         endDate.setHours(23, 59, 59, 999);
 
-        console.log(`[Summary] Cutoff Query: ${startDate.toISOString()} to ${endDate.toISOString()}`);
+        // Postgres requires ISO Strings
+        const startStr = startDate.toISOString();
+        const endStr = endDate.toISOString();
 
-        const dateFilter = {
-            createdAt: {
-                [Op.gte]: startDate,
-                [Op.lte]: endDate
-            }
-        };
+        console.log(`[Summary] Debug: ${month}/${year}`);
+        console.log(`[Summary] Cutoff: ${startStr} TO ${endStr}`);
 
-        // Fetch all relevant data first
-        const [users, overtimes, claims] = await Promise.all([
-            User.findAll({ attributes: ['id', 'name', 'role', 'staffId', 'email'] }),
-            Overtime.findAll({
-                where: {
-                    ...dateFilter,
-                    status: { [Op.in]: ['Approved', 'Pending'] }
-                }
-            }),
-            Claim.findAll({
-                where: {
-                    ...dateFilter,
-                    status: { [Op.in]: ['Approved', 'Pending'] }
-                }
-            })
-        ]);
+        // --- 2. SQL QUERY WITH TYPE CASTING ---
+        // Note: double quotes for camelCase columns in Postgres are critical
+        const sql = `
+            SELECT 
+                u.id, u.name, u.email, u.role, u."staffId",
+                COALESCE(SUM(CASE WHEN o.status = 'Approved' THEN o."payableAmount" ELSE 0 END), 0)::int as "overtimeTotal",
+                COALESCE(SUM(CASE WHEN o.status = 'Approved' THEN o.hours ELSE 0 END), 0)::float as "overtimeHours",
+                COALESCE(SUM(CASE WHEN c.status = 'Approved' THEN c.amount ELSE 0 END), 0)::int as "claimTotal"
+            FROM "Users" u
+            LEFT JOIN "Overtimes" o ON u.id = o."UserId" 
+                AND o."createdAt" >= $1 AND o."createdAt" <= $2
+            LEFT JOIN "Claims" c ON u.id = c."UserId" 
+                AND c."createdAt" >= $1 AND c."createdAt" <= $2
+            GROUP BY u.id
+        `;
 
-        const summaryMap = {};
+        // Use sequelize.query instead of raw pool
+        const users = await sequelize.query(sql, {
+            bind: [startStr, endStr],
+            type: Sequelize.QueryTypes.SELECT
+        });
 
-        // Initialize with existing users
-        users.forEach(user => {
-            summaryMap[user.id] = {
-                id: user.id, // Explicitly include id for frontend keys
+        // --- 3. TRANSFORM & SAFE CALCULATION ---
+        const summary = users.map(user => {
+            const ot = parseFloat(user.overtimeTotal) || 0;
+            const cl = parseFloat(user.claimTotal) || 0;
+
+            return {
+                id: user.id,
                 userId: user.id,
                 name: user.name,
                 role: user.role,
-                staffId: user.staffId, // Include staffId if available
+                staffId: user.staffId,
                 email: user.email,
-                overtimeTotal: 0,
-                overtimeHours: 0,
-                claimTotal: 0,
-                totalPayable: 0,
+                overtimeTotal: ot,
+                overtimeHours: parseFloat(user.overtimeHours) || 0,
+                claimTotal: cl,
+                totalPayable: ot + cl,
                 status: 'Active',
-                details: { overtimes: [], claims: [] }
+                details: { overtimes: [], claims: [] } // Metadata omitted for performance in summary view
             };
-        });
-
-        // Agregate Overtimes
-        overtimes.forEach(ot => {
-            const uid = ot.UserId;
-            if (!summaryMap[uid]) {
-                summaryMap[uid] = {
-                    id: uid,
-                    userId: uid,
-                    name: 'Unknown User (Deleted)',
-                    role: 'N/A',
-                    staffId: 'N/A',
-                    email: '',
-                    overtimeTotal: 0,
-                    overtimeHours: 0,
-                    claimTotal: 0,
-                    totalPayable: 0,
-                    status: 'Deleted',
-                    details: { overtimes: [], claims: [] }
-                };
-            }
-            summaryMap[uid].overtimeTotal += (parseFloat(ot.payableAmount) || 0); // Ensure float for Postgres decimal type
-            summaryMap[uid].overtimeHours += (parseFloat(ot.hours) || 0);
-
-            summaryMap[uid].details.overtimes.push({
-                id: ot.id,
-                date: ot.date,
-                createdAt: ot.createdAt,
-                activity: ot.activity,
-                hours: ot.hours,
-                amount: ot.payableAmount
-            });
-        });
-
-        // Aggregate Claims
-        claims.forEach(cl => {
-            const uid = cl.UserId;
-            if (!summaryMap[uid]) {
-                summaryMap[uid] = {
-                    id: uid,
-                    userId: uid,
-                    name: 'Unknown User (Deleted)',
-                    role: 'N/A',
-                    staffId: 'N/A',
-                    email: '',
-                    overtimeTotal: 0,
-                    overtimeHours: 0,
-                    claimTotal: 0,
-                    totalPayable: 0,
-                    status: 'Deleted',
-                    details: { overtimes: [], claims: [] }
-                };
-            }
-            summaryMap[uid].claimTotal += (parseFloat(cl.amount) || 0);
-
-            summaryMap[uid].details.claims.push({
-                id: cl.id,
-                date: cl.date,
-                createdAt: cl.createdAt,
-                title: cl.title,
-                status: cl.status,
-                amount: cl.amount
-            });
-        });
-
-        // Calculate Totals and cleanup
-        const summary = Object.values(summaryMap)
-            .map(item => ({
-                ...item,
-                totalPayable: item.overtimeTotal + item.claimTotal
-            }))
-            .filter(item => item.totalPayable > 0 || item.status === 'Active')
-            .sort((a, b) => b.totalPayable - a.totalPayable);
+        }).sort((a, b) => b.totalPayable - a.totalPayable);
 
         res.json(summary);
+
     } catch (error) {
-        console.error("Summary Endpoint Error:", error);
-        res.status(500).json({ error: error.message });
+        console.error("🚨 PAYROLL CRASH:", error);
+        // Log explicitly for debugging
+        if (error.original) {
+            console.error("SQL Error:", error.original);
+        }
+        res.status(500).json({ error: "Server Error", details: error.message });
     }
 });
 
