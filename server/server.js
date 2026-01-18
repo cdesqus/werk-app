@@ -1639,15 +1639,15 @@ app.get('/api/admin/summary', authenticateToken, isAdmin, async (req, res, next)
                 COALESCE(SUM(CASE WHEN c.status = 'Approved' THEN c.amount ELSE 0 END), 0)::int as "claimTotal"
             FROM "Users" u
             LEFT JOIN "Overtimes" o ON u.id = o."UserId" 
-                AND o."createdAt" >= $1 AND o."createdAt" <= $2
+                AND o."createdAt" >= :startDate AND o."createdAt" <= :endDate
             LEFT JOIN "Claims" c ON u.id = c."UserId" 
-                AND c."createdAt" >= $1 AND c."createdAt" <= $2
-            GROUP BY u.id
+                AND c."createdAt" >= :startDate AND c."createdAt" <= :endDate
+            GROUP BY u.id, u.name, u.email, u.role, u."staffId"
         `;
 
-        // Use sequelize.query instead of raw pool
+        // Use sequelize.query with replacements (safer than bind in some versions)
         const users = await sequelize.query(sql, {
-            bind: [startStr, endStr],
+            replacements: { startDate: startStr, endDate: endStr },
             type: Sequelize.QueryTypes.SELECT
         });
 
