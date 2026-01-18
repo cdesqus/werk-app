@@ -71,7 +71,7 @@ const Presence = () => {
             // If no log, default to CLOCK_IN. If last was CLOCK_IN, next is CLOCK_OUT.
             const type = lastLog?.type === 'CLOCK_IN' ? 'CLOCK_OUT' : 'CLOCK_IN';
 
-            const { data } = await api.post('/api/attendance', {
+            const { data } = await api.post('/attendance', {
                 latitude: location.latitude,
                 longitude: location.longitude,
                 accuracy: location.accuracy,
@@ -174,9 +174,6 @@ const Presence = () => {
                     <MapPin size={40} className={clsx("text-white drop-shadow-md", isSubmitting && "animate-bounce")} />
                     <span className="text-2xl font-black text-white tracking-widest drop-shadow-sm uppercase">
                         {isSubmitting ? 'Verifying...' : nextAction.replace('_', ' ')}
-                    </span>
-                    <span className="text-white/80 text-xs font-bold bg-black/10 px-2 py-1 rounded">
-                        GPS LOCKED
                     </span>
                 </button>
             </div>
