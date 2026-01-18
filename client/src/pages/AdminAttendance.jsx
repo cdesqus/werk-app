@@ -80,12 +80,12 @@ const AdminAttendance = () => {
             u.durationStr = duration > 0 ? `${hrs}h ${mins}m` : '-';
 
             return u;
-        }).filter(u => u.name.toLowerCase().includes(userFilter.toLowerCase()));
+        }).filter(u => (u.name || '').toLowerCase().includes(userFilter.toLowerCase()));
     }, [logs, userFilter]);
 
     // Raw Filtered Logs
     const filteredRawLogs = logs.filter(log =>
-        log.User?.name.toLowerCase().includes(userFilter.toLowerCase())
+        (log.User?.name || 'Unknown').toLowerCase().includes(userFilter.toLowerCase())
     );
 
     // Export Handler
