@@ -3,7 +3,7 @@ import { useToast } from '../context/ToastContext';
 import { useAuth } from '../context/AuthContext';
 import api from '../utils/api';
 import ConfirmModal from '../components/ui/ConfirmModal';
-import { Edit2, X, Shield, User, Phone, Calendar, Search, Plus, Trash2, Mail, Lock, Palmtree } from 'lucide-react';
+import { Edit2, X, Shield, User, Phone, Calendar, Search, Plus, Trash2, Mail, Lock, Palmtree, MapPin } from 'lucide-react';
 import clsx from 'clsx';
 
 const AdminUsers = () => {
@@ -12,7 +12,7 @@ const AdminUsers = () => {
     const [users, setUsers] = useState([]);
     const [editingUser, setEditingUser] = useState(null);
     const [showAddModal, setShowAddModal] = useState(false);
-    const [formData, setFormData] = useState({ name: '', email: '', phone: '', birthDate: '', password: '', role: 'staff', leaveQuota: 12 });
+    const [formData, setFormData] = useState({ name: '', email: '', phone: '', birthDate: '', password: '', role: 'staff', leaveQuota: 12, can_attendance: false });
     const [searchTerm, setSearchTerm] = useState('');
     const [confirmModal, setConfirmModal] = useState({ isOpen: false, id: null });
 
@@ -38,7 +38,8 @@ const AdminUsers = () => {
             birthDate: user.birthDate || '',
             password: '',
             role: user.role,
-            leaveQuota: user.leaveQuota !== undefined ? user.leaveQuota : 12
+            leaveQuota: user.leaveQuota !== undefined ? user.leaveQuota : 12,
+            can_attendance: user.can_attendance || false
         });
     };
 
@@ -55,7 +56,8 @@ const AdminUsers = () => {
                 phone: formData.phone,
                 birthDate: formData.birthDate,
                 newPassword: formData.password,
-                leaveQuota: formData.leaveQuota
+                leaveQuota: formData.leaveQuota,
+                can_attendance: formData.can_attendance
             });
             setEditingUser(null);
             fetchUsers();
@@ -276,6 +278,27 @@ const AdminUsers = () => {
                                                         className="input-field w-full"
                                                     />
                                                     <span className="text-muted-foreground text-sm whitespace-nowrap">Days / Year</span>
+                                                </div>
+                                            </div>
+
+                                            <div className="space-y-2 pt-4 border-t border-border">
+                                                <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-2 mb-2"><MapPin size={14} /> GPS Presence Feature</label>
+                                                <div className="flex items-center gap-3 p-3 bg-muted/50 rounded-xl border border-border">
+                                                    <div className="flex-1">
+                                                        <span className="text-sm font-bold text-foreground block">Enable Attendance</span>
+                                                        <span className="text-xs text-muted-foreground">Allow user to clock in/out via GPS</span>
+                                                    </div>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => setFormData({ ...formData, can_attendance: !formData.can_attendance })}
+                                                        className={clsx("w-12 h-6 rounded-full p-1 transition-all duration-300 relative",
+                                                            formData.can_attendance ? "bg-emerald-500" : "bg-zinc-300 dark:bg-zinc-700"
+                                                        )}
+                                                    >
+                                                        <div className={clsx("w-4 h-4 rounded-full bg-white shadow-sm transition-all duration-300",
+                                                            formData.can_attendance ? "translate-x-6" : "translate-x-0"
+                                                        )} />
+                                                    </button>
                                                 </div>
                                             </div>
                                         </div>

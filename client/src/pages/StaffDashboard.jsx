@@ -5,7 +5,8 @@ import { useToast } from '../context/ToastContext';
 import api from '../utils/api';
 import ConfirmModal from '../components/ui/ConfirmModal';
 import DateInput from '../components/ui/DateInput';
-import { Clock, FileText, History, Palmtree, Sparkles, Upload, Megaphone, BarChart2, Zap, CheckCircle, Circle, Plus, X, Calendar, Pencil, Trash2, Camera, CheckCircle2, Lock, Monitor, Moon, Sun, Settings, DollarSign } from 'lucide-react';
+import { Clock, FileText, History, Palmtree, Sparkles, Upload, Megaphone, BarChart2, Zap, CheckCircle, Circle, Plus, X, Calendar, Pencil, Trash2, Camera, CheckCircle2, Lock, Monitor, Moon, Sun, Settings, DollarSign, MapPin } from 'lucide-react';
+import Presence from './Presence';
 import { format, differenceInMinutes, parse, isSunday } from 'date-fns';
 import clsx from 'clsx';
 
@@ -398,6 +399,7 @@ const StaffDashboard = () => {
 
     const tabs = [
         { id: 'overtime', label: 'My Hustle', icon: Clock },
+        ...(user?.can_attendance ? [{ id: 'presence', label: 'Presence', icon: MapPin }] : []),
         { id: 'claim', label: 'Claims', icon: FileText },
         { id: 'leave', label: 'Touch Grass', icon: Palmtree },
         { id: 'quests', label: 'Side Quests', icon: Zap },
@@ -568,6 +570,7 @@ const StaffDashboard = () => {
 
                     if (isActive) {
                         if (tab.id === 'overtime') { activeStyle = "text-orange-600 dark:text-orange-400 border-b-2 border-orange-500"; iconColor = "text-orange-500"; }
+                        if (tab.id === 'presence') { activeStyle = "text-red-600 dark:text-red-400 border-b-2 border-red-500"; iconColor = "text-red-500"; }
                         if (tab.id === 'claim') { activeStyle = "text-emerald-600 dark:text-emerald-400 border-b-2 border-emerald-500"; iconColor = "text-emerald-500"; }
                         if (tab.id === 'leave') { activeStyle = "text-pink-600 dark:text-pink-400 border-b-2 border-pink-500"; iconColor = "text-pink-500"; }
                         if (tab.id === 'quests') { activeStyle = "text-amber-600 dark:text-amber-400 border-b-2 border-amber-500"; iconColor = "text-amber-500"; }
@@ -605,6 +608,9 @@ const StaffDashboard = () => {
                         {renderHistoryList('overtime')}
                     </div>
                 )}
+
+                {/* Presence Tab - Conditionally Rendered */}
+                {activeTab === 'presence' && <Presence />}
 
                 {/* Claims Tab */}
                 {activeTab === 'claim' && (

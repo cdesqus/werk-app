@@ -199,7 +199,8 @@ const User = sequelize.define('User', {
     birthDate: { type: DataTypes.DATEONLY },
     staffId: { type: DataTypes.STRING, unique: true },
     otp: { type: DataTypes.STRING },
-    otpExpires: { type: DataTypes.DATE }
+    otpExpires: { type: DataTypes.DATE },
+    can_attendance: { type: DataTypes.BOOLEAN, defaultValue: false }
 });
 
 const Overtime = sequelize.define('Overtime', {
@@ -254,10 +255,19 @@ const Quest = sequelize.define('Quest', {
     assignedTo: { type: DataTypes.INTEGER } // Foreign key manually handled or via association
 });
 
-// New Setting model for System Services
 const Setting = sequelize.define('Setting', {
     key: { type: DataTypes.STRING, primaryKey: true },
     value: { type: DataTypes.BOOLEAN, defaultValue: true }
+});
+
+const AttendanceLog = sequelize.define('AttendanceLog', {
+    type: { type: DataTypes.STRING, allowNull: false }, // 'CLOCK_IN' | 'CLOCK_OUT'
+    timestamp: { type: DataTypes.DATE, allowNull: false }, // Server Time
+    latitude: { type: DataTypes.FLOAT, allowNull: false },
+    longitude: { type: DataTypes.FLOAT, allowNull: false },
+    accuracy: { type: DataTypes.FLOAT },
+    address: { type: DataTypes.TEXT },
+    is_suspicious: { type: DataTypes.BOOLEAN, defaultValue: false }
 });
 
 // Relationships
@@ -293,6 +303,9 @@ Quest.belongsTo(User, { foreignKey: 'assignedTo' });
 
 User.hasMany(AuditLog);
 AuditLog.belongsTo(User);
+
+User.hasMany(AttendanceLog);
+AttendanceLog.belongsTo(User);
 
 // Helper: Log Audit Event
 const logAudit = async (userId, action, details, req) => {
@@ -381,7 +394,7 @@ app.post('/api/login', authLimiter, loginValidation, validate, async (req, res, 
         await logAudit(user.id, 'User Login', 'Successful login', req);
 
         // Security: Explicitly define returned fields, excluding password hash
-        res.json({ token, user: { id: user.id, name: user.name, email: user.email, role: user.role, leaveQuota: user.leaveQuota } });
+        res.json({ token, user: { id: user.id, name: user.name, email: user.email, role: user.role, leaveQuota: user.leaveQuota, can_attendance: user.can_attendance } });
     } catch (error) {
         next(error);
     }
@@ -1300,6 +1313,7 @@ app.put('/api/admin/users/:id', authenticateToken, isAdmin, async (req, res, nex
         if (phone) user.phone = phone;
         if (req.body.birthDate) user.birthDate = req.body.birthDate;
         if (req.body.leaveQuota !== undefined) user.leaveQuota = req.body.leaveQuota;
+        if (req.body.can_attendance !== undefined) user.can_attendance = req.body.can_attendance;
         if (newPassword) {
             user.password = await bcrypt.hash(newPassword, 10);
         }
@@ -1326,6 +1340,105 @@ app.delete('/api/admin/users/:id', authenticateToken, isAdmin, async (req, res, 
         await logAudit(req.user.id, 'Admin Deleted User', `Deleted user ID: ${req.params.id} (${user.email})`, req);
 
         res.json({ message: 'User deleted successfully' });
+    } catch (error) {
+        next(error);
+    }
+});
+
+// Helper: Haversine Distance
+function getDistanceFromLatLonInKm(lat1, lon1, lat2, lon2) {
+    const R = 6371; // Radius of the earth in km
+    const dLat = deg2rad(lat2 - lat1);
+    const dLon = deg2rad(lon2 - lon1);
+    const a =
+        Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+        Math.cos(deg2rad(lat1)) * Math.cos(deg2rad(lat2)) *
+        Math.sin(dLon / 2) * Math.sin(dLon / 2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    const d = R * c; // Distance in km
+    return d;
+}
+
+function deg2rad(deg) {
+    return deg * (Math.PI / 180);
+}
+
+// Attendance API
+app.post('/api/attendance', authenticateToken, async (req, res, next) => {
+    try {
+        const { latitude, longitude, accuracy, type } = req.body;
+        const user = await User.findByPk(req.user.id);
+
+        if (!user.can_attendance) {
+            return res.status(403).json({ error: 'Attendance feature is not enabled for your account.' });
+        }
+
+        const serverTime = new Date(); // TRUSTED SERVER TIME
+        let is_suspicious = false;
+
+        // Superman Heuristic: Check against last log
+        const lastLog = await AttendanceLog.findOne({
+            where: { UserId: user.id },
+            order: [['timestamp', 'DESC']]
+        });
+
+        if (lastLog) {
+            const distKm = getDistanceFromLatLonInKm(lastLog.latitude, lastLog.longitude, latitude, longitude);
+            const timeDiffHours = (serverTime - new Date(lastLog.timestamp)) / 1000 / 3600;
+
+            // Avoid division by zero if logs are practically simultaneous
+            if (timeDiffHours > 0.0002) { // > ~0.7 seconds
+                const speed = distKm / timeDiffHours;
+                if (speed > 800) { // 800 km/h threshold
+                    is_suspicious = true;
+                    console.log(`[Attendance] Suspicious Speed Detected: User ${user.name}, Speed: ${speed.toFixed(2)} km/h`);
+                }
+            }
+        }
+
+        const log = await AttendanceLog.create({
+            UserId: user.id,
+            type,
+            timestamp: serverTime,
+            latitude,
+            longitude,
+            accuracy,
+            is_suspicious
+        });
+
+        res.status(201).json(log);
+    } catch (error) {
+        next(error);
+    }
+});
+
+app.get('/api/attendance', authenticateToken, async (req, res, next) => {
+    try {
+        const { userId, date } = req.query;
+        let whereClause = {};
+
+        // RBAC: Admin sees all (filtered), Staff sees own
+        if (['admin', 'super_admin'].includes(req.user.role)) {
+            if (userId) whereClause.UserId = userId;
+        } else {
+            whereClause.UserId = req.user.id;
+        }
+
+        if (date) {
+            const start = new Date(date);
+            start.setHours(0, 0, 0, 0);
+            const end = new Date(date);
+            end.setHours(23, 59, 59, 999);
+            whereClause.timestamp = { [Op.between]: [start, end] };
+        }
+
+        const logs = await AttendanceLog.findAll({
+            where: whereClause,
+            include: [{ model: User, attributes: ['name', 'staffId'] }],
+            order: [['timestamp', 'DESC']]
+        });
+
+        res.json(logs);
     } catch (error) {
         next(error);
     }
@@ -1458,7 +1571,7 @@ app.use((err, req, res, next) => {
 
 // Sync DB & Start Server
 // Using sync() without options prevents data loss from table recreation on restarts
-sequelize.sync().then(async () => {
+sequelize.sync({ alter: true }).then(async () => {
     console.log('Database synced');
 
     // Create Default Admin if not exists
