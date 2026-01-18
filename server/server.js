@@ -159,19 +159,34 @@ const transporter = nodemailer.createTransport({
 
 // Database Setup
 // Database Setup
-const dataDir = path.join(__dirname, 'data');
-if (!fs.existsSync(dataDir)) {
-    fs.mkdirSync(dataDir);
-}
-
-const dbPath = path.join(dataDir, 'database.sqlite');
-console.log(`[DB] Using database file at: ${dbPath}`);
-
-const sequelize = new Sequelize({
-    dialect: 'sqlite',
-    storage: dbPath,
-    logging: false
-});
+// Database Setup (PostgreSQL Migration)
+const sequelize = new Sequelize(
+    process.env.DB_NAME || 'werk_db',
+    process.env.DB_USER || 'postgres',
+    process.env.DB_PASS || 'postgres',
+    {
+        host: process.env.DB_HOST || 'localhost',
+        dialect: 'postgres',
+        logging: false,
+        pool: {
+            max: 5,
+            min: 0,
+            acquire: 30000,
+            idle: 10000
+        },
+        retry: {
+            match: [
+                /SequelizeConnectionError/,
+                /SequelizeConnectionRefusedError/,
+                /SequelizeHostNotFoundError/,
+                /SequelizeHostNotReachableError/,
+                /SequelizeInvalidConnectionError/,
+                /SequelizeConnectionTimedOutError/
+            ],
+            max: 5
+        }
+    }
+);
 
 // Models
 const User = sequelize.define('User', {
@@ -1572,7 +1587,7 @@ app.get('/api/admin/audit-logs', authenticateToken, isAdmin, async (req, res, ne
 });
 
 
-// Admin Payroll Summary
+// Admin Payroll Summary (Postgres & Cutoff Logic)
 app.get('/api/admin/summary', authenticateToken, isAdmin, async (req, res, next) => {
     try {
         const { month, year } = req.query;
@@ -1585,25 +1600,41 @@ app.get('/api/admin/summary', authenticateToken, isAdmin, async (req, res, next)
             return res.status(400).json({ error: 'Invalid Month or Year' });
         }
 
-        // Construct simpler date strings for SQLite DATEONLY comparison
-        const startStr = `${y}-${String(m).padStart(2, '0')}-01`;
-        const lastDay = new Date(y, m, 0).getDate();
-        const endStr = `${y}-${String(m).padStart(2, '0')}-${lastDay}`;
+        // PAYROLL CUTOFF LOGIC
+        // Start Date: 28th of Previous Month
+        // End Date: 27th of Current Month
+        // Example: For Jan 2026 (Month 1), Range is Dec 28, 2025 - Jan 27, 2026
 
-        console.log(`[Summary] Query: ${startStr} to ${endStr}`);
+        let startMonth = m - 2; // m is 1-based (Jan=1). Prev month index is 0-based: 1 - 2 = -1 (Dec of prev year)
+        let startYear = y;
+
+        const startDate = new Date(startYear, m - 1 - 1, 28); // Month is 0-indexed. m=1 -> Jan. m-1=0(Jan). m-1-1=-1(Dec)
+        startDate.setHours(0, 0, 0, 0);
+
+        const endDate = new Date(y, m - 1, 27);
+        endDate.setHours(23, 59, 59, 999);
+
+        console.log(`[Summary] Cutoff Query: ${startDate.toISOString()} to ${endDate.toISOString()}`);
+
+        const dateFilter = {
+            createdAt: {
+                [Op.gte]: startDate,
+                [Op.lte]: endDate
+            }
+        };
 
         // Fetch all relevant data first
         const [users, overtimes, claims] = await Promise.all([
             User.findAll({ attributes: ['id', 'name', 'role', 'staffId', 'email'] }),
             Overtime.findAll({
                 where: {
-                    date: { [Op.between]: [startStr, endStr] },
+                    ...dateFilter,
                     status: { [Op.in]: ['Approved', 'Pending'] }
                 }
             }),
             Claim.findAll({
                 where: {
-                    date: { [Op.between]: [startStr, endStr] },
+                    ...dateFilter,
                     status: { [Op.in]: ['Approved', 'Pending'] }
                 }
             })
@@ -1648,8 +1679,8 @@ app.get('/api/admin/summary', authenticateToken, isAdmin, async (req, res, next)
                     details: { overtimes: [], claims: [] }
                 };
             }
-            summaryMap[uid].overtimeTotal += (ot.payableAmount || 0);
-            summaryMap[uid].overtimeHours += (ot.hours || 0);
+            summaryMap[uid].overtimeTotal += (parseFloat(ot.payableAmount) || 0); // Ensure float for Postgres decimal type
+            summaryMap[uid].overtimeHours += (parseFloat(ot.hours) || 0);
 
             summaryMap[uid].details.overtimes.push({
                 id: ot.id,
@@ -1680,7 +1711,7 @@ app.get('/api/admin/summary', authenticateToken, isAdmin, async (req, res, next)
                     details: { overtimes: [], claims: [] }
                 };
             }
-            summaryMap[uid].claimTotal += (cl.amount || 0);
+            summaryMap[uid].claimTotal += (parseFloat(cl.amount) || 0);
 
             summaryMap[uid].details.claims.push({
                 id: cl.id,
