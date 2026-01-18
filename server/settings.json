@@ -1,11 +1,11 @@
 {
     "smtp": {
-        "host": "",
-        "port": 587,
-        "secure": false,
-        "user": "",
-        "pass": "",
-        "fromEmail": "",
+        "host": "mail.idesolusi.co.id",
+        "port": 465,
+        "secure": true,
+        "user": "noreply@idesolusi.co.id",
+        "pass": "6)H*aHP=PUT.Y6Yk",
+        "fromEmail": "noreply@idesolusi.co.id",
         "fromName": "WERK IDE"
     }
 }
