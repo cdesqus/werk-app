@@ -1,8 +1,27 @@
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { AuthProvider, useAuth } from './context/AuthContext';
+import { ToastProvider } from './context/ToastContext';
 import ForceChangePassword from './pages/Auth/ForceChangePassword';
 
-// ... (imports)
+import Layout from './components/Layout';
+import ProtectedRoute from './components/ProtectedRoute';
+import Login from './pages/Login';
+import Register from './pages/Register';
+import StaffDashboard from './pages/StaffDashboard';
 
-// Simple wrapper to check auth but NOT password status (to avoid loops)
+import AdminLayout from './components/AdminLayout';
+import AdminDashboard from './pages/AdminDashboard';
+import AdminUsers from './pages/AdminUsers';
+import AdminOvertimes from './pages/AdminOvertimes';
+import AdminClaims from './pages/AdminClaims';
+import AdminPayroll from './pages/AdminPayroll';
+import AdminLeaves from './pages/AdminLeaves';
+import AdminQuests from './pages/AdminQuests';
+import AdminVibeCheck from './pages/AdminVibeCheck';
+import AdminAuditLogs from './pages/AdminAuditLogs';
+import AdminSettings from './pages/AdminSettings';
+import AdminAttendance from './pages/AdminAttendance';
+
 const RequireAuth = ({ children }) => {
   const { user, loading } = useAuth();
   if (loading) return null; // or spinner
@@ -10,51 +29,57 @@ const RequireAuth = ({ children }) => {
   return children;
 };
 
-// ... (HomeRedirect)
+const HomeRedirect = () => {
+  const { user, loading } = useAuth();
+  if (loading) return null;
+  if (!user) return <Navigate to="/login" replace />;
+  return ['admin', 'super_admin'].includes(user.role) ? <Navigate to="/admin" replace /> : <Navigate to="/staff" replace />;
+};
 
 function App() {
   return (
     <BrowserRouter>
-      {/* ... */}
-      <Routes>
-        <Route path="/login" element={<Login />} />
-        <Route path="/register" element={<Register />} />
+      <AuthProvider>
+        <ToastProvider>
+          <Routes>
+            <Route path="/login" element={<Login />} />
+            <Route path="/register" element={<Register />} />
 
-        <Route path="/force-change-password" element={
-          <RequireAuth>
-            <ForceChangePassword />
-          </RequireAuth>
-        } />
+            <Route path="/force-change-password" element={
+              <RequireAuth>
+                <ForceChangePassword />
+              </RequireAuth>
+            } />
 
-        {/* Staff Routes */}
-        {/* ... */}
-        <Route element={<ProtectedRoute allowedRoles={['staff', 'admin', 'super_admin']} />}>
-          <Route element={<Layout />}>
-            <Route path="/staff" element={<StaffDashboard />} />
-          </Route>
-        </Route>
+            {/* Staff Routes */}
+            {/* ... */}
+            <Route element={<ProtectedRoute allowedRoles={['staff', 'admin', 'super_admin']} />}>
+              <Route element={<Layout />}>
+                <Route path="/staff" element={<StaffDashboard />} />
+              </Route>
+            </Route>
 
-        {/* Admin Routes */}
-        <Route element={<ProtectedRoute allowedRoles={['admin', 'super_admin']} />}>
-          <Route element={<AdminLayout />}>
-            <Route path="/admin" element={<AdminDashboard />} />
-            <Route path="/admin/users" element={<AdminUsers />} />
-            <Route path="/admin/leaves" element={<AdminLeaves />} />
-            <Route path="/admin/payroll" element={<AdminPayroll />} />
-            <Route path="/admin/overtimes" element={<AdminOvertimes />} />
-            <Route path="/admin/claims" element={<AdminClaims />} />
-            <Route path="/admin/quests" element={<AdminQuests />} />
-            <Route path="/admin/vibes" element={<AdminVibeCheck />} />
-            <Route path="/admin/attendance" element={<AdminAttendance />} />
-            <Route path="/admin/logs" element={<AdminAuditLogs />} />
-            <Route path="/admin/settings" element={<AdminSettings />} />
-          </Route>
-        </Route>
+            {/* Admin Routes */}
+            <Route element={<ProtectedRoute allowedRoles={['admin', 'super_admin']} />}>
+              <Route element={<AdminLayout />}>
+                <Route path="/admin" element={<AdminDashboard />} />
+                <Route path="/admin/users" element={<AdminUsers />} />
+                <Route path="/admin/leaves" element={<AdminLeaves />} />
+                <Route path="/admin/payroll" element={<AdminPayroll />} />
+                <Route path="/admin/overtimes" element={<AdminOvertimes />} />
+                <Route path="/admin/claims" element={<AdminClaims />} />
+                <Route path="/admin/quests" element={<AdminQuests />} />
+                <Route path="/admin/vibes" element={<AdminVibeCheck />} />
+                <Route path="/admin/attendance" element={<AdminAttendance />} />
+                <Route path="/admin/logs" element={<AdminAuditLogs />} />
+                <Route path="/admin/settings" element={<AdminSettings />} />
+              </Route>
+            </Route>
 
-        {/* Default Redirect */}
-        <Route path="/" element={<HomeRedirect />} />
-      </Routes>
-    </ToastProvider>
+            {/* Default Redirect */}
+            <Route path="/" element={<HomeRedirect />} />
+          </Routes>
+        </ToastProvider>
       </AuthProvider >
     </BrowserRouter >
   );
