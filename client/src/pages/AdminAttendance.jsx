@@ -147,7 +147,7 @@ const AdminAttendance = () => {
                         <input
                             type="text"
                             placeholder="Filter user..."
-                            className="w-full bg-background border border-input rounded-xl px-4 py-2 pl-5 focus:ring-2 focus:ring-primary outline-none text-foreground placeholder-muted-foreground text-sm"
+                            className="w-full bg-background border border-input rounded-xl px-4 py-2 pl-9 focus:ring-2 focus:ring-primary outline-none text-foreground placeholder-muted-foreground text-sm"
                             value={userFilter}
                             onChange={e => setUserFilter(e.target.value)}
                         />
