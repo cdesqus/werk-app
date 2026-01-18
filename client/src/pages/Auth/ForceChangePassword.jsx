@@ -1,7 +1,7 @@
 import { useState } from 'react';
-import { useAuth } from '../context/AuthContext';
-import { useToast } from '../context/ToastContext';
-import api from '../utils/api';
+import { useAuth } from '../../context/AuthContext';
+import { useToast } from '../../context/ToastContext';
+import api from '../../utils/api';
 import { useNavigate } from 'react-router-dom';
 import { Lock, ArrowRight, ShieldCheck } from 'lucide-react';
 
