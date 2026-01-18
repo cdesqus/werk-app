@@ -1580,7 +1580,7 @@ app.get('/api/admin/summary', authenticateToken, isAdmin, async (req, res, next)
         const summary = Object.values(summaryMap).map(u => {
             u.totalPayable = u.overtimeTotal + u.claimTotal;
             return u;
-        }).sort((a, b) => b.totalPayable - a.totalPayable);
+        }).filter(u => u.totalPayable > 0).sort((a, b) => b.totalPayable - a.totalPayable);
 
         console.log('[Summary] Aggregation complete. Sending response.');
         res.json(summary);
