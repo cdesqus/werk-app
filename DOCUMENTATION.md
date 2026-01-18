@@ -123,7 +123,8 @@ graph TD
 
 ### Tech Stack
 *   **Frontend**: React, Vite, TailwindCSS (Glassmorphism), Lucide Icons.
-*   **Backend**: Node.js, Express, Sequelize (SQLite).
+*   **Backend**: Node.js, Express, Sequelize (PostgreSQL) - Migrate from SQLite in Jan 2026.
+*   **Database**: PostgreSQL 15 (Dockerized) - Chosen for reliability and complex date handling.
 *   **Security Middleware**: `helmet` (headers), `express-rate-limit`, `express-validator`, `multer` (upload limits).
 
 ### Database Schema (Key Models)
@@ -136,13 +137,28 @@ graph TD
 
 ## 🐳 Production Deployment (Docker)
 
+The system now runs on a fully containerized environment with a dedicated database service.
+
 1.  **Configuration**:
-    *   Ensure `.env` contains a strong `SECRET_KEY`.
-2.  **Build & Run**:
+    *   Ensure `.env` contains a strong `SECRET_KEY` and SMTP credentials.
+    *   Database connection is handled via `docker-compose` internal networking (`DB_HOST=db`).
+2.  **Container Structure**:
+    *   `client`: Nginx serving React App (Port 81).
+    *   `server`: Node.js Express API (Port 5000).
+    *   `db`: PostgreSQL 15 Database (Port 5432) with persistent volume `postgres_data`.
+3.  **Build & Run**:
     ```bash
-    docker-compose up -d --build
+    docker-compose down  # Stop old containers
+    docker-compose up -d --build # Build and start new stack
     ```
-3.  **Access**:
-    *   Frontend: `http://localhost:81`
+4.  **Access**:
+    *   Frontend: `http://localhost` (or configured domain)
     *   API: `http://localhost/api`
     *   Uploads: `http://localhost/uploads` (Served securely via Nginx).
+
+## 💰 Payroll Logic (Critical)
+The system enforces a strict **Monthly Cutoff Cycle**:
+- **Start Date**: 28th of the *Previous* Month.
+- **End Date**: 27th of the *Current* Month.
+- **Example**: For the **January 2026** payroll, the system aggregates approved tasks from **Dec 28, 2025** to **Jan 27, 2026**.
+- **Reasoning**: This provides a 3-4 day buffer for admin processing before the actual end-of-month payday, ensuring payments can be made strictly on the 1st or last day of the month without rushing.
