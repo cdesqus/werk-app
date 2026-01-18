@@ -6,3 +6,4 @@ server/data/database.sqlite
 server/data/
 *.sqlite
 *.sqlite-journal
+.env

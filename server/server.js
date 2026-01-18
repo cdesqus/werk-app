@@ -53,8 +53,12 @@ const allowedOrigins = [
     'https://werk.kaumtech.com',
     'https://www.werk.kaumtech.com',
     'https://api-werk.kaumtech.com',
+    'http://werk.kaumtech.com',
+    'http://api-werk.kaumtech.com',
     'http://localhost:5173',
-    'http://localhost:3000'
+    'http://localhost:3000',
+    'http://localhost:80',
+    'http://localhost:81'
 ];
 
 // --- MIDDLEWARE PIPELINE (Order is Critical) ---

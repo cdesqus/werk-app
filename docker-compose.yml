@@ -6,9 +6,9 @@ services:
     container_name: werk-db
     restart: always
     environment:
-      - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=postgres
-      - POSTGRES_DB=werk_db
+      - POSTGRES_USER=${DB_USER}
+      - POSTGRES_PASSWORD=${DB_PASS}
+      - POSTGRES_DB=${DB_NAME}
     ports:
       - "5432:5432"
     volumes:
@@ -24,13 +24,13 @@ services:
       - ./server/uploads:/app/uploads
       - ./server/settings.json:/app/settings.json
     environment:
-      - PORT=5000
-      - SECRET_KEY=${SECRET_KEY:-werk-secret-key-gen-z}
+      - PORT=${PORT:-5000}
+      - SECRET_KEY=${SECRET_KEY}
       - DB_HOST=db
-      - DB_USER=postgres
-      - DB_PASS=postgres
-      - DB_NAME=werk_db
-      - DB_PORT=5432
+      - DB_USER=${DB_USER}
+      - DB_PASS=${DB_PASS}
+      - DB_NAME=${DB_NAME}
+      - DB_PORT=${DB_PORT:-5432}
       - SMTP_HOST=${SMTP_HOST}
       - SMTP_PORT=${SMTP_PORT}
       - SMTP_USER=${SMTP_USER}
