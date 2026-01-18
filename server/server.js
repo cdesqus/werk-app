@@ -1580,43 +1580,87 @@ app.get('/api/admin/summary', authenticateToken, isAdmin, async (req, res, next)
         const startDate = new Date(year, month - 1, 1).toISOString().split('T')[0];
         const endDate = new Date(year, month, 0).toISOString().split('T')[0];
 
-        const users = await User.findAll({
-            attributes: ['id', 'name', 'role']
-        });
-
-        const summary = [];
-
-        for (const user of users) {
-            const overtimes = await Overtime.findAll({
+        // Fetch all relevant data first
+        const [users, overtimes, claims] = await Promise.all([
+            User.findAll({ attributes: ['id', 'name', 'role', 'staffId'] }),
+            Overtime.findAll({
                 where: {
-                    UserId: user.id,
-                    status: { [Op.in]: ['Approved', 'Pending'] },
-                    date: { [Op.between]: [startDate, endDate] }
+                    date: { [Op.between]: [startDate, endDate] },
+                    status: { [Op.in]: ['Approved', 'Pending'] }
                 }
-            });
-
-            const claims = await Claim.findAll({
+            }),
+            Claim.findAll({
                 where: {
-                    UserId: user.id,
-                    status: { [Op.in]: ['Approved', 'Pending'] },
-                    date: { [Op.between]: [startDate, endDate] }
+                    date: { [Op.between]: [startDate, endDate] },
+                    status: { [Op.in]: ['Approved', 'Pending'] }
                 }
-            });
+            })
+        ]);
 
-            const overtimeTotal = overtimes.reduce((sum, item) => sum + (item.payableAmount || 0), 0);
-            const claimTotal = claims.reduce((sum, item) => sum + (item.amount || 0), 0);
+        const userMap = users.reduce((acc, user) => {
+            acc[user.id] = user;
+            return acc;
+        }, {});
 
-            summary.push({
+        const summaryMap = {};
+
+        // Initialize with existing users
+        users.forEach(user => {
+            summaryMap[user.id] = {
                 userId: user.id,
                 name: user.name,
                 role: user.role,
-                overtimeTotal,
-                claimTotal,
-                totalPayable: overtimeTotal + claimTotal
-            });
-        }
+                staffId: user.staffId,
+                overtimeTotal: 0,
+                claimTotal: 0,
+                totalPayable: 0,
+                status: 'Active'
+            };
+        });
 
-        summary.sort((a, b) => b.totalPayable - a.totalPayable);
+        // Agregate Overtimes
+        overtimes.forEach(ot => {
+            const uid = ot.UserId;
+            if (!summaryMap[uid]) {
+                // Handle deleted/unknown users
+                summaryMap[uid] = {
+                    userId: uid,
+                    name: 'Unknown User (Deleted)',
+                    role: 'N/A',
+                    overtimeTotal: 0,
+                    claimTotal: 0,
+                    totalPayable: 0,
+                    status: 'Deleted'
+                };
+            }
+            summaryMap[uid].overtimeTotal += (ot.payableAmount || 0);
+        });
+
+        // Aggregate Claims
+        claims.forEach(cl => {
+            const uid = cl.UserId;
+            if (!summaryMap[uid]) {
+                summaryMap[uid] = {
+                    userId: uid,
+                    name: 'Unknown User (Deleted)',
+                    role: 'N/A',
+                    overtimeTotal: 0,
+                    claimTotal: 0,
+                    totalPayable: 0,
+                    status: 'Deleted'
+                };
+            }
+            summaryMap[uid].claimTotal += (cl.amount || 0);
+        });
+
+        // Calculate Totals and cleanup
+        const summary = Object.values(summaryMap)
+            .map(item => ({
+                ...item,
+                totalPayable: item.overtimeTotal + item.claimTotal
+            }))
+            .filter(item => item.totalPayable > 0 || item.status === 'Active') // Keep active users even if 0, keep deleted only if > 0
+            .sort((a, b) => b.totalPayable - a.totalPayable);
 
         res.json(summary);
     } catch (error) {
