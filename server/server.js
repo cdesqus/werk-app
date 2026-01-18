@@ -26,6 +26,7 @@ webpush.setVapidDetails(
     publicVapidKey,
     privateVapidKey
 );
+const app = express();
 const PORT = process.env.PORT || 5000;
 const SECRET_KEY = process.env.SECRET_KEY || 'werk-secret-key-gen-z';
 
@@ -99,33 +100,6 @@ app.use(generalLimiter);
 // Middleware (Order is Critical: CORS first, then Security/Body Parsing)
 
 
-app.use(cors({
-    origin: function (origin, callback) {
-        // Allow requests with no origin (like mobile apps or curl requests)
-        if (!origin) return callback(null, true);
-
-        if (allowedOrigins.indexOf(origin) !== -1 || origin.endsWith('.kaumtech.com')) {
-            return callback(null, true);
-        } else {
-            // For debugging production issues, we log the blocked origin
-            console.log('Blocked by CORS:', origin);
-            // Fail safe: reject if really unknown
-            return callback(new Error('Not allowed by CORS'));
-        }
-    },
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization'],
-    credentials: true,
-    optionsSuccessStatus: 204
-}));
-app.options(/.*/, cors()); // FIX CRASH (Duplicate)
-
-// Security: Rate Limiters
-
-
-
-
-app.use(generalLimiter);
 // app.use(cors({...})) removed from here
 app.use(express.json({ limit: '10kb' })); // Security: Limit body size
 app.use('/uploads', express.static('uploads'));
