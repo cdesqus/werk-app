@@ -44,26 +44,44 @@ const AdminDashboard = () => {
         const month = currentDate.getMonth() + 1;
         const year = currentDate.getFullYear();
         console.log(`[Frontend Debug] Fetching Admin Summary for: ${month}/${year}`);
+
         try {
-            const [summaryRes, otRes, claimRes, leaveRes, servicesRes] = await Promise.all([
-                api.get(`/admin/summary?month=${month}&year=${year}`),
-                api.get(`/overtimes?status=Pending`),
-                api.get(`/claims?status=Pending`),
-                api.get(`/leaves?status=Pending`),
-                api.get('/admin/services')
-            ]);
-            setSummary(summaryRes.data);
-            setServices(servicesRes.data || {});
+            // Summary
+            try {
+                const { data } = await api.get(`/admin/summary?month=${month}&year=${year}`);
+                setSummary(data);
+            } catch (e) {
+                console.error("Failed to fetch summary:", e);
+                toast.error("Failed to load payroll summary.");
+            }
 
-            console.log('[Frontend Debug] Summary Response:', summaryRes.data);
+            // Services
+            try {
+                const { data } = await api.get('/admin/services');
+                setServices(data || {});
+            } catch (e) { console.error("Failed services", e); }
 
-            const pending = [
-                ...otRes.data.map(i => ({ ...i, dataType: 'overtime' })),
-                ...claimRes.data.map(i => ({ ...i, dataType: 'claim' })),
-                ...leaveRes.data.map(i => ({ ...i, dataType: 'leave' }))
-            ];
+            // Action Center Items
+            let pending = [];
+
+            try {
+                const ot = await api.get(`/overtimes?status=Pending`);
+                pending = [...pending, ...ot.data.map(i => ({ ...i, dataType: 'overtime' }))];
+            } catch (e) { console.error("Failed overtimes", e); }
+
+            try {
+                const cl = await api.get(`/claims?status=Pending`);
+                pending = [...pending, ...cl.data.map(i => ({ ...i, dataType: 'claim' }))];
+            } catch (e) { console.error("Failed claims", e); }
+
+            try {
+                const lv = await api.get(`/leaves?status=Pending`);
+                pending = [...pending, ...lv.data.map(i => ({ ...i, dataType: 'leave' }))];
+            } catch (e) { console.error("Failed leaves", e); }
+
             setPendingItems(pending);
-        } catch (err) { console.error(err); }
+
+        } catch (err) { console.error("Critical dashboard error:", err); }
     };
 
     const toggleService = async (key) => {
