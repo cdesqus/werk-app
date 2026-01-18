@@ -1577,12 +1577,16 @@ app.get('/api/admin/summary', authenticateToken, isAdmin, async (req, res, next)
         const { month, year } = req.query;
         if (!month || !year) return res.status(400).json({ error: 'Month and Year required' });
 
-        const startDate = new Date(year, month - 1, 1).toISOString().split('T')[0];
-        const endDate = new Date(year, month, 0).toISOString().split('T')[0];
+        const m = parseInt(month);
+        const y = parseInt(year);
+
+        // Month is 0-indexed in JS Date, but query is 1-indexed (1=Jan)
+        const startDate = new Date(y, m - 1, 1).toISOString().split('T')[0];
+        const endDate = new Date(y, m, 0).toISOString().split('T')[0];
 
         // Fetch all relevant data first
         const [users, overtimes, claims] = await Promise.all([
-            User.findAll({ attributes: ['id', 'name', 'role', 'staffId'] }),
+            User.findAll({ attributes: ['id', 'name', 'role'] }), // Removed staffId to be safe
             Overtime.findAll({
                 where: {
                     date: { [Op.between]: [startDate, endDate] },
@@ -1597,11 +1601,6 @@ app.get('/api/admin/summary', authenticateToken, isAdmin, async (req, res, next)
             })
         ]);
 
-        const userMap = users.reduce((acc, user) => {
-            acc[user.id] = user;
-            return acc;
-        }, {});
-
         const summaryMap = {};
 
         // Initialize with existing users
@@ -1610,7 +1609,6 @@ app.get('/api/admin/summary', authenticateToken, isAdmin, async (req, res, next)
                 userId: user.id,
                 name: user.name,
                 role: user.role,
-                staffId: user.staffId,
                 overtimeTotal: 0,
                 claimTotal: 0,
                 totalPayable: 0,
@@ -1622,7 +1620,6 @@ app.get('/api/admin/summary', authenticateToken, isAdmin, async (req, res, next)
         overtimes.forEach(ot => {
             const uid = ot.UserId;
             if (!summaryMap[uid]) {
-                // Handle deleted/unknown users
                 summaryMap[uid] = {
                     userId: uid,
                     name: 'Unknown User (Deleted)',
@@ -1659,11 +1656,12 @@ app.get('/api/admin/summary', authenticateToken, isAdmin, async (req, res, next)
                 ...item,
                 totalPayable: item.overtimeTotal + item.claimTotal
             }))
-            .filter(item => item.totalPayable > 0 || item.status === 'Active') // Keep active users even if 0, keep deleted only if > 0
+            .filter(item => item.totalPayable > 0 || item.status === 'Active')
             .sort((a, b) => b.totalPayable - a.totalPayable);
 
         res.json(summary);
     } catch (error) {
+        console.error("Summary Endpoint Error:", error);
         next(error);
     }
 });
