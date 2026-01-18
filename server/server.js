@@ -1575,9 +1575,7 @@ app.get('/api/admin/audit-logs', authenticateToken, isAdmin, async (req, res, ne
 // Admin Payroll Summary
 app.get('/api/admin/summary', authenticateToken, isAdmin, async (req, res, next) => {
     try {
-        console.log("Accessing Admin Summary Endpoint");
-        console.log("Op:", Op); // Log 'Op' to ensure it is defined
-        const { month, year, filterMode } = req.query; // filterMode: 'activity' (default) or 'submission'
+        const { month, year } = req.query;
         if (!month || !year) return res.status(400).json({ error: 'Month and Year required' });
 
         const m = parseInt(month);
@@ -1587,44 +1585,43 @@ app.get('/api/admin/summary', authenticateToken, isAdmin, async (req, res, next)
             return res.status(400).json({ error: 'Invalid Month or Year' });
         }
 
-        // Month is 0-indexed in JS Date, but query is 1-indexed (1=Jan)
-        const startDate = new Date(y, m - 1, 1).toISOString().split('T')[0];
-        const endDate = new Date(y, m, 0).toISOString().split('T')[0] + ' 23:59:59'; // Include end of day for createdAt comparisons
+        // Construct simpler date strings for SQLite DATEONLY comparison
+        const startStr = `${y}-${String(m).padStart(2, '0')}-01`;
+        const lastDay = new Date(y, m, 0).getDate();
+        const endStr = `${y}-${String(m).padStart(2, '0')}-${lastDay}`;
 
-        console.log(`Summary Query: ${month}/${year}, Mode: ${filterMode || 'activity'}`);
-
-        const dateFilter = (filterMode === 'submission')
-            ? { createdAt: { [Op.between]: [new Date(y, m - 1, 1), new Date(y, m, 0, 23, 59, 59)] } }
-            : { date: { [Op.between]: [startDate, endDate.split(' ')[0]] } };
+        console.log(`[Summary] Query: ${startStr} to ${endStr}`);
 
         // Fetch all relevant data first
         const [users, overtimes, claims] = await Promise.all([
-            User.findAll({ attributes: ['id', 'name', 'role'] }),
+            User.findAll({ attributes: ['id', 'name', 'role', 'staffId', 'email'] }),
             Overtime.findAll({
                 where: {
-                    ...dateFilter,
+                    date: { [Op.between]: [startStr, endStr] },
                     status: { [Op.in]: ['Approved', 'Pending'] }
                 }
             }),
             Claim.findAll({
                 where: {
-                    ...dateFilter,
+                    date: { [Op.between]: [startStr, endStr] },
                     status: { [Op.in]: ['Approved', 'Pending'] }
                 }
             })
         ]);
-
-        console.log(`Fetched: ${users.length} users, ${overtimes.length} overtimes, ${claims.length} claims`);
 
         const summaryMap = {};
 
         // Initialize with existing users
         users.forEach(user => {
             summaryMap[user.id] = {
+                id: user.id, // Explicitly include id for frontend keys
                 userId: user.id,
                 name: user.name,
                 role: user.role,
+                staffId: user.staffId, // Include staffId if available
+                email: user.email,
                 overtimeTotal: 0,
+                overtimeHours: 0,
                 claimTotal: 0,
                 totalPayable: 0,
                 status: 'Active',
@@ -1635,13 +1632,16 @@ app.get('/api/admin/summary', authenticateToken, isAdmin, async (req, res, next)
         // Agregate Overtimes
         overtimes.forEach(ot => {
             const uid = ot.UserId;
-            // Robustness: ensure summaryMap[uid] exists even if user not found in 'users' list (e.g. deleted but still in DB refs)
             if (!summaryMap[uid]) {
                 summaryMap[uid] = {
+                    id: uid,
                     userId: uid,
                     name: 'Unknown User (Deleted)',
                     role: 'N/A',
+                    staffId: 'N/A',
+                    email: '',
                     overtimeTotal: 0,
+                    overtimeHours: 0,
                     claimTotal: 0,
                     totalPayable: 0,
                     status: 'Deleted',
@@ -1649,7 +1649,8 @@ app.get('/api/admin/summary', authenticateToken, isAdmin, async (req, res, next)
                 };
             }
             summaryMap[uid].overtimeTotal += (ot.payableAmount || 0);
-            // Add detail for expansion
+            summaryMap[uid].overtimeHours += (ot.hours || 0);
+
             summaryMap[uid].details.overtimes.push({
                 id: ot.id,
                 date: ot.date,
@@ -1665,10 +1666,14 @@ app.get('/api/admin/summary', authenticateToken, isAdmin, async (req, res, next)
             const uid = cl.UserId;
             if (!summaryMap[uid]) {
                 summaryMap[uid] = {
+                    id: uid,
                     userId: uid,
                     name: 'Unknown User (Deleted)',
                     role: 'N/A',
+                    staffId: 'N/A',
+                    email: '',
                     overtimeTotal: 0,
+                    overtimeHours: 0,
                     claimTotal: 0,
                     totalPayable: 0,
                     status: 'Deleted',
@@ -1676,7 +1681,7 @@ app.get('/api/admin/summary', authenticateToken, isAdmin, async (req, res, next)
                 };
             }
             summaryMap[uid].claimTotal += (cl.amount || 0);
-            // Add detail for expansion
+
             summaryMap[uid].details.claims.push({
                 id: cl.id,
                 date: cl.date,
@@ -1699,8 +1704,7 @@ app.get('/api/admin/summary', authenticateToken, isAdmin, async (req, res, next)
         res.json(summary);
     } catch (error) {
         console.error("Summary Endpoint Error:", error);
-        // Expose error to client for debugging
-        res.status(500).json({ error: error.message, stack: process.env.NODE_ENV === 'development' ? error.stack : undefined });
+        res.status(500).json({ error: error.message });
     }
 });
 
