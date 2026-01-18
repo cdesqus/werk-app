@@ -193,11 +193,13 @@ const AdminDashboard = () => {
                                     <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3 mb-1">
                                         <div className="flex items-center gap-3">
                                             <div className="w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-700 dark:text-slate-300 font-bold text-xs border border-slate-200 dark:border-slate-700">
-                                                {item.User?.name?.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase()}
+                                                {item.User?.name ? item.User.name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase() : '?'}
                                             </div>
                                             <div>
-                                                <h4 className="text-slate-900 dark:text-white font-bold text-sm leading-tight">{item.User?.name}</h4>
-                                                <p className="text-slate-500 text-xs font-medium">{item.User?.role} • {item.User?.email}</p>
+                                                <h4 className="text-slate-900 dark:text-white font-bold text-sm leading-tight">{item.User?.name || 'Unknown User'}</h4>
+                                                <p className="text-slate-500 text-xs font-medium">
+                                                    {item.User ? `${item.User.role} • ${item.User.email}` : 'User deleted or missing'}
+                                                </p>
                                             </div>
                                         </div>
                                         <span className={clsx("text-[10px] font-bold uppercase px-2 py-0.5 rounded",
