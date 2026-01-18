@@ -1591,95 +1591,120 @@ app.get('/api/admin/audit-logs', authenticateToken, isAdmin, async (req, res, ne
 });
 
 
-// Admin Payroll Summary (Robust Raw SQL & Jan Fix)
+// Admin Payroll Summary (Safe JS Aggregation)
 app.get('/api/admin/summary', authenticateToken, isAdmin, async (req, res, next) => {
     try {
         const { month, year } = req.query;
         if (!month || !year) return res.status(400).json({ error: 'Month and Year required' });
 
-        // --- 1. ROBUST DATE LOGIC (Fixing the January/Year-End Bug) ---
-        const currentMonthIndex = parseInt(month) - 1; // JS months are 0-11
-        const currentYear = parseInt(year);
+        const m = parseInt(month);
+        const y = parseInt(year);
 
-        if (isNaN(currentMonthIndex) || isNaN(currentYear)) {
+        if (isNaN(m) || isNaN(y)) {
             return res.status(400).json({ error: 'Invalid Month or Year' });
         }
 
-        // Calculate Previous Month (Start Date)
-        let prevMonthIndex = currentMonthIndex - 1;
-        let prevMonthYear = currentYear;
+        // --- 1. ROBUST DATE LOGIC ---
+        // Calculate cutoff range carefully
+        let startMonthIndex = m - 2; // (m-1) is current month index. (m-1)-1 is prev month index.
+        let startYear = y;
 
-        if (prevMonthIndex < 0) {
-            prevMonthIndex = 11; // December
-            prevMonthYear = currentYear - 1; // Go back one year
+        if (startMonthIndex < 0) {
+            startMonthIndex = 11; // December
+            startYear = y - 1;    // Previous Year
         }
 
         // Start: 28th of Prev Month
-        const startDate = new Date(prevMonthYear, prevMonthIndex, 28);
+        const startDate = new Date(startYear, startMonthIndex, 28);
         startDate.setHours(0, 0, 0, 0);
 
-        // End: 27th of Current Month (End of Day)
-        const endDate = new Date(currentYear, currentMonthIndex, 27);
+        // End: 27th of Current Month
+        const endDate = new Date(y, m - 1, 27);
         endDate.setHours(23, 59, 59, 999);
 
-        // Postgres requires ISO Strings
-        const startStr = startDate.toISOString();
-        const endStr = endDate.toISOString();
-
+        // Postgres ISO Strings for logging/debugging
         console.log(`[Summary] Debug: ${month}/${year}`);
-        console.log(`[Summary] Cutoff: ${startStr} TO ${endStr}`);
+        console.log(`[Summary] Cutoff: ${startDate.toISOString()} TO ${endDate.toISOString()}`);
 
-        // --- 2. SQL QUERY WITH TYPE CASTING ---
-        // Note: double quotes for camelCase columns in Postgres are critical
-        const sql = `
-            SELECT 
-                u.id, u.name, u.email, u.role, u."staffId",
-                COALESCE(SUM(CASE WHEN o.status = 'Approved' THEN o."payableAmount" ELSE 0 END), 0)::int as "overtimeTotal",
-                COALESCE(SUM(CASE WHEN o.status = 'Approved' THEN o.hours ELSE 0 END), 0)::float as "overtimeHours",
-                COALESCE(SUM(CASE WHEN c.status = 'Approved' THEN c.amount ELSE 0 END), 0)::int as "claimTotal"
-            FROM "Users" u
-            LEFT JOIN "Overtimes" o ON u.id = o."UserId" 
-                AND o."createdAt" >= :startDate AND o."createdAt" <= :endDate
-            LEFT JOIN "Claims" c ON u.id = c."UserId" 
-                AND c."createdAt" >= :startDate AND c."createdAt" <= :endDate
-            GROUP BY u.id, u.name, u.email, u.role, u."staffId"
-        `;
+        // --- 2. FETCH DATA INDEPENDENTLY (Avoids JOIN/GROUP BY Issues) ---
+        const whereDate = {
+            createdAt: {
+                [Op.gte]: startDate,
+                [Op.lte]: endDate
+            }
+        };
 
-        // Use sequelize.query with replacements (safer than bind in some versions)
-        const users = await sequelize.query(sql, {
-            replacements: { startDate: startStr, endDate: endStr },
-            type: Sequelize.QueryTypes.SELECT
+        const [users, overtimes, claims] = await Promise.all([
+            User.findAll({
+                attributes: ['id', 'name', 'email', 'role', 'staffId']
+            }),
+            Overtime.findAll({
+                where: {
+                    ...whereDate,
+                    status: 'Approved'
+                },
+                attributes: ['id', 'UserId', 'payableAmount', 'hours', 'activity', 'date', 'createdAt']
+            }),
+            Claim.findAll({
+                where: {
+                    ...whereDate,
+                    status: 'Approved'
+                },
+                attributes: ['id', 'UserId', 'amount', 'title', 'date', 'createdAt', 'status']
+            })
+        ]);
+
+        // --- 3. AGGREGATE IN JAVASCRIPT ---
+        const summaryMap = {};
+
+        // Initialize all users
+        users.forEach(u => {
+            summaryMap[u.id] = {
+                id: u.id,
+                userId: u.id,
+                name: u.name,
+                email: u.email,
+                role: u.role,
+                staffId: u.staffId,
+                overtimeTotal: 0,
+                overtimeHours: 0,
+                claimTotal: 0,
+                totalPayable: 0,
+                status: 'Active', // Default status, can be inferred later if needed
+                details: { overtimes: [], claims: [] }
+            };
         });
 
-        // --- 3. TRANSFORM & SAFE CALCULATION ---
-        const summary = users.map(user => {
-            const ot = parseFloat(user.overtimeTotal) || 0;
-            const cl = parseFloat(user.claimTotal) || 0;
+        // Sum Overtimes
+        overtimes.forEach(ot => {
+            if (summaryMap[ot.UserId]) {
+                const amount = parseFloat(ot.payableAmount) || 0;
+                const hours = parseFloat(ot.hours) || 0;
+                summaryMap[ot.UserId].overtimeTotal += amount;
+                summaryMap[ot.UserId].overtimeHours += hours;
+                summaryMap[ot.UserId].details.overtimes.push(ot);
+            }
+        });
 
-            return {
-                id: user.id,
-                userId: user.id,
-                name: user.name,
-                role: user.role,
-                staffId: user.staffId,
-                email: user.email,
-                overtimeTotal: ot,
-                overtimeHours: parseFloat(user.overtimeHours) || 0,
-                claimTotal: cl,
-                totalPayable: ot + cl,
-                status: 'Active',
-                details: { overtimes: [], claims: [] } // Metadata omitted for performance in summary view
-            };
+        // Sum Claims
+        claims.forEach(cl => {
+            if (summaryMap[cl.UserId]) {
+                const amount = parseFloat(cl.amount) || 0;
+                summaryMap[cl.UserId].claimTotal += amount;
+                summaryMap[cl.UserId].details.claims.push(cl);
+            }
+        });
+
+        // Compute Final Totals & Sort
+        const summary = Object.values(summaryMap).map(u => {
+            u.totalPayable = u.overtimeTotal + u.claimTotal;
+            return u;
         }).sort((a, b) => b.totalPayable - a.totalPayable);
 
         res.json(summary);
 
     } catch (error) {
         console.error("🚨 PAYROLL CRASH:", error);
-        // Log explicitly for debugging
-        if (error.original) {
-            console.error("SQL Error:", error.original);
-        }
         res.status(500).json({ error: "Server Error", details: error.message });
     }
 });
