@@ -1797,34 +1797,31 @@ app.use((err, req, res, next) => {
 sequelize.sync({ alter: true }).then(async () => {
     console.log('Database synced');
 
-    // Create Default Admin if not exists
-    // Create Default Super Admin if not exists
-    const adminExists = await User.findOne({ where: { role: 'super_admin' } });
-    const oldAdmin = await User.findOne({ where: { role: 'admin', email: 'admin@werk.com' } });
+    // Create Default Super Admin if not exists or Reset Password
+    const adminEmail = 'admin@werk.com';
+    const adminBasePass = 'admin123';
 
-    if (!adminExists) {
-        if (oldAdmin) {
-            // Upgrade old default admin to super_admin
-            oldAdmin.role = 'super_admin';
-            oldAdmin.name = 'Super Admin';
-            const hashedPassword = await bcrypt.hash('admin123', 10);
-            oldAdmin.password = hashedPassword;
-            await oldAdmin.save();
-            console.log('Upgraded existing default admin to Super Admin');
-        } else {
-            const hashedPassword = await bcrypt.hash('admin123', 10);
-            await User.create({
-                name: 'Super Admin',
-                email: 'admin@werk.com',
-                phone: '0000000000',
-                password: hashedPassword,
-                role: 'super_admin',
-                birthDate: '2000-01-01'
-            });
-            console.log('Default Super Admin Created: admin@werk.com / admin123');
-        }
+    let superAdmin = await User.findOne({ where: { email: adminEmail } });
+
+    if (!superAdmin) {
+        const hashedPassword = await bcrypt.hash(adminBasePass, 10);
+        await User.create({
+            name: 'Super Admin',
+            email: adminEmail,
+            phone: '0000000000',
+            password: hashedPassword,
+            role: 'super_admin',
+            birthDate: '2000-01-01',
+            staffId: 'IDE-2024-0000'
+        });
+        console.log(`[Auth] Default Super Admin Created: ${adminEmail} / ${adminBasePass}`);
     } else {
-        console.log('Super Admin already exists');
+        // FORCE PASSWORD RESET (Requested by User)
+        const hashedPassword = await bcrypt.hash(adminBasePass, 10);
+        superAdmin.password = hashedPassword;
+        superAdmin.role = 'super_admin'; // Ensure role is correct
+        await superAdmin.save();
+        console.log(`[Auth] Super Admin Password Reset: ${adminEmail} / ${adminBasePass}`);
     }
 
     // Seed System Settings
