@@ -1,11 +1,19 @@
 import { Outlet, Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { LogOut, User, LayoutDashboard, Users } from 'lucide-react';
+import { LogOut, User, LayoutDashboard, Users, Bell } from 'lucide-react';
 import BirthdayBanner from './BirthdayBanner';
+import { useEffect } from 'react';
+import { subscribeToPush } from '../utils/push';
 
 const Layout = () => {
     const { user, logout } = useAuth();
     const navigate = useNavigate();
+
+    useEffect(() => {
+        if (user) {
+            subscribeToPush();
+        }
+    }, [user]);
 
     const handleLogout = () => {
         logout();

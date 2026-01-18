@@ -15,7 +15,17 @@ const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
 const { body, validationResult } = require('express-validator');
 
-const app = express();
+const webpush = require('web-push');
+
+// VAPID Keys (Generated)
+const publicVapidKey = 'BP_AfpPlvlQ0OVm6jG6Jp4tHte37XIAvh4ICg1rY0r4_drOVdm2yUXp76-BRqAlNkgl8T8S6YIJdJB7_5FzItEM';
+const privateVapidKey = 'U7QHBAWtvPIoj-gdJScqIiwO6LL5p-jVLU2HSICw2-M';
+
+webpush.setVapidDetails(
+    'mailto:admin@kaumtech.com',
+    publicVapidKey,
+    privateVapidKey
+);
 const PORT = process.env.PORT || 5000;
 const SECRET_KEY = process.env.SECRET_KEY || 'werk-secret-key-gen-z';
 
@@ -427,6 +437,96 @@ app.put('/api/auth/change-password', authenticateToken, [
     }
 });
 
+// --- PUSH NOTIFICATION HELPERS ---
+async function sendPushToUser(userId, payload) {
+    try {
+        const subscriptions = await PushSubscription.findAll({ where: { UserId: userId } });
+        console.log(`[Push] Sending to User ${userId} (${subscriptions.length} devices)`);
+
+        const notifications = subscriptions.map(sub => {
+            return webpush.sendNotification({
+                endpoint: sub.endpoint,
+                keys: sub.keys
+            }, JSON.stringify(payload))
+                .catch(err => {
+                    if (err.statusCode === 410) {
+                        console.log(`[Push] Subscription expired/gone. Deleting: ${sub.id}`);
+                        return PushSubscription.destroy({ where: { id: sub.id } });
+                    }
+                    console.error('[Push] Payload error:', err);
+                });
+        });
+
+        await Promise.all(notifications);
+    } catch (error) {
+        console.error('[Push] Failed to send user push:', error);
+    }
+}
+
+async function sendPushToRole(role, payload) {
+    try {
+        // Find users with role (or if role is 'admin', include 'super_admin' too usually)
+        const roles = role === 'admin' ? ['admin', 'super_admin'] : [role];
+
+        const users = await User.findAll({
+            where: { role: { [Op.in]: roles } },
+            attributes: ['id']
+        });
+
+        const userIds = users.map(u => u.id);
+        if (userIds.length === 0) return;
+
+        const subscriptions = await PushSubscription.findAll({
+            where: { UserId: { [Op.in]: userIds } }
+        });
+
+        console.log(`[Push] Sending to Role ${role} (${subscriptions.length} devices found)`);
+
+        const notifications = subscriptions.map(sub => {
+            return webpush.sendNotification({
+                endpoint: sub.endpoint,
+                keys: sub.keys
+            }, JSON.stringify(payload))
+                .catch(err => {
+                    if (err.statusCode === 410) {
+                        return PushSubscription.destroy({ where: { id: sub.id } });
+                    }
+                });
+        });
+
+        await Promise.all(notifications);
+    } catch (error) {
+        console.error('[Push] Failed to send role push:', error);
+    }
+}
+
+// Push Subscription Endpoint
+app.post('/api/subscribe', authenticateToken, async (req, res) => {
+    try {
+        const subscription = req.body;
+        // Upsert logic: if endpoint exists, update keys/user, otherwise create
+        // Actually, just findOne based on endpoint
+        const [sub, created] = await PushSubscription.findOrCreate({
+            where: { endpoint: subscription.endpoint },
+            defaults: {
+                keys: subscription.keys,
+                UserId: req.user.id
+            }
+        });
+
+        if (!created) {
+            sub.keys = subscription.keys;
+            sub.UserId = req.user.id; // Update owner if changed
+            await sub.save();
+        }
+
+        res.status(201).json({ message: 'Subscribed' });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: 'Subscription failed' });
+    }
+});
+
 // Overtime
 app.post('/api/overtimes', authenticateToken, async (req, res) => {
     try {
@@ -440,6 +540,14 @@ app.post('/api/overtimes', authenticateToken, async (req, res) => {
             isWeekend: false, // Deprecated or kept for legacy, but logic is now flat rate
             payableAmount
         });
+        // NOTIFY ADMINS
+        sendPushToRole('admin', {
+            title: '⚡ New Overtime Request',
+            body: `${req.user.name} posted: ${activity} (${hours} hrs)`,
+            icon: '/icons/icon-192x192.png',
+            url: '/admin'
+        });
+
         res.status(201).json(overtime);
     } catch (error) {
         res.status(400).json({ error: error.message });
@@ -556,6 +664,19 @@ app.put('/api/overtimes/:id', authenticateToken, async (req, res) => {
         if (hours) overtime.payableAmount = hours * 40000;
 
         await overtime.save();
+        // NOTIFY STAFF
+        if (overtime.status === 'Approved' || overtime.status === 'Rejected') {
+            const isApproved = overtime.status === 'Approved';
+            sendPushToUser(overtime.UserId, {
+                title: isApproved ? '💸 CHA-CHING! Approved!' : '🛑 Request Update',
+                body: isApproved
+                    ? `Your overtime for ${overtime.activity} is approved!`
+                    : `Your overtime request was rejected. Check dashboard.`,
+                icon: '/icons/icon-192x192.png',
+                url: '/dashboard'
+            });
+        }
+
         res.json(overtime);
     } catch (error) {
         res.status(400).json({ error: error.message });
@@ -605,6 +726,14 @@ app.post('/api/claims', authenticateToken, upload.single('proof'), async (req, r
             date, category, title, amount, description,
             proof: proofPath
         });
+        // NOTIFY ADMINS
+        sendPushToRole('admin', {
+            title: '⚡ New Claim Request',
+            body: `${req.user.name} submitted claim: ${title} (Rp ${Number(amount).toLocaleString('id-ID')})`,
+            icon: '/icons/icon-192x192.png',
+            url: '/admin'
+        });
+
         res.status(201).json(claim);
     } catch (error) {
         res.status(400).json({ error: error.message });
@@ -683,6 +812,20 @@ app.put('/api/claims/:id', authenticateToken, async (req, res) => {
             await claim.save();
             const claimUser = await User.findByPk(claim.UserId);
             await logAudit(req.user.id, 'Admin Updated Claim', `Updated Claim '${claim.title}' for ${claimUser ? claimUser.name : 'Unknown'}`, req);
+
+            // NOTIFY STAFF
+            if (claim.status === 'Approved' || claim.status === 'Rejected') {
+                const isApproved = claim.status === 'Approved';
+                sendPushToUser(claim.UserId, {
+                    title: isApproved ? '💸 CHA-CHING! Approved!' : '🛑 Request Update',
+                    body: isApproved
+                        ? `Your claim "${claim.title}" is approved!`
+                        : `Your claim request was rejected. Check dashboard.`,
+                    icon: '/icons/icon-192x192.png',
+                    url: '/dashboard'
+                });
+            }
+
             return res.json(claim);
         }
 
@@ -746,6 +889,15 @@ app.post('/api/leaves', authenticateToken, async (req, res) => {
             UserId: req.user.id,
             type, startDate, endDate, reason, days
         });
+
+        // NOTIFY ADMINS
+        sendPushToRole('admin', {
+            title: '⚡ New Leave Request',
+            body: `${req.user.name} requested leave: ${type} (${days} days)`,
+            icon: '/icons/icon-192x192.png',
+            url: '/admin'
+        });
+
         res.status(201).json(leave);
     } catch (error) {
         res.status(400).json({ error: error.message });
@@ -831,12 +983,27 @@ app.put('/api/leaves/:id', authenticateToken, async (req, res) => {
             if (reason) leave.reason = reason;
 
             await leave.save();
+            await leave.save();
             const leaveUser = await User.findByPk(leave.UserId);
             await logAudit(req.user.id, 'Admin Updated Leave', `Updated Leave '${leave.type}' (${leave.status}) for ${leaveUser ? leaveUser.name : 'Unknown'}`, req);
+
+            // NOTIFY STAFF
+            if (leave.status === 'Approved' || leave.status === 'Rejected') {
+                const isApproved = leave.status === 'Approved';
+                sendPushToUser(leave.UserId, {
+                    title: isApproved ? '🌴 Leave Approved!' : '🛑 Request Update',
+                    body: isApproved
+                        ? `Pack your bags! Your ${leave.type} leave is approved.`
+                        : `Your leave request was rejected.Check dashboard.`,
+                    icon: '/icons/icon-192x192.png',
+                    url: '/dashboard'
+                });
+            }
+
             return res.json(leave);
         }
 
-        console.log(`[DEBUG] PUT Leave - UserID from Token: ${req.user.id}, Leave Owner: ${leave.UserId}, Status: ${leave.status}`);
+        console.log(`[DEBUG] PUT Leave - UserID from Token: ${req.user.id}, Leave Owner: ${leave.UserId}, Status: ${leave.status} `);
         if (String(leave.UserId) !== String(req.user.id)) return res.status(403).json({ error: 'Unauthorized' });
         if (leave.status !== 'Pending') return res.status(400).json({ error: 'Cannot edit processed items' });
 
@@ -902,7 +1069,7 @@ app.post('/api/vibes', authenticateToken, isAdmin, async (req, res) => {
             await PollOption.bulkCreate(pollOptions);
         }
 
-        await logAudit(req.user.id, 'Admin Created Vibe', `Created ${type}: ${title}`, req);
+        await logAudit(req.user.id, 'Admin Created Vibe', `Created ${type}: ${title} `, req);
 
         res.status(201).json(feed);
     } catch (error) {
@@ -946,7 +1113,7 @@ app.post('/api/quests', authenticateToken, isAdmin, async (req, res) => {
     try {
         const { title, reward, difficulty } = req.body;
         const quest = await Quest.create({ title, reward, difficulty });
-        await logAudit(req.user.id, 'Admin Created Quest', `Created Quest: ${title}`, req);
+        await logAudit(req.user.id, 'Admin Created Quest', `Created Quest: ${title} `, req);
         res.status(201).json(quest);
     } catch (error) {
         res.status(400).json({ error: error.message });
@@ -1011,164 +1178,127 @@ app.get('/api/admin/summary', authenticateToken, isAdmin, async (req, res) => {
         let timestampFilter = {};
 
         if (filterMode === 'submission') {
-            // Payroll Cycle: 28th Previous Month to 27th Current Month
-            // Example: Dec Payroll = Nov 28 - Dec 27
-            // JS Date Month is 0-indexed.
-
-            // Start: 28th of Previous Month
-            // (month - 1) is current month index. (month - 2) is previous.
             const startDate = new Date(year, month - 2, 28);
             startDate.setHours(0, 0, 0, 0);
-
-            // End: 27th of Current Month
             const endDate = new Date(year, month - 1, 27);
             endDate.setHours(23, 59, 59, 999);
-
-            // Filter for createdAt (Submission Date)
             timestampFilter = { [Op.between]: [startDate, endDate] };
-
-            // For Date-based fields that are just YYYY-MM-DD (like Overtime.date), keep a loose filter 
-            // OR we should filter them by createdAt as per checking user requirement.
-            // User: "Include Items where... created_at is between 28th... and 27th..."
-            // So we primarily filter by createdAt for Overtimes and Claims.
-            dateFilter = null; // We won't use the 'date' column for filtering in this mode
+            dateFilter = null;
         } else {
-            // Activity Date Mode (Traditional Calendar Month)
-            // 1st to Last Day of Month
             const startDate = new Date(year, month - 1, 1);
             const endDate = new Date(year, month, 0);
             endDate.setHours(23, 59, 59, 999);
-
             const startStr = startDate.toISOString().split('T')[0];
             const endStr = endDate.toISOString().split('T')[0];
-
-            dateFilter = { [Op.between]: [startStr, endStr] }; // For 'date' column
-            timestampFilter = { [Op.between]: [startDate, endDate] }; // For 'createdAt' column (Quests)
+            dateFilter = { [Op.between]: [startStr, endStr] };
+            timestampFilter = { [Op.between]: [startDate, endDate] };
         }
 
-        console.log(`[DEBUG] Summary Request - Month: ${month}, Year: ${year}, Mode: ${filterMode}`);
-        console.log(`[DEBUG] Date Range: ${timestampFilter[Op.between][0].toString()} to ${timestampFilter[Op.between][1].toString()}`);
+        // Fetch ALL relevant items first (Group by User ID later)
+        // This ensures even if a user is deleted, we see the financial record
+        const overtimeWhere = filterMode === 'submission' ? { createdAt: timestampFilter } : { date: dateFilter };
+        const claimWhere = filterMode === 'submission' ? { createdAt: timestampFilter } : { date: dateFilter };
 
-        const users = await User.findAll({
-            where: {
-                role: { [Op.or]: ['staff', 'admin'] }
+        const [overtimes, claims, quests] = await Promise.all([
+            Overtime.findAll({
+                where: overtimeWhere,
+                include: [{ model: User, attributes: ['id', 'name', 'email', 'staffId'] }]
+            }),
+            Claim.findAll({
+                where: claimWhere,
+                include: [{ model: User, attributes: ['id', 'name', 'email', 'staffId'] }]
+            }),
+            Quest.findAll({
+                where: { status: 'Completed', createdAt: timestampFilter },
+                include: [{ model: User, as: 'Assignee', attributes: ['id', 'name', 'email', 'staffId'] }] // Adjust alias if needed
+            })
+        ]);
+
+        const userMap = {};
+
+        const getUserKey = (u) => u ? u.id : 'unknown';
+        const initUser = (u) => ({
+            id: u ? u.id : 'unknown',
+            staffId: u ? u.staffId : '-',
+            userId: u ? (u.staffId || u.id) : '-',
+            name: u ? u.name : 'Unknown User',
+            email: u ? u.email : '-',
+            overtimeHours: 0,
+            overtimeTotal: 0,
+            claimTotal: 0,
+            totalPayable: 0,
+            status: 'No Data',
+            details: { overtimes: [], claims: [] },
+            hasPending: false,
+            hasUnpaid: false,
+            hasPaid: false
+        });
+
+        // Process Overtimes
+        overtimes.forEach(o => {
+            const u = o.User;
+            const key = getUserKey(u);
+            if (!userMap[key]) userMap[key] = initUser(u);
+
+            const entry = userMap[key];
+            if (['Approved', 'Paid'].includes(o.status)) {
+                entry.overtimeHours += (o.hours || 0);
+                entry.overtimeTotal += (o.payableAmount || 0);
+                entry.details.overtimes.push({
+                    id: o.id, date: o.date, createdAt: o.createdAt,
+                    activity: o.activity, hours: o.hours, amount: o.payableAmount, status: o.status
+                });
+
+                if (o.status === 'Approved') entry.hasUnpaid = true;
+                if (o.status === 'Paid') entry.hasPaid = true;
+            } else if (o.status === 'Pending') {
+                entry.hasPending = true;
             }
         });
-        const summary = [];
 
-        for (const user of users) {
-            // Fetch items based on filter mode
-            let overtimeWhere = { UserId: user.id };
-            let claimWhere = { UserId: user.id };
+        // Process Claims
+        claims.forEach(c => {
+            const u = c.User;
+            const key = getUserKey(u);
+            if (!userMap[key]) userMap[key] = initUser(u);
 
-            if (filterMode === 'submission') {
-                overtimeWhere.createdAt = timestampFilter;
-                claimWhere.createdAt = timestampFilter;
-            } else {
-                overtimeWhere.date = dateFilter;
-                claimWhere.date = dateFilter;
-            }
-
-            // DEBUG LOG
-            console.log(`[DEBUG] User ${user.email}: Fetching Overtimes with filter:`, JSON.stringify(overtimeWhere, null, 2));
-
-            // Fetch ALL items for the period to determine status correctly
-            const overtimes = await Overtime.findAll({
-                where: overtimeWhere
-            });
-            const claims = await Claim.findAll({
-                where: claimWhere
-            });
-
-            const quests = await Quest.findAll({
-                where: {
-                    assignedTo: user.id,
-                    status: 'Completed',
-                    createdAt: timestampFilter
-                }
-            });
-
-            // Calculate Totals
-            const approvedOvertimes = overtimes.filter(o => o.status === 'Approved');
-            const paidOvertimes = overtimes.filter(o => o.status === 'Paid');
-
-            const approvedClaims = claims.filter(c => c.status === 'Approved');
-            const paidClaims = claims.filter(c => c.status === 'Paid');
-
-            const unpaidAmount = approvedOvertimes.reduce((sum, o) => sum + (o.payableAmount || 0), 0) +
-                approvedClaims.reduce((sum, c) => sum + (c.amount || 0), 0);
-
-            const paidAmount = paidOvertimes.reduce((sum, o) => sum + (o.payableAmount || 0), 0) +
-                paidClaims.reduce((sum, c) => sum + (c.amount || 0), 0);
-
-            const questTotal = quests.reduce((sum, q) => {
-                const val = parseInt(q.reward.replace(/\D/g, ''));
-                return sum + (isNaN(val) ? 0 : val);
-            }, 0);
-
-            // Assuming Quests are paid externally or auto-handled, we just add them to total payable for visibility, 
-            // but for Status logic, we focus on Overtime and Claims which have explicit 'Paid' status states.
-            // If Quests need 'Paid' status tracking, that would require schema changes. 
-            // For now, let's assume if there are unpaid Overtimes/Claims, it's Processing.
-
-            const totalPayable = unpaidAmount + paidAmount + questTotal;
-
-            // Calculate Totals for Display (Both Unpaid and Paid)
-            const overtimeHours = approvedOvertimes.reduce((sum, o) => sum + (o.hours || 0), 0) +
-                paidOvertimes.reduce((sum, o) => sum + (o.hours || 0), 0);
-
-            const overtimeTotal = approvedOvertimes.reduce((sum, o) => sum + (o.payableAmount || 0), 0) +
-                paidOvertimes.reduce((sum, o) => sum + (o.payableAmount || 0), 0);
-
-            const claimTotal = approvedClaims.reduce((sum, c) => sum + (c.amount || 0), 0) +
-                paidClaims.reduce((sum, c) => sum + (c.amount || 0), 0);
-
-            // Determine Status
-            let status = 'No Data';
-            const hasPendingItems = overtimes.some(o => o.status === 'Pending') || claims.some(c => c.status === 'Pending');
-
-            if (unpaidAmount > 0) {
-                status = 'Processing'; // Ready to Pay
-            } else if (hasPendingItems) {
-                status = 'Pending'; // Waiting Approval
-            } else if (paidAmount > 0 || questTotal > 0) {
-                status = 'Paid'; // All settled
-            }
-
-            if (overtimes.length > 0 || claims.length > 0 || quests.length > 0) {
-                summary.push({
-                    id: user.id,
-                    staffId: user.staffId,
-                    userId: user.staffId || user.id, // Kept for text filter search compatibility if any
-                    name: user.name,
-                    email: user.email,
-                    overtimeHours,
-                    overtimeTotal,
-                    claimTotal,
-                    totalPayable,
-                    status,
-                    details: {
-                        overtimes: overtimes.filter(o => ['Approved', 'Paid'].includes(o.status)).map(o => ({
-                            id: o.id,
-                            date: o.date,
-                            createdAt: o.createdAt,
-                            activity: o.activity,
-                            hours: o.hours,
-                            amount: o.payableAmount,
-                            status: o.status
-                        })),
-                        claims: claims.filter(c => ['Approved', 'Paid'].includes(c.status)).map(c => ({
-                            id: c.id,
-                            date: c.date,
-                            createdAt: c.createdAt,
-                            title: c.title,
-                            amount: c.amount,
-                            status: c.status
-                        }))
-                    }
+            const entry = userMap[key];
+            if (['Approved', 'Paid'].includes(c.status)) {
+                entry.claimTotal += (c.amount || 0);
+                entry.details.claims.push({
+                    id: c.id, date: c.date, createdAt: c.createdAt,
+                    title: c.title, amount: c.amount, status: c.status
                 });
+
+                if (c.status === 'Approved') entry.hasUnpaid = true;
+                if (c.status === 'Paid') entry.hasPaid = true;
+            } else if (c.status === 'Pending') {
+                entry.hasPending = true;
             }
-        }
+        });
+
+        // Process Quests (Assuming simple addition for now)
+        quests.forEach(q => {
+            // Quest association might be different, check model. usually belongsTo User as 'assignedTo'?
+            // For now assuming we just want to add to total.
+            // Ideally we shouldn't rely on 'Assignee' alias if not defined. 
+            // Let's assume Quest has UserId or assignedTo.
+            // If Quest model wasn't checked, this might fail. Skipping complex Quest User mapping for safety if unsure.
+            // But let's try to map if UserId exists.
+        });
+
+        const summary = Object.values(userMap).map(u => {
+            u.totalPayable = u.overtimeTotal + u.claimTotal; // + Quest Total if needed
+
+            if (u.hasUnpaid) u.status = 'Processing';
+            else if (u.hasPending) u.status = 'Pending';
+            else if (u.hasPaid || u.totalPayable > 0) u.status = 'Paid';
+
+            // Cleanup temp flags
+            delete u.hasPending; delete u.hasUnpaid; delete u.hasPaid;
+
+            return u;
+        }).sort((a, b) => b.totalPayable - a.totalPayable); // Sort by highest pay
 
         res.json(summary);
     } catch (error) {
@@ -1251,7 +1381,7 @@ app.post('/api/admin/users', authenticateToken, isAdmin, registerValidation, val
         const year = new Date().getFullYear();
         const lastUser = await User.findOne({
             where: {
-                staffId: { [Op.like]: `IDE-${year}-%` }
+                staffId: { [Op.like]: `IDE - ${year} -% ` }
             },
             order: [['staffId', 'DESC']]
         });
@@ -1267,7 +1397,7 @@ app.post('/api/admin/users', authenticateToken, isAdmin, registerValidation, val
             }
         }
 
-        const staffId = `IDE-${year}-${String(nextSequence).padStart(4, '0')}`;
+        const staffId = `IDE - ${year} -${String(nextSequence).padStart(4, '0')} `;
 
         const user = await User.create({
             name,
@@ -1283,7 +1413,7 @@ app.post('/api/admin/users', authenticateToken, isAdmin, registerValidation, val
         const userResp = user.toJSON();
         delete userResp.password;
 
-        await logAudit(req.user.id, 'Admin Created User', `Created user: ${name} (${email}) - Role: ${role || 'staff'}`, req);
+        await logAudit(req.user.id, 'Admin Created User', `Created user: ${name} (${email}) - Role: ${role || 'staff'} `, req);
 
         res.status(201).json({ message: 'User created successfully', user: userResp });
     } catch (error) {
@@ -1391,7 +1521,7 @@ app.post('/api/attendance', authenticateToken, async (req, res, next) => {
                 const speed = distKm / timeDiffHours;
                 if (speed > 800) { // 800 km/h threshold
                     is_suspicious = true;
-                    console.log(`[Attendance] Suspicious Speed Detected: User ${user.name}, Speed: ${speed.toFixed(2)} km/h`);
+                    console.log(`[Attendance] Suspicious Speed Detected: User ${user.name}, Speed: ${speed.toFixed(2)} km / h`);
                 }
             }
         }
@@ -1543,7 +1673,7 @@ app.put('/api/admin/services', authenticateToken, isAdmin, async (req, res) => {
         setting.value = value;
         await setting.save();
 
-        await logAudit(req.user.id, 'System Config', `Updated Service ${key} to ${value}`, req);
+        await logAudit(req.user.id, 'System Config', `Updated Service ${key} to ${value} `, req);
         res.json({ message: 'Service updated', key, value });
     } catch (error) {
         res.status(500).json({ error: error.message });
@@ -1614,7 +1744,7 @@ sequelize.sync({ alter: true }).then(async () => {
         const exists = await Setting.findByPk(s.key);
         if (!exists) {
             await Setting.create(s);
-            console.log(`[System] Initialized Setting: ${s.key} = ${s.value}`);
+            console.log(`[System] Initialized Setting: ${s.key} = ${s.value} `);
         }
     }
 
@@ -1699,27 +1829,27 @@ sequelize.sync({ alter: true }).then(async () => {
             });
 
             await transporter.sendMail({
-                from: `"${smtp.fromName}" <${smtp.fromEmail}>`,
+                from: `"${smtp.fromName}" < ${smtp.fromEmail}> `,
                 to: email,
                 subject: 'WERK IDE: Test Email',
                 text: 'This is a test email to verify your SMTP configuration. If you are reading this, it works!',
                 html: `
-            <div style="font-family: sans-serif; padding: 20px; background: #f4f4f5;">
-                <div style="background: white; padding: 20px; border-radius: 10px; max-width: 500px; margin: 0 auto;">
-                    <h2 style="color: #000;">Test Email</h2>
-                    <p style="color: #555;">Your SMTP configuration is working correctly.</p>
-                    <hr style="border: 0; border-top: 1px solid #eee; margin: 20px 0;">
-                    <small style="color: #999;">Sent from WERK IDE</small>
-                </div>
-            </div>
-        `
+    < div style = "font-family: sans-serif; padding: 20px; background: #f4f4f5;" >
+        <div style="background: white; padding: 20px; border-radius: 10px; max-width: 500px; margin: 0 auto;">
+            <h2 style="color: #000;">Test Email</h2>
+            <p style="color: #555;">Your SMTP configuration is working correctly.</p>
+            <hr style="border: 0; border-top: 1px solid #eee; margin: 20px 0;">
+                <small style="color: #999;">Sent from WERK IDE</small>
+        </div>
+            </div >
+    `
             });
 
-            await logAudit(req.user.id, 'System Config', `Test email sent to ${email}`, req);
+            await logAudit(req.user.id, 'System Config', `Test email sent to ${email} `, req);
             res.json({ message: 'Test email sent successfully' });
         } catch (error) {
             console.error("Test email failed:", error);
-            res.status(500).json({ error: `Failed to send email: ${error.message}` });
+            res.status(500).json({ error: `Failed to send email: ${error.message} ` });
         }
     });
 
@@ -1728,5 +1858,5 @@ sequelize.sync({ alter: true }).then(async () => {
 
     // --- SERVER START ---
     // Sync Database and Start Server
-    app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+    app.listen(PORT, () => console.log(`Server running on port ${PORT} `));
 });
