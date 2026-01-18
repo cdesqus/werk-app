@@ -1,6 +1,6 @@
 const express = require('express');
 const sharp = require('sharp');
-const sqlite3 = require('sqlite3').verbose();
+
 const { Sequelize, DataTypes, Op } = require('sequelize');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
