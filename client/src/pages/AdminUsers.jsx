@@ -281,8 +281,8 @@ const AdminUsers = () => {
                                                 </div>
                                             </div>
 
-                                            <div className="space-y-2 pt-4 border-t border-border">
-                                                <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-2 mb-2"><MapPin size={14} /> GPS Presence Feature</label>
+                                            <div className="space-y-2 pt-6 border-t border-border">
+                                                <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-2 mb-3"><MapPin size={14} /> GPS Presence Feature</label>
                                                 <div className="flex items-center gap-3 p-3 bg-muted/50 rounded-xl border border-border">
                                                     <div className="flex-1">
                                                         <span className="text-sm font-bold text-foreground block">Enable Attendance</span>

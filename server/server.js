@@ -1294,7 +1294,7 @@ app.post('/api/admin/users', authenticateToken, isAdmin, registerValidation, val
 app.get('/api/admin/users', authenticateToken, isAdmin, async (req, res, next) => {
     try {
         const users = await User.findAll({
-            attributes: ['id', 'name', 'email', 'phone', 'role', 'leaveQuota', 'birthDate']
+            attributes: ['id', 'name', 'email', 'phone', 'role', 'leaveQuota', 'birthDate', 'can_attendance']
         });
         res.json(users);
     } catch (error) {
