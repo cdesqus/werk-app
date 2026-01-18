@@ -307,6 +307,114 @@ const sendPaydayAlert = async (models, transporter) => {
     }
 };
 
+const sendBirthdayAlert = async (models, transporter) => {
+    const { User, Setting } = models;
+    console.log('[Cron] Running Birthday Alert...');
+
+    try {
+        const enabled = await Setting.findByPk('birthday_email');
+        if (enabled && enabled.value === false) {
+            console.log('[Cron] Birthday Alert is disabled by settings. Skipping.');
+            return { success: false, message: 'Disabled by settings' };
+        }
+
+        const today = new Date();
+        const currentMonth = today.getMonth() + 1; // JS months are 0-11
+        const currentDay = today.getDate();
+
+        // Find users with birthday today
+        // Sequelize SQLite specific syntax for date extraction might vary, but for compatibility we can fetch all or use raw query.
+        // Or simpler: fetch all users and filter in JS if user base is small (<1000). Werk has small user base.
+        const allUsers = await User.findAll({ attributes: ['id', 'name', 'email', 'birthDate', 'role'] });
+
+        const birthdayPeeps = allUsers.filter(u => {
+            if (!u.birthDate) return false;
+            const d = new Date(u.birthDate);
+            return d.getDate() === currentDay && (d.getMonth() + 1) === currentMonth;
+        });
+
+        if (birthdayPeeps.length === 0) {
+            console.log('[Cron] No birthdays today.');
+            return { success: true, message: 'No birthdays today' };
+        }
+
+        // Recipients: All users
+        const recipients = allUsers.map(u => u.email);
+        const frontendUrl = process.env.FRONTEND_URL || 'https://werk.kaumtech.com';
+
+        for (const bdayUser of birthdayPeeps) {
+            const firstName = bdayUser.name.split(' ')[0];
+
+            const htmlContent = `
+                <!DOCTYPE html>
+                <html>
+                <head>
+                    <style>
+                        body { margin: 0; padding: 0; font-family: 'Inter', sans-serif; background-color: #fafafa; color: #18181b; }
+                        .container { max-width: 600px; margin: 40px auto; background-color: #ffffff; border-radius: 20px; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.08); border: 1px solid #f4f4f5; }
+                        .header { background: radial-gradient(circle at center, #fef08a, #fde047); padding: 40px 20px; text-align: center; }
+                        .cake-icon { font-size: 64px; margin-bottom: 10px; display: block; animation: bounce 2s infinite; }
+                        .title { font-size: 32px; font-weight: 900; color: #854d0e; margin: 0; letter-spacing: -1px; }
+                        .subtitle { font-size: 16px; color: #a16207; font-weight: 600; margin-top: 8px; text-transform: uppercase; letter-spacing: 2px; }
+                        .content { padding: 40px 30px; text-align: center; }
+                        .avatar { width: 120px; height: 120px; border-radius: 60px; background-color: #f4f4f5; margin: 0 auto 24px; display: flex; align-items: center; justify-content: center; font-size: 48px; border: 4px solid #ffffff; box-shadow: 0 4px 12px rgba(0,0,0,0.1); color: #71717a; font-weight: 900; }
+                        .message { font-size: 18px; line-height: 1.6; color: #52525b; margin-bottom: 32px; }
+                        .wish-button { background-color: #18181b; color: #ffffff; text-decoration: none; padding: 14px 28px; border-radius: 12px; font-weight: 700; font-size: 14px; transition: transform 0.2s; display: inline-block; }
+                        .wish-button:hover { transform: translateY(-2px); }
+                        .footer { padding: 30px; background-color: #18181b; color: #52525b; font-size: 12px; text-align: center; border-top: 1px solid #27272a; }
+                    </style>
+                </head>
+                <body>
+                    <div class="container">
+                        <div class="header">
+                            <span class="cake-icon">🎂</span>
+                            <h1 class="title">Happy Birthday!</h1>
+                        </div>
+                        <div class="content">
+                            <div class="avatar">
+                                ${bdayUser.name.charAt(0)}
+                            </div>
+                            <h2 style="font-size: 24px; font-weight: 800; margin: 0 0 10px 0; color: #18181b;">${bdayUser.name}</h2>
+                            <p style="color: #a1a1aa; font-weight: 600; font-size: 14px; margin: 0 0 24px 0;">${bdayUser.role.toUpperCase().replace('_', ' ')}</p>
+                            
+                            <p class="message">
+                                Today is a special day! Let's all wish <strong>${firstName}</strong> a fantastic birthday. 
+                                May your year be filled with bug-free code, approved leaves, and endless coffee. 🎉
+                            </p>
+
+                            <a href="${frontendUrl}" class="wish-button">Send Good Vibes</a>
+                        </div>
+                        <div class="footer">
+                            <p style="color: #71717a;">WERK IDE Celebration Bot</p>
+                        </div>
+                    </div>
+                </body>
+                </html>
+            `;
+
+            // Send to ALL users
+            // Using BCC to send one email to everyone, or individual loop if safer.
+            // For better deliverability and personalization, individual is better, but risky for quota.
+            // Using BCC for efficiency here as requested "email to all".
+
+            await transporter.sendMail({
+                from: `"WERK Celebration" <${process.env.SMTP_USER}>`,
+                bcc: recipients,
+                subject: `🎂 Happy Birthday ${bdayUser.name}!`,
+                html: htmlContent
+            });
+
+            console.log(`[Cron] Birthday email for ${bdayUser.name} sent to ${recipients.length} users.`);
+        }
+
+        return { success: true, message: `Celebrated ${birthdayPeeps.length} birthdays` };
+
+    } catch (error) {
+        console.error('[Cron] Failed to run Birthday Alert:', error);
+        return { success: false, message: error.message };
+    }
+};
+
 const initCronJobs = (models, transporter) => {
     // 1. DAILY MORNING BRIEF (08:00 AM)
     cron.schedule('0 8 * * *', () => sendMorningBrief(models, transporter), {
@@ -319,6 +427,11 @@ const initCronJobs = (models, transporter) => {
         scheduled: true,
         timezone: "Asia/Jakarta"
     });
+    // 3. BIRTHDAY ALERT (08:05 AM)
+    cron.schedule('5 8 * * *', () => sendBirthdayAlert(models, transporter), {
+        scheduled: true,
+        timezone: "Asia/Jakarta"
+    });
 };
 
-module.exports = { initCronJobs, sendMorningBrief, sendPaydayAlert };
+module.exports = { initCronJobs, sendMorningBrief, sendPaydayAlert, sendBirthdayAlert };
