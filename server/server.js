@@ -1574,19 +1574,27 @@ app.get('/api/admin/audit-logs', authenticateToken, isAdmin, async (req, res, ne
 // Admin Payroll Summary
 app.get('/api/admin/summary', authenticateToken, isAdmin, async (req, res, next) => {
     try {
+        console.log("Accessing Admin Summary Endpoint");
+        console.log("Op:", Op); // Log 'Op' to ensure it is defined
         const { month, year } = req.query;
         if (!month || !year) return res.status(400).json({ error: 'Month and Year required' });
 
         const m = parseInt(month);
         const y = parseInt(year);
 
+        if (isNaN(m) || isNaN(y)) {
+            return res.status(400).json({ error: 'Invalid Month or Year' });
+        }
+
         // Month is 0-indexed in JS Date, but query is 1-indexed (1=Jan)
         const startDate = new Date(y, m - 1, 1).toISOString().split('T')[0];
         const endDate = new Date(y, m, 0).toISOString().split('T')[0];
 
+        console.log(`Summary Query: ${startDate} to ${endDate}`);
+
         // Fetch all relevant data first
         const [users, overtimes, claims] = await Promise.all([
-            User.findAll({ attributes: ['id', 'name', 'role'] }), // Removed staffId to be safe
+            User.findAll({ attributes: ['id', 'name', 'role'] }),
             Overtime.findAll({
                 where: {
                     date: { [Op.between]: [startDate, endDate] },
@@ -1600,6 +1608,8 @@ app.get('/api/admin/summary', authenticateToken, isAdmin, async (req, res, next)
                 }
             })
         ]);
+
+        console.log(`Fetched: ${users.length} users, ${overtimes.length} overtimes, ${claims.length} claims`);
 
         const summaryMap = {};
 
@@ -1619,6 +1629,7 @@ app.get('/api/admin/summary', authenticateToken, isAdmin, async (req, res, next)
         // Agregate Overtimes
         overtimes.forEach(ot => {
             const uid = ot.UserId;
+            // Robustness: ensure summaryMap[uid] exists even if user not found in 'users' list (e.g. deleted but still in DB refs)
             if (!summaryMap[uid]) {
                 summaryMap[uid] = {
                     userId: uid,
@@ -1662,7 +1673,8 @@ app.get('/api/admin/summary', authenticateToken, isAdmin, async (req, res, next)
         res.json(summary);
     } catch (error) {
         console.error("Summary Endpoint Error:", error);
-        next(error);
+        // Expose error to client for debugging
+        res.status(500).json({ error: error.message, stack: process.env.NODE_ENV === 'development' ? error.stack : undefined });
     }
 });
 
