@@ -1418,7 +1418,7 @@ app.post('/api/attendance', authenticateToken, async (req, res, next) => {
 
 app.get('/api/attendance', authenticateToken, async (req, res, next) => {
     try {
-        const { userId, date } = req.query;
+        const { userId, date, startDate, endDate } = req.query;
         let whereClause = {};
 
         // RBAC: Admin sees all (filtered), Staff sees own
@@ -1428,7 +1428,17 @@ app.get('/api/attendance', authenticateToken, async (req, res, next) => {
             whereClause.UserId = req.user.id;
         }
 
-        if (date) {
+        if (startDate && endDate) {
+            const start = new Date(startDate);
+            start.setHours(0, 0, 0, 0);
+            const end = new Date(endDate);
+            end.setHours(23, 59, 59, 999);
+            whereClause.timestamp = { [Op.between]: [start, end] };
+        } else if (startDate) {
+            const start = new Date(startDate);
+            start.setHours(0, 0, 0, 0);
+            whereClause.timestamp = { [Op.gte]: start };
+        } else if (date) {
             const start = new Date(date);
             start.setHours(0, 0, 0, 0);
             const end = new Date(date);

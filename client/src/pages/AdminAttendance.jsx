@@ -8,19 +8,25 @@ import { format, differenceInMinutes, parseISO } from 'date-fns';
 const AdminAttendance = () => {
     const [logs, setLogs] = useState([]);
     const [loading, setLoading] = useState(true);
-    const [dateFilter, setDateFilter] = useState(format(new Date(), 'yyyy-MM-dd'));
+    const [dateRange, setDateRange] = useState({
+        start: format(new Date(), 'yyyy-MM-dd'),
+        end: format(new Date(), 'yyyy-MM-dd')
+    });
     const [userFilter, setUserFilter] = useState('');
     const [viewMode, setViewMode] = useState('summary'); // 'summary' | 'raw'
 
     useEffect(() => {
         fetchLogs();
-    }, [dateFilter]);
+    }, [dateRange]);
 
     const fetchLogs = async () => {
         setLoading(true);
         try {
             const { data } = await api.get('/attendance', {
-                params: { date: dateFilter }
+                params: {
+                    startDate: dateRange.start,
+                    endDate: dateRange.end
+                }
             });
             setLogs(data);
         } catch (error) {
@@ -37,11 +43,17 @@ const AdminAttendance = () => {
         // logs are typically ordered DESC by timestamp, but we'll sort them to be sure
         const sortedLogs = [...logs].sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
 
+        // Group by User AND Date (since we now support multiple days)
         sortedLogs.forEach(log => {
             const userId = log.UserId;
-            if (!userGroups[userId]) {
-                userGroups[userId] = {
+            const logDate = format(new Date(log.timestamp), 'yyyy-MM-dd');
+            const key = `${userId}-${logDate}`;
+
+            if (!userGroups[key]) {
+                userGroups[key] = {
+                    key: key,
                     id: userId,
+                    date: logDate,
                     staffId: log.User?.staffId,
                     name: log.User?.name,
                     logs: [],
@@ -50,13 +62,13 @@ const AdminAttendance = () => {
                     suspiciousCount: 0
                 };
             }
-            userGroups[userId].logs.push(log);
-            if (log.is_suspicious) userGroups[userId].suspiciousCount++;
+            userGroups[key].logs.push(log);
+            if (log.is_suspicious) userGroups[key].suspiciousCount++;
 
             if (log.type === 'CLOCK_IN') {
-                if (!userGroups[userId].firstIn) userGroups[userId].firstIn = log;
+                if (!userGroups[key].firstIn) userGroups[key].firstIn = log;
             } else if (log.type === 'CLOCK_OUT') {
-                userGroups[userId].lastOut = log;
+                userGroups[key].lastOut = log;
             }
         });
 
@@ -64,8 +76,6 @@ const AdminAttendance = () => {
         return Object.values(userGroups).map(u => {
             let duration = 0;
             // Simple duration calculation: Last Out - First In
-            // This is a naive calculation; complex shifts might need more advanced pairs processing
-            // But sufficient for "Per Day Summary" as per request
             if (u.firstIn && u.lastOut) {
                 const start = new Date(u.firstIn.timestamp);
                 const end = new Date(u.lastOut.timestamp);
@@ -97,7 +107,7 @@ const AdminAttendance = () => {
         const rows = summaryData.map(u => [
             u.staffId || '-',
             u.name,
-            dateFilter,
+            u.date,
             u.firstIn ? format(new Date(u.firstIn.timestamp), 'HH:mm:ss') : '-',
             u.lastOut ? format(new Date(u.lastOut.timestamp), 'HH:mm:ss') : '-',
             u.durationStr,
@@ -115,7 +125,7 @@ const AdminAttendance = () => {
         const url = URL.createObjectURL(blob);
         const link = document.createElement('a');
         link.setAttribute('href', url);
-        link.setAttribute('download', `Attendance_Summary_${dateFilter}.csv`);
+        link.setAttribute('download', `Attendance_Summary_${dateRange.start}_to_${dateRange.end}.csv`);
         link.style.visibility = 'hidden';
         document.body.appendChild(link);
         link.click();
@@ -142,11 +152,17 @@ const AdminAttendance = () => {
                             onChange={e => setUserFilter(e.target.value)}
                         />
                     </div>
-                    <div className="w-full md:w-40">
+                    <div className="flex gap-2 items-center w-full md:w-auto">
                         <DateInput
-                            value={dateFilter}
-                            onChange={e => setDateFilter(e.target.value)}
-                            className="w-full"
+                            value={dateRange.start}
+                            onChange={e => setDateRange(prev => ({ ...prev, start: e.target.value }))}
+                            className="w-36"
+                        />
+                        <span className="text-muted-foreground">-</span>
+                        <DateInput
+                            value={dateRange.end}
+                            onChange={e => setDateRange(prev => ({ ...prev, end: e.target.value }))}
+                            className="w-36"
                         />
                     </div>
 
@@ -186,6 +202,7 @@ const AdminAttendance = () => {
                             <thead className="bg-muted/50 text-muted-foreground text-xs uppercase tracking-wider border-b border-border">
                                 <tr>
                                     <th className="p-4 font-bold">Staff</th>
+                                    <th className="p-4 font-bold">Date</th>
                                     <th className="p-4 font-bold text-center">First In</th>
                                     <th className="p-4 font-bold text-center">Last Out</th>
                                     <th className="p-4 font-bold text-center">Duration</th>
@@ -194,12 +211,12 @@ const AdminAttendance = () => {
                             </thead>
                             <tbody className="divide-y divide-border">
                                 {loading ? (
-                                    <tr><td colSpan="5" className="p-8 text-center text-muted-foreground">Loading data...</td></tr>
+                                    <tr><td colSpan="6" className="p-8 text-center text-muted-foreground">Loading data...</td></tr>
                                 ) : summaryData.length === 0 ? (
-                                    <tr><td colSpan="5" className="p-8 text-center text-muted-foreground">No attendance records found for this date.</td></tr>
+                                    <tr><td colSpan="6" className="p-8 text-center text-muted-foreground">No attendance records found for this date range.</td></tr>
                                 ) : (
                                     summaryData.map(user => (
-                                        <tr key={user.id} className="hover:bg-muted/30 transition-colors">
+                                        <tr key={user.key} className="hover:bg-muted/30 transition-colors">
                                             <td className="p-4 font-bold text-foreground">
                                                 <div className="flex items-center gap-3">
                                                     <div className="w-8 h-8 rounded-full bg-blue-100 dark:bg-blue-900/40 flex items-center justify-center text-blue-600 dark:text-blue-400 font-black text-xs">
@@ -210,6 +227,9 @@ const AdminAttendance = () => {
                                                         <span className="text-[10px] text-muted-foreground font-mono">{user.staffId}</span>
                                                     </div>
                                                 </div>
+                                            </td>
+                                            <td className="p-4 text-sm font-medium font-mono text-muted-foreground">
+                                                {user.date}
                                             </td>
                                             <td className="p-4 text-center">
                                                 {user.firstIn ? (

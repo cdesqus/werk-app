@@ -57,16 +57,23 @@ graph TD
     C --> D{Validate Credentials};
     D -- Invalid --> C;
     D -- Valid --> E[Log Audit Event];
-    E --> F{Check Role};
-    F -- Admin --> G[Redirect /admin];
-    F -- Staff --> H[Redirect /staff];
+    E --> F{Check Force Change Password};
+    F -- Yes --> G[Redirect /force-change-password];
+    G --> H[Update Password];
+    H --> I{Check Role};
+    F -- No --> I;
+    I -- Admin --> J[Redirect /admin];
+    I -- Staff --> K[Redirect /staff];
 ```
 
 1.  **Access**: User visits `/login`.
 2.  **Verification**: Solves the math CAPTCHA.
 3.  **Credentials**: Enters Email and Password.
 4.  **Audit**: Successful login is logged to Audit Trail.
-5.  **Routing**: Redirects to appropriate dashboard based on Role.
+5.  **Security Check**:
+    *   If **first-time login** (or reset), user is redirected to `/force-change-password`.
+    *   User *must* change their temporary password to proceed.
+6.  **Routing**: Redirects to appropriate dashboard based on Role.
 
 ### Security Audit Flow (Super Admin)
 ```mermaid
