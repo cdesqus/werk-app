@@ -204,7 +204,8 @@ const User = sequelize.define('User', {
     staffId: { type: DataTypes.STRING, unique: true },
     otp: { type: DataTypes.STRING },
     otpExpires: { type: DataTypes.DATE },
-    can_attendance: { type: DataTypes.BOOLEAN, defaultValue: false }
+    can_attendance: { type: DataTypes.BOOLEAN, defaultValue: false },
+    mustChangePassword: { type: DataTypes.BOOLEAN, defaultValue: true }
 });
 
 const Overtime = sequelize.define('Overtime', {
@@ -393,12 +394,27 @@ app.post('/api/login', authLimiter, loginValidation, validate, async (req, res, 
         const validPassword = await bcrypt.compare(password, user.password);
         if (!validPassword) return res.status(400).json({ error: 'Invalid password' });
 
-        const token = jwt.sign({ id: user.id, role: user.role, name: user.name }, SECRET_KEY, { expiresIn: '24h' });
+        const token = jwt.sign(
+            { id: user.id, role: user.role, name: user.name, mustChangePassword: user.mustChangePassword },
+            SECRET_KEY,
+            { expiresIn: '24h' }
+        );
 
         await logAudit(user.id, 'User Login', 'Successful login', req);
 
         // Security: Explicitly define returned fields, excluding password hash
-        res.json({ token, user: { id: user.id, name: user.name, email: user.email, role: user.role, leaveQuota: user.leaveQuota, can_attendance: user.can_attendance } });
+        res.json({
+            token,
+            user: {
+                id: user.id,
+                name: user.name,
+                email: user.email,
+                role: user.role,
+                leaveQuota: user.leaveQuota,
+                can_attendance: user.can_attendance,
+                mustChangePassword: user.mustChangePassword
+            }
+        });
     } catch (error) {
         next(error);
     }
@@ -421,6 +437,7 @@ app.put('/api/auth/change-password', authenticateToken, [
         // 2. Hash New Password
         const hashedPassword = await bcrypt.hash(newPassword, 10);
         user.password = hashedPassword;
+        user.mustChangePassword = false; // Reset flag
         await user.save();
 
         await logAudit(user.id, 'Password Changed', 'User changed their own password', req);

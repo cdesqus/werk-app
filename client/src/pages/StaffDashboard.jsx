@@ -1092,7 +1092,7 @@ const StatusBadge = ({ status }) => {
         Completed: 'bg-slate-100 text-slate-700 dark:bg-slate-700 dark:text-slate-300',
     };
     return (
-        <span className={clsx("px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider", styles[status] || styles.Pending)}>
+        <span className={clsx("px-2.5 py-0.5 rounded-full text-[10px] font-medium uppercase tracking-wider shadow-none border-0 leading-none inline-flex items-center", styles[status] || styles.Pending)}>
             {status}
         </span>
     );
