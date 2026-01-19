@@ -1385,6 +1385,24 @@ app.post('/api/attendance', authenticateToken, async (req, res, next) => {
             if (serverTime.getHours() >= 10) {
                 return res.status(400).json({ error: 'Clock-in rejected. Maximum time is 10:00 AM. You are considered absent.' });
             }
+
+            // --- RULE: Cannot Clock-In if already Clocked-Out today (One Shift) ---
+            const startOfDay = new Date(serverTime);
+            startOfDay.setHours(0, 0, 0, 0);
+            const endOfDay = new Date(serverTime);
+            endOfDay.setHours(23, 59, 59, 999);
+
+            const hasClockOut = await AttendanceLog.findOne({
+                where: {
+                    UserId: user.id,
+                    type: 'CLOCK_OUT',
+                    timestamp: { [Op.between]: [startOfDay, endOfDay] }
+                }
+            });
+
+            if (hasClockOut) {
+                return res.status(400).json({ error: 'You have already finished your shift today. Clock-in denied.' });
+            }
         }
 
         let is_suspicious = false;
