@@ -1315,6 +1315,8 @@ app.put('/api/admin/users/:id', authenticateToken, isAdmin, async (req, res, nex
 
         if (name) user.name = name;
         if (phone) user.phone = phone;
+        if (req.body.staffId) user.staffId = req.body.staffId;
+        if (req.body.role) user.role = req.body.role;
         if (req.body.birthDate) user.birthDate = req.body.birthDate;
         if (req.body.leaveQuota !== undefined) user.leaveQuota = req.body.leaveQuota;
         if (req.body.can_attendance !== undefined) user.can_attendance = req.body.can_attendance;

@@ -12,7 +12,7 @@ const AdminUsers = () => {
     const [users, setUsers] = useState([]);
     const [editingUser, setEditingUser] = useState(null);
     const [showAddModal, setShowAddModal] = useState(false);
-    const [formData, setFormData] = useState({ name: '', email: '', phone: '', birthDate: '', password: '', role: 'staff', leaveQuota: 12, can_attendance: false });
+    const [formData, setFormData] = useState({ name: '', email: '', phone: '', staffId: '', birthDate: '', password: '', role: 'staff', leaveQuota: 12, can_attendance: false });
     const [searchTerm, setSearchTerm] = useState('');
     const [confirmModal, setConfirmModal] = useState({ isOpen: false, id: null });
 
@@ -35,6 +35,7 @@ const AdminUsers = () => {
             name: user.name,
             email: user.email,
             phone: user.phone,
+            staffId: user.staffId || '',
             birthDate: user.birthDate || '',
             password: '',
             role: user.role,
@@ -54,6 +55,8 @@ const AdminUsers = () => {
             await api.put(`/admin/users/${editingUser.id}`, {
                 name: formData.name,
                 phone: formData.phone,
+                staffId: formData.staffId,
+                role: formData.role,
                 birthDate: formData.birthDate,
                 newPassword: formData.password,
                 leaveQuota: formData.leaveQuota,
@@ -218,6 +221,17 @@ const AdminUsers = () => {
                                                     value={formData.email}
                                                     readOnly
                                                     className="input-field w-full opacity-60 cursor-not-allowed bg-muted"
+                                                />
+                                            </div>
+
+                                            <div className="space-y-2">
+                                                <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-2"><User size={14} /> Staff ID</label>
+                                                <input
+                                                    type="text"
+                                                    value={formData.staffId}
+                                                    onChange={e => setFormData({ ...formData, staffId: e.target.value })}
+                                                    className="input-field w-full font-mono"
+                                                    placeholder="IDE-YYYY-XXXX"
                                                 />
                                             </div>
 
