@@ -1378,6 +1378,15 @@ app.post('/api/attendance', authenticateToken, async (req, res, next) => {
         }
 
         const serverTime = new Date(); // TRUSTED SERVER TIME
+
+        // --- RULE: Max Clock-In 10:00 AM ---
+        if (type === 'CLOCK_IN') {
+            // Check if hour is 10 or greater (meaning 10:00:00 or later)
+            if (serverTime.getHours() >= 10) {
+                return res.status(400).json({ error: 'Clock-in rejected. Maximum time is 10:00 AM. You are considered absent.' });
+            }
+        }
+
         let is_suspicious = false;
 
         // Superman Heuristic: Check against last log
