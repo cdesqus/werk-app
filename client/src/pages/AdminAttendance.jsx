@@ -202,7 +202,8 @@ const AdminAttendance = () => {
                             <thead className="bg-muted/50 text-muted-foreground text-xs uppercase tracking-wider border-b border-border">
                                 <tr>
                                     <th className="p-4 font-bold">Staff</th>
-                                    <th className="p-4 font-bold">Date</th>
+                                    <th className="p-4 font-bold whitespace-nowrap">Date</th>
+                                    <th className="p-4 font-bold">Location</th>
                                     <th className="p-4 font-bold text-center">First In</th>
                                     <th className="p-4 font-bold text-center">Last Out</th>
                                     <th className="p-4 font-bold text-center">Duration</th>
@@ -211,25 +212,37 @@ const AdminAttendance = () => {
                             </thead>
                             <tbody className="divide-y divide-border">
                                 {loading ? (
-                                    <tr><td colSpan="6" className="p-8 text-center text-muted-foreground">Loading data...</td></tr>
+                                    <tr><td colSpan="7" className="p-8 text-center text-muted-foreground">Loading data...</td></tr>
                                 ) : summaryData.length === 0 ? (
-                                    <tr><td colSpan="6" className="p-8 text-center text-muted-foreground">No attendance records found for this date range.</td></tr>
+                                    <tr><td colSpan="7" className="p-8 text-center text-muted-foreground">No attendance records found for this date range.</td></tr>
                                 ) : (
                                     summaryData.map(user => (
                                         <tr key={user.key} className="hover:bg-muted/30 transition-colors">
                                             <td className="p-4 font-bold text-foreground">
                                                 <div className="flex items-center gap-3">
-                                                    <div className="w-8 h-8 rounded-full bg-blue-100 dark:bg-blue-900/40 flex items-center justify-center text-blue-600 dark:text-blue-400 font-black text-xs">
+                                                    <div className="w-8 h-8 rounded-full bg-blue-100 dark:bg-blue-900/40 flex items-center justify-center text-blue-600 dark:text-blue-400 font-black text-xs shrink-0">
                                                         {user.name?.charAt(0) || '?'}
                                                     </div>
                                                     <div>
-                                                        <span className="block">{user.name}</span>
+                                                        <span className="block whitespace-nowrap">{user.name}</span>
                                                         <span className="text-[10px] text-muted-foreground font-mono">{user.staffId}</span>
                                                     </div>
                                                 </div>
                                             </td>
-                                            <td className="p-4 text-sm font-medium font-mono text-muted-foreground">
+                                            <td className="p-4 text-sm font-medium font-mono text-muted-foreground whitespace-nowrap">
                                                 {user.date}
+                                            </td>
+                                            <td className="p-4">
+                                                {user.firstIn ? (
+                                                    <a
+                                                        href={`https://www.google.com/maps?q=${user.firstIn.latitude},${user.firstIn.longitude}`}
+                                                        target="_blank"
+                                                        rel="noopener noreferrer"
+                                                        className="flex items-center gap-1.5 text-blue-500 hover:text-blue-600 dark:text-blue-400 font-medium text-xs transition-colors whitespace-nowrap"
+                                                    >
+                                                        <MapPin size={14} /> Map
+                                                    </a>
+                                                ) : <span className="text-muted-foreground text-xs">-</span>}
                                             </td>
                                             <td className="p-4 text-center">
                                                 {user.firstIn ? (
