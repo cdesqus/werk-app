@@ -1487,6 +1487,30 @@ app.get('/api/attendance', authenticateToken, async (req, res, next) => {
     }
 });
 
+// Admin: Get Staff On Leave (Specific Date)
+app.get('/api/admin/leaves/active', authenticateToken, isAdmin, async (req, res) => {
+    try {
+        // Default to server today if not provided
+        let targetDate = req.query.date;
+        if (!targetDate) {
+            targetDate = new Date().toISOString().split('T')[0];
+        }
+
+        const leaves = await Leave.findAll({
+            where: {
+                status: 'Approved',
+                startDate: { [Op.lte]: targetDate },
+                endDate: { [Op.gte]: targetDate }
+            },
+            include: [{ model: User, attributes: ['name', 'email', 'role', 'staffId'] }],
+            order: [['startDate', 'ASC']]
+        });
+        res.json(leaves);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
 // Admin Audit Logs
 app.get('/api/admin/audit-logs', authenticateToken, isAdmin, async (req, res, next) => {
     try {

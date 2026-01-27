@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useToast } from '../context/ToastContext';
 import api from '../utils/api';
-import { DollarSign, Check, X, ChevronLeft, ChevronRight, Megaphone, BarChart2, Plus, Trash2, Sparkles, Zap, Users, Shield } from 'lucide-react';
+import { DollarSign, Check, X, ChevronLeft, ChevronRight, Megaphone, BarChart2, Plus, Trash2, Sparkles, Zap, Users, Shield, Palmtree } from 'lucide-react';
 import { format, subMonths, addMonths } from 'date-fns';
 import clsx from 'clsx';
 
@@ -28,6 +28,7 @@ const AdminDashboard = () => {
     const [summary, setSummary] = useState([]);
     const [pendingItems, setPendingItems] = useState([]);
     const [services, setServices] = useState({});
+    const [onLeaveToday, setOnLeaveToday] = useState([]);
 
     // Forms
     const [showVibeModal, setShowVibeModal] = useState(false);
@@ -60,6 +61,12 @@ const AdminDashboard = () => {
                 const { data } = await api.get('/admin/services');
                 setServices(data || {});
             } catch (e) { console.error("Failed services", e); }
+
+            // Active Leaves Today
+            try {
+                const { data } = await api.get('/admin/leaves/active');
+                setOnLeaveToday(data);
+            } catch (e) { console.error("Failed active leaves", e); }
 
             // Action Center Items
             let pending = [];
@@ -251,28 +258,71 @@ const AdminDashboard = () => {
 
                 {/* Payroll Summary */}
                 <div className="space-y-6">
-                    <h2 className="text-xl font-bold text-slate-900 dark:text-white flex items-center gap-2"><DollarSign className="text-emerald-500" size={20} /> Payroll Estimate</h2>
-                    <div className="saas-card overflow-hidden">
-                        <table className="w-full text-left">
-                            <thead className="bg-slate-50 dark:bg-slate-900 border-b border-slate-100 dark:border-slate-800 text-slate-500 text-xs uppercase tracking-wider">
-                                <tr>
-                                    <th className="p-4 font-bold">Staff</th>
-                                    <th className="p-4 font-bold text-right">Overtime</th>
-                                    <th className="p-4 font-bold text-right">Claims</th>
-                                    <th className="p-4 font-bold text-right text-slate-900 dark:text-white">Total</th>
-                                </tr>
-                            </thead>
-                            <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-                                {summary.map(user => (
-                                    <tr key={user.userId} className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
-                                        <td className="p-4 font-bold text-slate-900 dark:text-white text-sm">{user.name}</td>
-                                        <td className="p-4 text-right text-slate-500 text-sm">Rp {user.overtimeTotal.toLocaleString('id-ID')}</td>
-                                        <td className="p-4 text-right text-slate-500 text-sm">Rp {user.claimTotal.toLocaleString('id-ID')}</td>
-                                        <td className="p-4 text-right font-bold text-emerald-600 dark:text-emerald-400 text-sm">Rp {user.totalPayable.toLocaleString('id-ID')}</td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
+                    <div className="flex flex-col gap-6">
+                        {/* Out of Office Card */}
+                        <div className="bg-gradient-to-br from-pink-50 to-orange-50 dark:from-pink-900/10 dark:to-orange-900/10 rounded-2xl p-6 border border-pink-100 dark:border-pink-900/20">
+                            <div className="flex items-center justify-between mb-4">
+                                <h2 className="text-xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                                    <Palmtree className="text-pink-500" size={20} /> Out of Office
+                                    <span className="bg-pink-200 dark:bg-pink-500/30 text-pink-700 dark:text-pink-300 text-[10px] px-2 py-0.5 rounded-full uppercase tracking-wider font-bold">Today</span>
+                                </h2>
+                                <span className="text-2xl font-black text-pink-500/20">{onLeaveToday.length}</span>
+                            </div>
+
+                            {onLeaveToday.length === 0 ? (
+                                <div className="text-center py-4 text-slate-500 dark:text-slate-400 text-sm italic">
+                                    All hands on deck! No one is on leave.
+                                </div>
+                            ) : (
+                                <div className="space-y-3">
+                                    {onLeaveToday.map(leave => (
+                                        <div key={leave.id} className="flex items-center gap-3 bg-white/50 dark:bg-black/20 p-3 rounded-xl border border-white/50 dark:border-white/5">
+                                            <div className="w-10 h-10 rounded-full bg-pink-100 dark:bg-pink-800 flex items-center justify-center text-pink-600 dark:text-pink-200 font-bold text-xs shrink-0">
+                                                {leave.User?.name?.charAt(0) || '?'}
+                                            </div>
+                                            <div className="min-w-0">
+                                                <h4 className="font-bold text-slate-900 dark:text-white text-sm truncate">{leave.User?.name || 'Unknown'}</h4>
+                                                <p className="text-xs text-slate-500 dark:text-slate-400 truncate">{leave.User?.email}</p>
+                                            </div>
+                                            <div className="ml-auto text-right shrink-0">
+                                                <span className="text-[10px] font-bold uppercase tracking-wider bg-white dark:bg-zinc-800 px-2 py-1 rounded text-slate-500 border border-slate-100 dark:border-slate-700 block mb-0.5">
+                                                    {leave.type}
+                                                </span>
+                                                <span className="text-[10px] text-slate-400">
+                                                    Returns {format(new Date(leave.endDate), 'MMM d')}
+                                                </span>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+
+                        <div>
+                            <h2 className="text-xl font-bold text-slate-900 dark:text-white flex items-center gap-2 mb-6"><DollarSign className="text-emerald-500" size={20} /> Payroll Estimate</h2>
+                            <div className="saas-card overflow-hidden">
+                                <table className="w-full text-left">
+                                    <thead className="bg-slate-50 dark:bg-slate-900 border-b border-slate-100 dark:border-slate-800 text-slate-500 text-xs uppercase tracking-wider">
+                                        <tr>
+                                            <th className="p-4 font-bold">Staff</th>
+                                            <th className="p-4 font-bold text-right">Overtime</th>
+                                            <th className="p-4 font-bold text-right">Claims</th>
+                                            <th className="p-4 font-bold text-right text-slate-900 dark:text-white">Total</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+                                        {summary.map(user => (
+                                            <tr key={user.userId} className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+                                                <td className="p-4 font-bold text-slate-900 dark:text-white text-sm">{user.name}</td>
+                                                <td className="p-4 text-right text-slate-500 text-sm">Rp {user.overtimeTotal.toLocaleString('id-ID')}</td>
+                                                <td className="p-4 text-right text-slate-500 text-sm">Rp {user.claimTotal.toLocaleString('id-ID')}</td>
+                                                <td className="p-4 text-right font-bold text-emerald-600 dark:text-emerald-400 text-sm">Rp {user.totalPayable.toLocaleString('id-ID')}</td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
