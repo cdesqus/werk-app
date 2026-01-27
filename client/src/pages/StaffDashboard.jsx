@@ -159,12 +159,16 @@ const StaffDashboard = () => {
             const leaveData = leaveRes.data.map(i => ({ ...i, dataType: 'leave' }));
 
             // Calculate Stats
-            // 1. Earned: Sum of Approved Overtimes * Hourly Rate (Assume 20k/hr if not in response)
-            // Ideally backend sends 'amount', but we can estimate or sum 'totalRate' if present. 
-            // We'll trust the user's dashboard logic, assuming 'hours' * 20000 roughly if field missing.
-            const totalEarned = otData
+            // 1. Earned: Sum of Approved Overtimes (payableAmount) + Approved Claims
+            const earnedFromOt = otData
                 .filter(ot => ot.status === 'Approved')
-                .reduce((acc, curr) => acc + (curr.totalRate || (parseFloat(curr.hours) * 20000)), 0);
+                .reduce((acc, curr) => acc + (curr.payableAmount || (parseFloat(curr.hours) * 40000)), 0);
+
+            const earnedFromClaims = claimData
+                .filter(c => c.status === 'Approved')
+                .reduce((acc, curr) => acc + parseFloat(curr.amount || 0), 0);
+
+            const totalEarned = earnedFromOt + earnedFromClaims;
 
             const pendingClaims = claimData.filter(c => c.status === 'Pending').length;
 

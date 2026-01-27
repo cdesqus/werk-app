@@ -954,7 +954,7 @@ app.get('/api/leaves', authenticateToken, async (req, res) => {
 
         const leaves = await Leave.findAll({
             where: whereClause,
-            include: [{ model: User, attributes: ['name'] }],
+            include: [{ model: User, attributes: ['name', 'email', 'role'] }],
             order: [['startDate', 'DESC']]
         });
         res.json(leaves);
