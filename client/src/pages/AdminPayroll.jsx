@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useToast } from '../context/ToastContext';
 import api from '../utils/api';
 import ConfirmModal from '../components/ui/ConfirmModal';
-import { DollarSign, Calendar, ChevronLeft, ChevronRight, Download, CheckCircle, Loader, CheckCircle2, ChevronDown, ChevronUp, Clock, FileText, AlertTriangle, Filter, Search } from 'lucide-react';
+import { DollarSign, Calendar, ChevronLeft, ChevronRight, Download, CheckCircle, Loader, CheckCircle2, ChevronDown, ChevronUp, Clock, FileText, AlertTriangle, Filter, Search, Image } from 'lucide-react';
 import { format, subMonths, addMonths, differenceInDays } from 'date-fns';
 import * as XLSX from 'xlsx';
 import clsx from 'clsx';
@@ -390,6 +390,8 @@ const AdminPayroll = () => {
                                                                         <tr>
                                                                             <th className="p-2 text-left">Date</th>
                                                                             <th className="p-2 text-left">Title</th>
+                                                                            <th className="p-2 text-left">Description</th>
+                                                                            <th className="p-2 text-center">Proof</th>
                                                                             <th className="p-2 text-right">Status</th>
                                                                             <th className="p-2 text-right">Amount</th>
                                                                         </tr>
@@ -414,7 +416,27 @@ const AdminPayroll = () => {
                                                                                             )}
                                                                                         </div>
                                                                                     </td>
-                                                                                    <td className="p-2">{claim.title}</td>
+                                                                                    <td className="p-2 font-medium">{claim.title}</td>
+                                                                                    <td className="p-2 text-muted-foreground max-w-xs">
+                                                                                        <span className="line-clamp-2 text-xs" title={claim.description}>
+                                                                                            {claim.description || '-'}
+                                                                                        </span>
+                                                                                    </td>
+                                                                                    <td className="p-2 text-center">
+                                                                                        {claim.proof ? (
+                                                                                            <a
+                                                                                                href={`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}${claim.proof}`}
+                                                                                                target="_blank"
+                                                                                                rel="noopener noreferrer"
+                                                                                                className="inline-flex items-center gap-1 text-blue-500 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 transition-colors"
+                                                                                                title="View proof"
+                                                                                            >
+                                                                                                <Image size={16} />
+                                                                                            </a>
+                                                                                        ) : (
+                                                                                            <span className="text-muted-foreground text-xs">-</span>
+                                                                                        )}
+                                                                                    </td>
                                                                                     <td className="p-2 text-right">
                                                                                         <span className={clsx("text-xs font-bold",
                                                                                             claim.status === 'Paid' ? "text-emerald-500" :
