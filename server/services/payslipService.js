@@ -104,7 +104,10 @@ const calculatePayroll = async (models, userId, month, year, adjustments = []) =
 const generateHtml = async (payrollData) => {
     const templatePath = path.join(__dirname, '../templates/payslip.hbs');
     const templateSource = fs.readFileSync(templatePath, 'utf8');
-    const template = handlebars.compile(templateSource);
+    const template = handlebars.compile(templateSource, {
+        allowProtoPropertiesByDefault: true,
+        allowProtoMethodsByDefault: true
+    });
 
     const html = template({
         user: payrollData.user,
@@ -124,7 +127,13 @@ const generateHtml = async (payrollData) => {
 const generatePdf = async (html) => {
     const browser = await puppeteer.launch({
         headless: 'new',
-        args: ['--no-sandbox', '--disable-setuid-sandbox']
+        executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || '/usr/bin/chromium-browser',
+        args: [
+            '--no-sandbox',
+            '--disable-setuid-sandbox',
+            '--disable-dev-shm-usage',
+            '--single-process'
+        ]
     });
     const page = await browser.newPage();
     await page.setContent(html, { waitUntil: 'networkidle0' });
