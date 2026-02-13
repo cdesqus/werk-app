@@ -3,7 +3,7 @@ import { useToast } from '../context/ToastContext';
 import api from '../utils/api';
 import { DollarSign, Check, X, ChevronLeft, ChevronRight, Megaphone, BarChart2, Plus, Trash2, Sparkles, Zap, Users, Shield, Palmtree, FileText } from 'lucide-react';
 import { format, subMonths, addMonths } from 'date-fns';
-import { format, subMonths, addMonths } from 'date-fns';
+
 import clsx from 'clsx';
 import PayslipGenerator from '../components/PayslipGenerator';
 
