@@ -415,6 +415,74 @@ const sendBirthdayAlert = async (models, transporter) => {
     }
 };
 
+const sendMonthlyPayslips = async (models, transporter) => {
+    const { User } = models;
+    const { sendPayslip } = require('./payslipService');
+
+    console.log('[Cron] Running Monthly Payslip Distribution...');
+
+    try {
+        const today = new Date();
+        const month = today.getMonth() + 1; // Current month (1-12)
+        const year = today.getFullYear();
+
+        console.log(`[Cron] Generating payslips for period: ${month}/${year}`);
+
+        // Get all users except superadmins
+        const users = await User.findAll({
+            where: {
+                role: { [Op.ne]: 'superadmin' }
+            },
+            order: [['name', 'ASC']]
+        });
+
+        if (users.length === 0) {
+            console.log('[Cron] No users found to send payslips to.');
+            return { success: false, message: 'No users found' };
+        }
+
+        console.log(`[Cron] Found ${users.length} users. Starting payslip generation...`);
+
+        let successCount = 0;
+        let failCount = 0;
+        const errors = [];
+
+        for (const user of users) {
+            try {
+                console.log(`[Cron] Processing payslip for ${user.name} (${user.email})...`);
+
+                // Send payslip with no manual adjustments
+                await sendPayslip(models, transporter, user.id, month, year, []);
+
+                successCount++;
+                console.log(`[Cron] ✓ Payslip sent to ${user.name}`);
+            } catch (error) {
+                failCount++;
+                const errorMsg = `Failed for ${user.name}: ${error.message}`;
+                errors.push(errorMsg);
+                console.error(`[Cron] ✗ ${errorMsg}`);
+            }
+        }
+
+        const summary = `Payslip Distribution Complete: ${successCount} sent, ${failCount} failed`;
+        console.log(`[Cron] ${summary}`);
+
+        if (errors.length > 0) {
+            console.error('[Cron] Errors:', errors);
+        }
+
+        return {
+            success: true,
+            message: summary,
+            details: { successCount, failCount, errors }
+        };
+
+    } catch (error) {
+        console.error('[Cron] Failed to run Monthly Payslip Distribution:', error);
+        return { success: false, message: error.message };
+    }
+};
+
 const initCronJobs = (models, transporter) => {
     // 1. DAILY MORNING BRIEF (08:00 AM)
     cron.schedule('0 8 * * *', () => sendMorningBrief(models, transporter), {
@@ -427,11 +495,24 @@ const initCronJobs = (models, transporter) => {
         scheduled: true,
         timezone: "Asia/Jakarta"
     });
+
     // 3. BIRTHDAY ALERT (08:05 AM)
     cron.schedule('5 8 * * *', () => sendBirthdayAlert(models, transporter), {
         scheduled: true,
         timezone: "Asia/Jakarta"
     });
+
+    // 4. MONTHLY PAYSLIP DISTRIBUTION (28th at 4:30 PM)
+    cron.schedule('30 16 28 * *', () => sendMonthlyPayslips(models, transporter), {
+        scheduled: true,
+        timezone: "Asia/Jakarta"
+    });
+
+    console.log('[Cron] All cron jobs initialized:');
+    console.log('  - Daily Morning Brief: 08:00 AM');
+    console.log('  - Monthly Payday Alert: 28th at 09:00 AM');
+    console.log('  - Birthday Alert: 08:05 AM');
+    console.log('  - Monthly Payslip Distribution: 28th at 4:30 PM');
 };
 
-module.exports = { initCronJobs, sendMorningBrief, sendPaydayAlert, sendBirthdayAlert };
+module.exports = { initCronJobs, sendMorningBrief, sendPaydayAlert, sendBirthdayAlert, sendMonthlyPayslips };
