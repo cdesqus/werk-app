@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useToast } from '../context/ToastContext';
 import api from '../utils/api';
 import ConfirmModal from '../components/ui/ConfirmModal';
-import { DollarSign, Calendar, ChevronLeft, ChevronRight, Download, CheckCircle, Loader, CheckCircle2, ChevronDown, ChevronUp, Clock, FileText, AlertTriangle, Filter, Search, Image } from 'lucide-react';
+import { DollarSign, Calendar, ChevronLeft, ChevronRight, Download, CheckCircle, Loader, CheckCircle2, ChevronDown, ChevronUp, Clock, FileText, AlertTriangle, Filter, Search, Image, X } from 'lucide-react';
 import { format, subMonths, addMonths, differenceInDays } from 'date-fns';
 import * as XLSX from 'xlsx';
 import clsx from 'clsx';
@@ -35,6 +35,9 @@ const AdminPayroll = () => {
 
     // Payslip Generator
     const [payslipUser, setPayslipUser] = useState(null);
+
+    // Image Preview Modal
+    const [previewImage, setPreviewImage] = useState(null);
 
     useEffect(() => {
         // Update currentDate when month or year changes
@@ -424,15 +427,13 @@ const AdminPayroll = () => {
                                                                                     </td>
                                                                                     <td className="p-2 text-center">
                                                                                         {claim.proof ? (
-                                                                                            <a
-                                                                                                href={`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}${claim.proof}`}
-                                                                                                target="_blank"
-                                                                                                rel="noopener noreferrer"
-                                                                                                className="inline-flex items-center gap-1 text-blue-500 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 transition-colors"
+                                                                                            <button
+                                                                                                onClick={() => setPreviewImage(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}${claim.proof}`)}
+                                                                                                className="inline-flex items-center gap-1 text-blue-500 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 transition-colors cursor-pointer"
                                                                                                 title="View proof"
                                                                                             >
                                                                                                 <Image size={16} />
-                                                                                            </a>
+                                                                                            </button>
                                                                                         ) : (
                                                                                             <span className="text-muted-foreground text-xs">-</span>
                                                                                         )}
@@ -511,6 +512,30 @@ const AdminPayroll = () => {
                     year={year}
                     onClose={() => setPayslipUser(null)}
                 />
+            )}
+
+            {/* Image Preview Modal */}
+            {previewImage && (
+                <div
+                    className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-[100] p-4"
+                    onClick={() => setPreviewImage(null)}
+                >
+                    <div className="relative max-w-4xl max-h-[90vh] bg-white dark:bg-zinc-900 rounded-xl shadow-2xl overflow-hidden">
+                        <button
+                            onClick={() => setPreviewImage(null)}
+                            className="absolute top-4 right-4 z-10 bg-white dark:bg-zinc-800 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-zinc-700 rounded-full p-2 shadow-lg transition-colors"
+                            title="Close"
+                        >
+                            <X size={20} />
+                        </button>
+                        <img
+                            src={previewImage}
+                            alt="Claim Proof"
+                            className="max-w-full max-h-[90vh] object-contain"
+                            onClick={(e) => e.stopPropagation()}
+                        />
+                    </div>
+                </div>
             )}
         </div >
     );

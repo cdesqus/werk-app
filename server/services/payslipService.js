@@ -132,14 +132,25 @@ const generatePdf = async (html) => {
             '--no-sandbox',
             '--disable-setuid-sandbox',
             '--disable-dev-shm-usage',
-            '--single-process'
-        ]
+            '--disable-gpu',
+            '--disable-software-rasterizer',
+            '--no-zygote',
+            '--disable-extensions'
+        ],
+        timeout: 60000,
+        dumpio: false
     });
-    const page = await browser.newPage();
-    await page.setContent(html, { waitUntil: 'networkidle0' });
-    const pdfBuffer = await page.pdf({ format: 'A4', printBackground: true });
-    await browser.close();
-    return pdfBuffer;
+
+    try {
+        const page = await browser.newPage();
+        await page.setContent(html, { waitUntil: 'networkidle0', timeout: 30000 });
+        const pdfBuffer = await page.pdf({ format: 'A4', printBackground: true });
+        await browser.close();
+        return pdfBuffer;
+    } catch (error) {
+        await browser.close();
+        throw error;
+    }
 };
 
 const sendPayslip = async (models, transporter, userId, month, year, adjustments) => {
