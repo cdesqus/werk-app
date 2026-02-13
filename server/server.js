@@ -1650,10 +1650,10 @@ app.get('/api/admin/audit-logs', authenticateToken, isAdmin, async (req, res, ne
 
 
 
-// Admin Payroll Summary (Robust SQL Version)
+// Admin Payroll Summary (Fixed & Detailed)
 app.get('/api/admin/summary', authenticateToken, isAdmin, async (req, res, next) => {
     try {
-        const { month, year } = req.query;
+        const { month, year, filterMode } = req.query;
         if (!month || !year) return res.status(400).json({ error: 'Month and Year required' });
 
         const m = parseInt(month);
@@ -1668,47 +1668,87 @@ app.get('/api/admin/summary', authenticateToken, isAdmin, async (req, res, next)
             startYear = y - 1;
         }
 
-        const startDate = new Date(startYear, startMonthIndex, 28).toISOString().split('T')[0];
-        const endDate = new Date(y, m - 1, 27).toISOString().split('T')[0];
+        // Period: 28th of Prev Month -> 27th of Current Month (Midnight)
+        const startDateStr = new Date(startYear, startMonthIndex, 28).toISOString().split('T')[0];
+        const endDateStr = new Date(y, m - 1, 27).toISOString().split('T')[0];
 
-        // robust SQL Aggregation
-        const sql = `
-            SELECT 
-                u.id, u.name, u.email, u.role, u."staffId",
-                COALESCE(SUM(CASE WHEN o.status = 'Approved' THEN o."payableAmount" ELSE 0 END), 0) as "overtimeTotal",
-                COALESCE(SUM(CASE WHEN o.status = 'Approved' THEN o.hours ELSE 0 END), 0) as "overtimeHours",
-                COALESCE(SUM(CASE WHEN c.status = 'Approved' THEN c.amount ELSE 0 END), 0) as "claimTotal",
-                (
-                    COALESCE(SUM(CASE WHEN o.status = 'Approved' THEN o."payableAmount" ELSE 0 END), 0) + 
-                    COALESCE(SUM(CASE WHEN c.status = 'Approved' THEN c.amount ELSE 0 END), 0)
-                ) as "totalPayable",
-                MAX(CASE WHEN o.status = 'Pending' OR c.status = 'Pending' THEN 1 ELSE 0 END) as "hasPending"
-            FROM "Users" u
-            LEFT JOIN "Overtimes" o ON u.id = o."UserId" AND o."createdAt" BETWEEN :startDate AND :endDate
-            LEFT JOIN "Claims" c ON u.id = c."UserId" AND c."createdAt" BETWEEN :startDate AND :endDate
-            GROUP BY u.id
-            HAVING (
-                COALESCE(SUM(CASE WHEN o.status = 'Approved' THEN o."payableAmount" ELSE 0 END), 0) + 
-                COALESCE(SUM(CASE WHEN c.status = 'Approved' THEN c.amount ELSE 0 END), 0)
-            ) > 0 OR MAX(CASE WHEN o.status = 'Pending' OR c.status = 'Pending' THEN 1 ELSE 0 END) = 1
-            ORDER BY "totalPayable" DESC
-        `;
+        // Filter Column: 'date' (Activity) or 'createdAt' (Submission)
+        const filterCol = (filterMode === 'activity') ? 'date' : 'createdAt';
 
-        const summaries = await sequelize.query(sql, {
-            replacements: { startDate, endDate },
-            type: Sequelize.QueryTypes.SELECT
+        let whereRange;
+
+        // Handle Date Range nuance for TIMESTAMP (createdAt) vs DATEONLY (date)
+        if (filterCol === 'createdAt') {
+            // For timestamps, "BETWEEN '...27' AND '...27'" misses filtering correctly.
+            // We set end to start of next day (28th midnight) to include the full end day (27th).
+            // Assuming the intention is [Start, End] inclusive logic for days.
+            const endDatePlusOne = new Date(y, m - 1, 28).toISOString().split('T')[0];
+            whereRange = { [Op.gte]: startDateStr, [Op.lt]: endDatePlusOne };
+        } else {
+            // For DATEONLY, string comparison is inclusive [28th, 27th]
+            // Wait, DATEONLY behavior in Sequelize with BETWEEN is inclusive.
+            whereRange = { [Op.between]: [startDateStr, endDateStr] };
+        }
+
+        const whereClause = {
+            [filterCol]: whereRange
+        };
+
+        const users = await User.findAll({
+            include: [
+                {
+                    model: Overtime,
+                    required: false,
+                    where: whereClause
+                },
+                {
+                    model: Claim,
+                    required: false,
+                    where: whereClause
+                }
+            ],
+            order: [['name', 'ASC']]
         });
 
-        // Format for Frontend
-        const result = summaries.map(s => ({
-            ...s,
-            overtimeTotal: parseFloat(s.overtimeTotal),
-            overtimeHours: parseFloat(s.overtimeHours),
-            claimTotal: parseFloat(s.claimTotal),
-            totalPayable: parseFloat(s.totalPayable),
-            status: (parseFloat(s.totalPayable) === 0 && s.hasPending) ? 'Processing' : 'Active',
-            details: { overtimes: [], claims: [] }
-        }));
+        const result = users.map(user => {
+            const overtimes = user.Overtimes || [];
+            const claims = user.Claims || [];
+
+            const overtimeTotal = overtimes
+                .filter(o => o.status === 'Approved')
+                .reduce((sum, o) => sum + (parseFloat(o.payableAmount || 0)), 0);
+
+            const overtimeHours = overtimes
+                .filter(o => o.status === 'Approved')
+                .reduce((sum, o) => sum + (parseFloat(o.hours || 0)), 0);
+
+            const claimTotal = claims
+                .filter(c => c.status === 'Approved')
+                .reduce((sum, c) => sum + (parseFloat(c.amount || 0)), 0);
+
+            const totalPayable = overtimeTotal + claimTotal;
+
+            const hasPending = overtimes.some(o => o.status === 'Pending') ||
+                claims.some(c => c.status === 'Pending');
+
+            return {
+                id: user.id,
+                name: user.name,
+                email: user.email,
+                role: user.role,
+                staffId: user.staffId,
+                overtimeTotal: overtimeTotal,
+                overtimeHours: overtimeHours,
+                claimTotal: claimTotal,
+                totalPayable: totalPayable,
+                hasPending: hasPending,
+                status: ((overtimeTotal + claimTotal) === 0 && hasPending) ? 'Processing' : 'Active',
+                details: {
+                    overtimes: overtimes,
+                    claims: claims
+                }
+            };
+        }).filter(u => u.totalPayable > 0 || u.hasPending);
 
         res.json(result);
     } catch (error) {
@@ -1989,21 +2029,70 @@ sequelize.sync({ alter: true }).then(async () => {
     });
 
     // 3. Managing Roster (User Shifts)
+    // 3. Managing Roster (User Shifts)
     app.post('/api/admin/roster', authenticateToken, isAdmin, async (req, res) => {
         try {
             const { userId, shiftId, startDate, endDate } = req.body;
 
-            // Remove existing overlaps (Simple strategy: Delete overlapping ranges for this user)
-            await UserShift.destroy({
+            // Helper for date math (YYYY-MM-DD)
+            const addDays = (dateStr, days) => {
+                const date = new Date(dateStr);
+                date.setUTCDate(date.getUTCDate() + days);
+                return date.toISOString().split('T')[0];
+            };
+
+            // 1. Find all overlapping shifts
+            const overlaps = await UserShift.findAll({
                 where: {
                     UserId: userId,
-                    [Op.or]: [
-                        { startDate: { [Op.between]: [startDate, endDate] } },
-                        { endDate: { [Op.between]: [startDate, endDate] } }
+                    [Op.and]: [
+                        { startDate: { [Op.lte]: endDate } },
+                        { endDate: { [Op.gte]: startDate } }
                     ]
                 }
             });
 
+            // 2. Process overlaps (Split or Delete)
+            for (const shift of overlaps) {
+                const sStart = shift.startDate;
+                const sEnd = shift.endDate;
+
+                // Case 1: Existing shift is fully inside new range -> Delete
+                if (sStart >= startDate && sEnd <= endDate) {
+                    await shift.destroy();
+                }
+                // Case 2: Existing shift covers the new range completely -> Split into two
+                else if (sStart < startDate && sEnd > endDate) {
+                    // Create the first part (before the new range)
+                    await UserShift.create({
+                        UserId: userId,
+                        ShiftId: shift.ShiftId,
+                        startDate: sStart,
+                        endDate: addDays(startDate, -1)
+                    });
+                    // Create the second part (after the new range)
+                    await UserShift.create({
+                        UserId: userId,
+                        ShiftId: shift.ShiftId,
+                        startDate: addDays(endDate, 1),
+                        endDate: sEnd
+                    });
+                    // Delete the original wide shift
+                    await shift.destroy();
+                }
+                // Case 3: Existing shift overlaps the start of new range -> Trim end
+                else if (sStart < startDate && sEnd >= startDate) {
+                    shift.endDate = addDays(startDate, -1);
+                    await shift.save();
+                }
+                // Case 4: Existing shift overlaps the end of new range -> Trim start
+                else if (sStart <= endDate && sEnd > endDate) {
+                    shift.startDate = addDays(endDate, 1);
+                    await shift.save();
+                }
+            }
+
+            // 3. Create the new shift
             const roster = await UserShift.create({ UserId: userId, ShiftId: shiftId, startDate, endDate });
             res.json(roster);
         } catch (e) { res.status(500).json({ error: e.message }); }

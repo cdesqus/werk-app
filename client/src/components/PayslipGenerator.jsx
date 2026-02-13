@@ -24,7 +24,7 @@ const PayslipGenerator = ({ user, month, year, onClose }) => {
         setLoading(true);
         try {
             const payload = {
-                userId: user.userId || user.id, // Handle different user object structures
+                userId: user.id, // Use user.id from payroll summary
                 month,
                 year,
                 adjustments: adjustments.map(a => ({
@@ -60,7 +60,7 @@ const PayslipGenerator = ({ user, month, year, onClose }) => {
         setSending(true);
         try {
             const payload = {
-                userId: user.userId || user.id,
+                userId: user.id, // Use user.id from payroll summary
                 month,
                 year,
                 adjustments: adjustments.map(a => ({
