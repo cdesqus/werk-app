@@ -4,7 +4,7 @@ import { useToast } from '../context/ToastContext';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import clsx from 'clsx';
-import { Mail, Save, Server, Shield, Globe, Send, CheckCircle, AlertTriangle, Zap, Monitor, Moon, Sun } from 'lucide-react';
+import { Mail, Save, Server, Shield, Globe, Send, CheckCircle, AlertTriangle, Zap, Monitor, Moon, Sun, Clock, Palmtree, Trash2, Edit } from 'lucide-react';
 
 const ServiceToggle = ({ label, description, isOn, onToggle }) => {
     return (
@@ -51,6 +51,7 @@ const AdminSettings = () => {
     const [shifts, setShifts] = useState([]);
     const [holidays, setHolidays] = useState([]);
     const [newShift, setNewShift] = useState({ name: '', startTime: '09:00', endTime: '18:00', color: '#FACC15', lateTolerance: 15 });
+    const [editingShiftId, setEditingShiftId] = useState(null);
     const [newHoliday, setNewHoliday] = useState({ name: '', date: '', type: 'National', isRecurring: true });
 
     useEffect(() => {
@@ -75,13 +76,36 @@ const AdminSettings = () => {
         }
     };
 
-    const handleCreateShift = async () => {
+    const handleCreateOrUpdateShift = async () => {
         try {
-            const { data } = await api.post('/admin/shifts', newShift);
-            setShifts([...shifts, data]);
-            toast.success('Shift created');
+            if (editingShiftId) {
+                const { data } = await api.put(`/admin/shifts/${editingShiftId}`, newShift);
+                setShifts(shifts.map(s => s.id === editingShiftId ? data : s));
+                toast.success('Shift updated');
+                setEditingShiftId(null);
+            } else {
+                const { data } = await api.post('/admin/shifts', newShift);
+                setShifts([...shifts, data]);
+                toast.success('Shift created');
+            }
             setNewShift({ name: '', startTime: '09:00', endTime: '18:00', color: '#FACC15', lateTolerance: 15 });
-        } catch (e) { toast.error('Failed to create shift'); }
+        } catch (e) { toast.error('Failed to save shift'); }
+    };
+
+    const handleEditStart = (shift) => {
+        setNewShift({
+            name: shift.name,
+            startTime: shift.startTime,
+            endTime: shift.endTime,
+            color: shift.color,
+            lateTolerance: shift.lateTolerance
+        });
+        setEditingShiftId(shift.id);
+    };
+
+    const handleCancelEdit = () => {
+        setNewShift({ name: '', startTime: '09:00', endTime: '18:00', color: '#FACC15', lateTolerance: 15 });
+        setEditingShiftId(null);
     };
 
     const handleCreateHoliday = async () => {
@@ -453,9 +477,11 @@ const AdminSettings = () => {
                         </div>
 
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                            {/* Create New Shift */}
+                            {/* Create/Edit Shift */}
                             <div className="bg-zinc-900/50 p-6 rounded-xl border border-zinc-800 space-y-4">
-                                <h3 className="font-bold text-zinc-400 uppercase text-xs tracking-wider">Create New Shift</h3>
+                                <h3 className="font-bold text-zinc-400 uppercase text-xs tracking-wider">
+                                    {editingShiftId ? 'Edit Shift' : 'Create New Shift'}
+                                </h3>
                                 <input type="text" placeholder="Shift Name (e.g. Night Shift)" className="input-field w-full" value={newShift.name} onChange={e => setNewShift({ ...newShift, name: e.target.value })} />
                                 <div className="grid grid-cols-2 gap-4">
                                     <input type="time" className="input-field w-full" value={newShift.startTime} onChange={e => setNewShift({ ...newShift, startTime: e.target.value })} />
@@ -465,7 +491,16 @@ const AdminSettings = () => {
                                     <input type="number" placeholder="Tolerance (min)" className="input-field w-full" value={newShift.lateTolerance} onChange={e => setNewShift({ ...newShift, lateTolerance: parseInt(e.target.value) })} />
                                     <input type="color" className="input-field w-full h-[42px] p-1" value={newShift.color} onChange={e => setNewShift({ ...newShift, color: e.target.value })} />
                                 </div>
-                                <button onClick={handleCreateShift} className="btn-primary w-full shadow-lg shadow-yellow-500/20">Create Shift</button>
+                                <div className="flex gap-2">
+                                    <button onClick={handleCreateOrUpdateShift} className="btn-primary flex-1 shadow-lg shadow-yellow-500/20">
+                                        {editingShiftId ? 'Update Shift' : 'Create Shift'}
+                                    </button>
+                                    {editingShiftId && (
+                                        <button onClick={handleCancelEdit} className="px-4 py-2 bg-zinc-800 hover:bg-zinc-700 text-white rounded-xl transition-colors">
+                                            Cancel
+                                        </button>
+                                    )}
+                                </div>
                             </div>
 
                             {/* List Shifts */}
@@ -480,6 +515,9 @@ const AdminSettings = () => {
                                                 <div className="text-xs text-zinc-500 font-mono">{shift.startTime} - {shift.endTime} • {shift.lateTolerance}m tol</div>
                                             </div>
                                         </div>
+                                        <button onClick={() => handleEditStart(shift)} className="p-2 text-zinc-500 hover:text-white transition-colors bg-zinc-800/50 rounded-lg opacity-0 group-hover:opacity-100">
+                                            <Edit size={16} />
+                                        </button>
                                     </div>
                                 ))}
                             </div>

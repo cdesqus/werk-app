@@ -1323,7 +1323,9 @@ app.post('/api/admin/users', authenticateToken, isAdmin, registerValidation, val
             }
         }
 
-        const staffId = `IDE - ${year} -${String(nextSequence).padStart(4, '0')} `;
+        const staffId = `IDE-${year}-${String(nextSequence).padStart(4, '0')}`;
+
+        const { baseSalary, bankDetails, leaveQuota } = req.body;
 
         const user = await User.create({
             name,
@@ -1332,7 +1334,10 @@ app.post('/api/admin/users', authenticateToken, isAdmin, registerValidation, val
             password: hashedPassword,
             birthDate,
             role: role || 'staff',
-            staffId
+            staffId,
+            baseSalary: baseSalary || 0,
+            bankDetails: bankDetails || '',
+            leaveQuota: leaveQuota || 12
         });
 
         // Security: don't return password
@@ -1350,7 +1355,7 @@ app.post('/api/admin/users', authenticateToken, isAdmin, registerValidation, val
 app.get('/api/admin/users', authenticateToken, isAdmin, async (req, res, next) => {
     try {
         const users = await User.findAll({
-            attributes: ['id', 'name', 'email', 'phone', 'role', 'leaveQuota', 'birthDate', 'can_attendance']
+            attributes: ['id', 'name', 'email', 'phone', 'role', 'leaveQuota', 'birthDate', 'can_attendance', 'baseSalary', 'bankDetails', 'staffId']
         });
         res.json(users);
     } catch (error) {
@@ -1360,7 +1365,7 @@ app.get('/api/admin/users', authenticateToken, isAdmin, async (req, res, next) =
 
 app.put('/api/admin/users/:id', authenticateToken, isAdmin, async (req, res, next) => {
     try {
-        const { name, phone, newPassword } = req.body;
+        const { name, phone, newPassword, baseSalary, bankDetails } = req.body;
         const user = await User.findByPk(req.params.id);
 
         if (!user) return res.status(404).json({ error: 'User not found' });
@@ -1372,6 +1377,9 @@ app.put('/api/admin/users/:id', authenticateToken, isAdmin, async (req, res, nex
         if (req.body.birthDate) user.birthDate = req.body.birthDate;
         if (req.body.leaveQuota !== undefined) user.leaveQuota = req.body.leaveQuota;
         if (req.body.can_attendance !== undefined) user.can_attendance = req.body.can_attendance;
+        if (baseSalary !== undefined) user.baseSalary = baseSalary;
+        if (bankDetails !== undefined) user.bankDetails = bankDetails; // Expecting string or JSON
+
         if (newPassword) {
             user.password = await bcrypt.hash(newPassword, 10);
         }
@@ -2038,6 +2046,116 @@ sequelize.sync({ alter: true }).then(async () => {
             { date: '2026-06-01', name: 'Hari Lahir Pancasila', isRecurring: true }
         ]);
     }
+
+    // --- SYSTEM SETTINGS (Shifts, Holidays, Roster) ---
+
+    // 1. Shift Management
+    app.get('/api/admin/shifts', authenticateToken, isAdmin, async (req, res, next) => {
+        try {
+            const shifts = await Shift.findAll({ order: [['id', 'ASC']] });
+            res.json(shifts);
+        } catch (error) { next(error); }
+    });
+
+    app.post('/api/admin/shifts', authenticateToken, isAdmin, async (req, res, next) => {
+        try {
+            const { name, startTime, endTime, lateTolerance, color } = req.body;
+            const shift = await Shift.create({ name, startTime, endTime, lateTolerance, color });
+            res.status(201).json(shift);
+        } catch (error) { next(error); }
+    });
+
+    app.put('/api/admin/shifts/:id', authenticateToken, isAdmin, async (req, res, next) => {
+        try {
+            const { id } = req.params;
+            const { name, startTime, endTime, lateTolerance, color } = req.body;
+            const shift = await Shift.findByPk(id);
+            if (!shift) return res.status(404).json({ error: 'Shift not found' });
+
+            await shift.update({ name, startTime, endTime, lateTolerance, color });
+            res.json(shift);
+        } catch (error) { next(error); }
+    });
+
+    app.delete('/api/admin/shifts/:id', authenticateToken, isAdmin, async (req, res, next) => {
+        try {
+            const { id } = req.params;
+            await Shift.destroy({ where: { id } });
+            res.json({ message: 'Shift deleted' });
+        } catch (error) { next(error); }
+    });
+
+
+    // 2. Holiday Management
+    app.get('/api/holidays', async (req, res, next) => {
+        try {
+            const holidays = await Holiday.findAll({ order: [['date', 'ASC']] });
+            res.json(holidays);
+        } catch (error) { next(error); }
+    });
+
+    app.post('/api/admin/holidays', authenticateToken, isAdmin, async (req, res, next) => {
+        try {
+            const { name, date, type, isRecurring } = req.body;
+            const holiday = await Holiday.create({ name, date, type, isRecurring });
+            res.status(201).json(holiday);
+        } catch (error) { next(error); }
+    });
+
+    app.delete('/api/admin/holidays/:id', authenticateToken, isAdmin, async (req, res, next) => {
+        try {
+            await Holiday.destroy({ where: { id: req.params.id } });
+            res.json({ message: 'Holiday deleted' });
+        } catch (error) { next(error); }
+    });
+
+
+    // 3. User Shift Roster
+    app.get('/api/admin/roster', authenticateToken, isAdmin, async (req, res, next) => {
+        try {
+            const rosters = await UserShift.findAll({
+                include: [
+                    { model: User, attributes: ['id', 'name'] },
+                    { model: Shift }
+                ],
+                order: [['startDate', 'ASC']]
+            });
+            res.json(rosters);
+        } catch (error) { next(error); }
+    });
+
+    app.post('/api/admin/roster', authenticateToken, isAdmin, async (req, res, next) => {
+        try {
+            const { userId, shiftId, startDate, endDate } = req.body;
+
+            if (new Date(endDate) < new Date(startDate)) {
+                return res.status(400).json({ error: 'End Date cannot be before Start Date' });
+            }
+
+            const assignment = await UserShift.create({
+                UserId: userId,
+                ShiftId: shiftId,
+                startDate,
+                endDate
+            });
+
+            res.status(201).json(assignment);
+        } catch (error) { next(error); }
+    });
+
+    // Update User Default Shift
+    app.put('/api/admin/users/:id/shift', authenticateToken, isAdmin, async (req, res, next) => {
+        try {
+            const { shiftId } = req.body;
+            const user = await User.findByPk(req.params.id);
+            if (!user) return res.status(404).json({ error: 'User not found' });
+
+            user.defaultShiftId = shiftId || null;
+            await user.save();
+            res.json({ message: 'Default shift updated' });
+        } catch (error) { next(error); }
+    });
+
 
     // --- SEED SHIFTS ---
     const shiftCount = await Shift.count();

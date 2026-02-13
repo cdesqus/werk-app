@@ -3,7 +3,7 @@ import { useToast } from '../context/ToastContext';
 import { useAuth } from '../context/AuthContext';
 import api from '../utils/api';
 import ConfirmModal from '../components/ui/ConfirmModal';
-import { Edit2, X, Shield, User, Phone, Calendar, Search, Plus, Trash2, Mail, Lock, Palmtree, MapPin } from 'lucide-react';
+import { Edit2, X, Shield, User, Phone, Calendar, Search, Plus, Trash2, Mail, Lock, Palmtree, MapPin, DollarSign, CreditCard } from 'lucide-react';
 import clsx from 'clsx';
 
 const AdminUsers = () => {
@@ -12,7 +12,7 @@ const AdminUsers = () => {
     const [users, setUsers] = useState([]);
     const [editingUser, setEditingUser] = useState(null);
     const [showAddModal, setShowAddModal] = useState(false);
-    const [formData, setFormData] = useState({ name: '', email: '', phone: '', staffId: '', birthDate: '', password: '', role: 'staff', leaveQuota: 12, can_attendance: false });
+    const [formData, setFormData] = useState({ name: '', email: '', phone: '', staffId: '', birthDate: '', password: '', role: 'staff', leaveQuota: 12, can_attendance: false, baseSalary: 0, bankDetails: '' });
     const [searchTerm, setSearchTerm] = useState('');
     const [confirmModal, setConfirmModal] = useState({ isOpen: false, id: null });
 
@@ -40,12 +40,14 @@ const AdminUsers = () => {
             password: '',
             role: user.role,
             leaveQuota: user.leaveQuota !== undefined ? user.leaveQuota : 12,
-            can_attendance: user.can_attendance || false
+            can_attendance: user.can_attendance || false,
+            baseSalary: user.baseSalary || 0,
+            bankDetails: user.bankDetails || ''
         });
     };
 
     const handleAddClick = () => {
-        setFormData({ name: '', email: '', phone: '', birthDate: '', password: '', role: 'staff', leaveQuota: 12 });
+        setFormData({ name: '', email: '', phone: '', birthDate: '', password: '', role: 'staff', leaveQuota: 12, baseSalary: 0, bankDetails: '' });
         setShowAddModal(true);
     };
 
@@ -60,7 +62,9 @@ const AdminUsers = () => {
                 birthDate: formData.birthDate,
                 newPassword: formData.password,
                 leaveQuota: formData.leaveQuota,
-                can_attendance: formData.can_attendance
+                can_attendance: formData.can_attendance,
+                baseSalary: formData.baseSalary,
+                bankDetails: formData.bankDetails
             });
             setEditingUser(null);
             fetchUsers();
@@ -295,6 +299,31 @@ const AdminUsers = () => {
                                                 </div>
                                             </div>
 
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-4 border-t border-border">
+                                                <div className="space-y-2">
+                                                    <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-2"><DollarSign size={14} /> Basic Salary</label>
+                                                    <div className="relative">
+                                                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground font-bold">Rp</span>
+                                                        <input
+                                                            type="number"
+                                                            value={formData.baseSalary}
+                                                            onChange={e => setFormData({ ...formData, baseSalary: parseInt(e.target.value) || 0 })}
+                                                            className="input-field w-full pl-10"
+                                                        />
+                                                    </div>
+                                                </div>
+                                                <div className="space-y-2">
+                                                    <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-2"><CreditCard size={14} /> Bank Details</label>
+                                                    <input
+                                                        type="text"
+                                                        value={formData.bankDetails}
+                                                        onChange={e => setFormData({ ...formData, bankDetails: e.target.value })}
+                                                        className="input-field w-full"
+                                                        placeholder="Bank Name - Account Number"
+                                                    />
+                                                </div>
+                                            </div>
+
                                             <div className="space-y-2 pt-6 border-t border-border">
                                                 <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-2 mb-3"><MapPin size={14} /> GPS Presence Feature</label>
                                                 <div className="flex items-center gap-3 p-3 bg-muted/50 rounded-xl border border-border">
@@ -431,6 +460,25 @@ const AdminUsers = () => {
                                         value={formData.leaveQuota}
                                         onChange={e => setFormData({ ...formData, leaveQuota: parseInt(e.target.value) || 0 })}
                                         className="input-field w-full"
+                                    />
+                                </div>
+                                <div className="space-y-2">
+                                    <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-2"><DollarSign size={14} /> Basic Salary (IDR)</label>
+                                    <input
+                                        type="number"
+                                        value={formData.baseSalary}
+                                        onChange={e => setFormData({ ...formData, baseSalary: parseInt(e.target.value) || 0 })}
+                                        className="input-field w-full"
+                                    />
+                                </div>
+                                <div className="space-y-2">
+                                    <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-2"><CreditCard size={14} /> Bank Details</label>
+                                    <input
+                                        type="text"
+                                        value={formData.bankDetails}
+                                        onChange={e => setFormData({ ...formData, bankDetails: e.target.value })}
+                                        className="input-field w-full"
+                                        placeholder="Bank Name - Account No"
                                     />
                                 </div>
                                 <div className="space-y-2">
