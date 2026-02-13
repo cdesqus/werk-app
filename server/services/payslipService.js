@@ -4,6 +4,7 @@ const handlebars = require('handlebars');
 const puppeteer = require('puppeteer');
 const { Op } = require('sequelize');
 const { format } = require('date-fns');
+const { PDFDocument } = require('pdf-lib');
 
 // Register Handlebars Helper
 handlebars.registerHelper('formatCurrency', function (value) {
@@ -154,6 +155,34 @@ const generatePdf = async (html) => {
     }
 };
 
+// Encrypt PDF with password
+const encryptPdf = async (pdfBuffer, password) => {
+    try {
+        // Load the PDF
+        const pdfDoc = await PDFDocument.load(pdfBuffer);
+
+        // Encrypt with password
+        const encryptedPdfBytes = await pdfDoc.save({
+            userPassword: password,
+            ownerPassword: password + '_owner', // Owner password for additional security
+            permissions: {
+                printing: 'highResolution',
+                modifying: false,
+                copying: false,
+                annotating: false,
+                fillingForms: false,
+                contentAccessibility: true,
+                documentAssembly: false
+            }
+        });
+
+        return Buffer.from(encryptedPdfBytes);
+    } catch (error) {
+        console.error('[PDF Encryption] Error:', error);
+        throw new Error('Failed to encrypt PDF: ' + error.message);
+    }
+};
+
 const sendPayslip = async (models, transporter, userId, month, year, adjustments) => {
     const { Payslip } = models;
 
@@ -182,10 +211,34 @@ const sendPayslip = async (models, transporter, userId, month, year, adjustments
         console.log(`[Payslip] Generating PDF...`);
         const pdfBuffer = await generatePdf(html);
 
-        // 4. Save to DB (Snapshot)
+        // 3.5. Encrypt PDF with birthdate password
+        let encryptedPdfBuffer = pdfBuffer; // Default to unencrypted
+        let passwordPin = null;
+
+        if (userData.birthDate) {
+            try {
+                // Format birthDate to DDMMYYYY
+                const birthDate = new Date(userData.birthDate);
+                const day = String(birthDate.getDate()).padStart(2, '0');
+                const month = String(birthDate.getMonth() + 1).padStart(2, '0');
+                const year = birthDate.getFullYear();
+                passwordPin = `${day}${month}${year}`;
+
+                console.log(`[Payslip] Encrypting PDF with birthdate PIN...`);
+                encryptedPdfBuffer = await encryptPdf(pdfBuffer, passwordPin);
+                console.log(`[Payslip] PDF encrypted successfully with PIN: ${passwordPin}`);
+            } catch (encryptError) {
+                console.error(`[Payslip] Failed to encrypt PDF:`, encryptError);
+                console.log(`[Payslip] Sending unencrypted PDF as fallback`);
+            }
+        } else {
+            console.warn(`[Payslip] No birthDate found for user ${userData.name}. Sending unencrypted PDF.`);
+        }
+
+        // 4. Save to DB (Snapshot) - Save unencrypted version for admin access
         const filename = `Payslip-${userData.staffId}-${month}-${year}.pdf`;
         const filePath = path.join(__dirname, '../uploads', filename);
-        fs.writeFileSync(filePath, pdfBuffer);
+        fs.writeFileSync(filePath, pdfBuffer); // Save unencrypted for admin
         console.log(`[Payslip] PDF saved to: ${filePath}`);
 
         const payslip = await Payslip.create({
@@ -203,7 +256,7 @@ const sendPayslip = async (models, transporter, userId, month, year, adjustments
             status: 'Sent' // Since we are emailing it now
         });
 
-        // 5. Send Email
+        // 5. Send Email with encrypted PDF
         console.log(`[Payslip] Sending email to: ${userData.email}`);
         const emailResult = await transporter.sendMail({
             from: `"WERK Payroll" <${process.env.SMTP_USER}>`,
@@ -226,6 +279,9 @@ const sendPayslip = async (models, transporter, userId, month, year, adjustments
                         .footer p { margin: 5px 0; font-size: 12px; color: #6b7280; }
                         .attachment-note { background: #eff6ff; border: 1px solid #bfdbfe; padding: 12px; border-radius: 6px; margin: 20px 0; }
                         .attachment-note p { margin: 0; color: #1e40af; font-size: 14px; }
+                        .security-box { background: #fef3c7; border: 2px solid #f59e0b; padding: 15px; border-radius: 6px; margin: 20px 0; }
+                        .security-box p { margin: 5px 0; color: #92400e; font-size: 14px; }
+                        .security-box strong { color: #78350f; font-size: 16px; }
                     </style>
                 </head>
                 <body>
@@ -243,8 +299,17 @@ const sendPayslip = async (models, transporter, userId, month, year, adjustments
                             </div>
                             
                             <div class="attachment-note">
-                                <p>📎 Your detailed payslip is attached to this email as a PDF document.</p>
+                                <p>Your detailed payslip is attached to this email as a PDF document.</p>
                             </div>
+                            
+                            ${passwordPin ? `
+                            <div class="security-box">
+                                <p>🔒 <strong>SECURITY NOTICE</strong></p>
+                                <p>Your payslip is password protected for your security.</p>
+                                <p><strong>Password:</strong> Use your Date of Birth in <strong>DDMMYYYY</strong> format</p>
+                                <p style="font-size: 12px; margin-top: 10px; opacity: 0.8;">Example: If your birthdate is 30 December 1995, use <strong>30121995</strong></p>
+                            </div>
+                            ` : ''}
                             
                             <p>Please review the attached document carefully. If you have any questions or notice any discrepancies, please don't hesitate to contact the Finance Team.</p>
                             
@@ -262,7 +327,7 @@ const sendPayslip = async (models, transporter, userId, month, year, adjustments
             attachments: [
                 {
                     filename: filename,
-                    content: pdfBuffer,
+                    content: encryptedPdfBuffer,
                     contentType: 'application/pdf'
                 }
             ]
