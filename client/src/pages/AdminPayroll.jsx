@@ -6,6 +6,7 @@ import { DollarSign, Calendar, ChevronLeft, ChevronRight, Download, CheckCircle,
 import { format, subMonths, addMonths, differenceInDays } from 'date-fns';
 import * as XLSX from 'xlsx';
 import clsx from 'clsx';
+import PayslipGenerator from '../components/PayslipGenerator';
 
 const AdminPayroll = () => {
     const toast = useToast();
@@ -31,6 +32,9 @@ const AdminPayroll = () => {
     // New state for month and year to align with the provided snippet's month navigation
     const [month, setMonth] = useState(currentDate.getMonth() + 1);
     const [year, setYear] = useState(currentDate.getFullYear());
+
+    // Payslip Generator
+    const [payslipUser, setPayslipUser] = useState(null);
 
     useEffect(() => {
         // Update currentDate when month or year changes
@@ -310,6 +314,12 @@ const AdminPayroll = () => {
                                                     Pay Now
                                                 </button>
                                             )}
+                                            <button
+                                                onClick={() => setPayslipUser(user)}
+                                                className="ml-2 text-xs font-bold text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white flex items-center gap-1 inline-flex"
+                                            >
+                                                <FileText size={12} /> Slip
+                                            </button>
                                         </td>
                                     </tr>
                                     {/* Expanded Details */}
@@ -470,6 +480,16 @@ const AdminPayroll = () => {
                 confirmText="Process Payout"
                 isDanger={false}
             />
+
+            {/* Payslip Generator Modal */}
+            {payslipUser && (
+                <PayslipGenerator
+                    user={payslipUser}
+                    month={month}
+                    year={year}
+                    onClose={() => setPayslipUser(null)}
+                />
+            )}
         </div >
     );
 };

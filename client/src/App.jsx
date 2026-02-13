@@ -21,6 +21,7 @@ import AdminVibeCheck from './pages/AdminVibeCheck';
 import AdminAuditLogs from './pages/AdminAuditLogs';
 import AdminSettings from './pages/AdminSettings';
 import AdminAttendance from './pages/AdminAttendance';
+import AdminRoster from './pages/AdminRoster';
 
 const RequireAuth = ({ children }) => {
   const { user, loading } = useAuth();
@@ -71,6 +72,7 @@ function App() {
                 <Route path="/admin/quests" element={<AdminQuests />} />
                 <Route path="/admin/vibes" element={<AdminVibeCheck />} />
                 <Route path="/admin/attendance" element={<AdminAttendance />} />
+                <Route path="/admin/roster" element={<AdminRoster />} />
                 <Route path="/admin/logs" element={<AdminAuditLogs />} />
                 <Route path="/admin/settings" element={<AdminSettings />} />
               </Route>

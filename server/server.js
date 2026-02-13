@@ -35,9 +35,10 @@ const SECRET_KEY = process.env.SECRET_KEY || 'werk-secret-key-gen-z';
 
 // 1. Security: Rate Limiters (Define first)
 const { initCronJobs } = require('./services/cronService');
+const { calculatePayroll, generateHtml, sendPayslip: sendPayslipService } = require('./services/payslipService');
 const generalLimiter = rateLimit({
     windowMs: 15 * 60 * 1000,
-    max: 300,
+    max: 5000,
     standardHeaders: true,
     legacyHeaders: false,
     message: 'Too many requests, please try again later.'
@@ -45,7 +46,7 @@ const generalLimiter = rateLimit({
 
 const authLimiter = rateLimit({
     windowMs: 60 * 60 * 1000,
-    max: 10,
+    max: 500,
     message: 'Too many login attempts, please try again later.'
 });
 
@@ -173,9 +174,9 @@ const sequelize = new Sequelize(
         dialect: 'postgres',
         logging: false,
         pool: {
-            max: 5,
-            min: 0,
-            acquire: 30000,
+            max: 50,
+            min: 5,
+            acquire: 60000,
             idle: 10000
         },
         retry: {
@@ -205,7 +206,9 @@ const User = sequelize.define('User', {
     otp: { type: DataTypes.STRING },
     otpExpires: { type: DataTypes.DATE },
     can_attendance: { type: DataTypes.BOOLEAN, defaultValue: false },
-    mustChangePassword: { type: DataTypes.BOOLEAN, defaultValue: true }
+    mustChangePassword: { type: DataTypes.BOOLEAN, defaultValue: true },
+    baseSalary: { type: DataTypes.INTEGER, defaultValue: 0 },
+    bankDetails: { type: DataTypes.JSON }
 });
 
 const Overtime = sequelize.define('Overtime', {
@@ -272,7 +275,26 @@ const AttendanceLog = sequelize.define('AttendanceLog', {
     longitude: { type: DataTypes.FLOAT, allowNull: false },
     accuracy: { type: DataTypes.FLOAT },
     address: { type: DataTypes.TEXT },
-    is_suspicious: { type: DataTypes.BOOLEAN, defaultValue: false }
+    is_suspicious: { type: DataTypes.BOOLEAN, defaultValue: false },
+    status: { type: DataTypes.STRING, defaultValue: 'On Time' },
+    lateMinutes: { type: DataTypes.INTEGER, defaultValue: 0 },
+    isHolidayWork: { type: DataTypes.BOOLEAN, defaultValue: false }
+});
+
+
+
+const Payslip = sequelize.define('Payslip', {
+    month: { type: DataTypes.INTEGER, allowNull: false },
+    year: { type: DataTypes.INTEGER, allowNull: false },
+    periodStart: { type: DataTypes.DATEONLY, allowNull: false }, // Use DATEONLY for consistency
+    periodEnd: { type: DataTypes.DATEONLY, allowNull: false },
+    baseSalary: { type: DataTypes.INTEGER, defaultValue: 0 },
+    totalOvertime: { type: DataTypes.INTEGER, defaultValue: 0 },
+    totalClaim: { type: DataTypes.INTEGER, defaultValue: 0 },
+    adjustments: { type: DataTypes.JSON },
+    netPay: { type: DataTypes.INTEGER, allowNull: false },
+    fileUrl: { type: DataTypes.STRING },
+    status: { type: DataTypes.STRING, defaultValue: 'Draft' }
 });
 
 // Relationships
@@ -300,6 +322,13 @@ PollVote.belongsTo(Feed);
 PollOption.hasMany(PollVote, { onDelete: 'CASCADE' });
 PollVote.belongsTo(PollOption);
 
+User.belongsTo(Shift, { as: 'defaultShift' });
+User.hasMany(UserShift);
+UserShift.belongsTo(User);
+UserShift.belongsTo(Shift);
+
+AttendanceLog.belongsTo(Shift); // Snapshot of shift used
+
 User.hasMany(PollVote);
 PollVote.belongsTo(User);
 
@@ -311,6 +340,9 @@ AuditLog.belongsTo(User);
 
 User.hasMany(AttendanceLog);
 AttendanceLog.belongsTo(User);
+
+User.hasMany(Payslip);
+Payslip.belongsTo(User);
 
 // Helper: Log Audit Event
 const logAudit = async (userId, action, details, req) => {
@@ -1369,7 +1401,7 @@ function deg2rad(deg) {
     return deg * (Math.PI / 180);
 }
 
-// Attendance API
+// Attendance API (Hybrid Shift System)
 app.post('/api/attendance', authenticateToken, async (req, res, next) => {
     try {
         const { latitude, longitude, accuracy, type } = req.body;
@@ -1380,36 +1412,76 @@ app.post('/api/attendance', authenticateToken, async (req, res, next) => {
         }
 
         const serverTime = new Date(); // TRUSTED SERVER TIME
+        const todayStr = serverTime.toISOString().split('T')[0];
 
-        // --- RULE: Max Clock-In 10:00 AM ---
+        // 1. Determine Effective Shift
+        // Priority: Roster > Default Shift > Fallback
+        let shift = await user.getDefaultShift();
+
+        const roster = await UserShift.findOne({
+            where: {
+                UserId: user.id,
+                startDate: { [Op.lte]: todayStr },
+                endDate: { [Op.gte]: todayStr }
+            },
+            include: Shift
+        });
+
+        if (roster && roster.Shift) {
+            console.log(`[Attendance] Using Roster Shift: ${roster.Shift.name} for ${user.name}`);
+            shift = roster.Shift;
+        }
+
+        // Fallback
+        if (!shift) {
+            console.log(`[Attendance] No shift found for ${user.name}. Using system default.`);
+            // Mock object if no shift assigned at all
+            shift = { id: null, name: 'System Default', startTime: '09:00', endTime: '18:00', lateTolerance: 15 };
+        }
+
+        // 2. Holiday Check
+        const isHoliday = await Holiday.findOne({ where: { date: todayStr } });
+        if (isHoliday) {
+            console.log(`[Attendance] Today is ${isHoliday.name}. Logging as Holiday work.`);
+        }
+
+        // 3. Late Calculation (Only for Clock In)
+        let status = 'On Time';
+        let lateMinutes = 0;
+
         if (type === 'CLOCK_IN') {
-            // Check if hour is 10 or greater (meaning 10:00:00 or later)
-            if (serverTime.getHours() >= 10) {
-                return res.status(400).json({ error: 'Clock-in rejected. Maximum time is 10:00 AM. You are considered absent.' });
+            const [shiftHour, shiftMinute] = shift.startTime.split(':').map(Number);
+            const shiftStartTime = new Date(serverTime);
+            shiftStartTime.setHours(shiftHour, shiftMinute, 0, 0);
+
+            const diffMs = serverTime - shiftStartTime;
+            const diffMins = Math.floor(diffMs / 60000);
+
+            // If positive, they are late. If negative, they are early (still On Time).
+            if (diffMins > shift.lateTolerance) {
+                status = 'Late';
+                lateMinutes = diffMins;
             }
 
-            // --- RULE: Cannot Clock-In if already Clocked-Out today (One Shift) ---
-            const startOfDay = new Date(serverTime);
-            startOfDay.setHours(0, 0, 0, 0);
-            const endOfDay = new Date(serverTime);
-            endOfDay.setHours(23, 59, 59, 999);
+            // Check for duplicate clock-in today
+            const startOfDay = new Date(serverTime); startOfDay.setHours(0, 0, 0, 0);
+            const endOfDay = new Date(serverTime); endOfDay.setHours(23, 59, 59, 999);
 
-            const hasClockOut = await AttendanceLog.findOne({
+            const existingClockIn = await AttendanceLog.findOne({
                 where: {
                     UserId: user.id,
-                    type: 'CLOCK_OUT',
+                    type: 'CLOCK_IN',
                     timestamp: { [Op.between]: [startOfDay, endOfDay] }
                 }
             });
 
-            if (hasClockOut) {
-                return res.status(400).json({ error: 'You have already finished your shift today. Clock-in denied.' });
+            if (existingClockIn) {
+                return res.status(400).json({ error: 'You have already clocked in today.' });
             }
         }
 
+        // 4. Suspicious Location Logic
         let is_suspicious = false;
-
-        // Superman Heuristic: Check against last log
         const lastLog = await AttendanceLog.findOne({
             where: { UserId: user.id },
             order: [['timestamp', 'DESC']]
@@ -1419,16 +1491,16 @@ app.post('/api/attendance', authenticateToken, async (req, res, next) => {
             const distKm = getDistanceFromLatLonInKm(lastLog.latitude, lastLog.longitude, latitude, longitude);
             const timeDiffHours = (serverTime - new Date(lastLog.timestamp)) / 1000 / 3600;
 
-            // Avoid division by zero if logs are practically simultaneous
-            if (timeDiffHours > 0.0002) { // > ~0.7 seconds
+            if (timeDiffHours > 0.0002) { // > ~0.7s
                 const speed = distKm / timeDiffHours;
-                if (speed > 800) { // 800 km/h threshold
+                if (speed > 800) {
                     is_suspicious = true;
-                    console.log(`[Attendance] Suspicious Speed Detected: User ${user.name}, Speed: ${speed.toFixed(2)} km / h`);
+                    console.log(`[Attendance] Suspicious Speed: ${speed.toFixed(2)} km/h`);
                 }
             }
         }
 
+        // 5. Create Log
         const log = await AttendanceLog.create({
             UserId: user.id,
             type,
@@ -1436,10 +1508,25 @@ app.post('/api/attendance', authenticateToken, async (req, res, next) => {
             latitude,
             longitude,
             accuracy,
-            is_suspicious
+            address: `Lat: ${latitude}, Lon: ${longitude}`, // Placeholder
+            is_suspicious,
+            ShiftId: shift.id,
+            status: type === 'CLOCK_IN' ? status : 'N/A',
+            lateMinutes: type === 'CLOCK_IN' ? lateMinutes : 0,
+            isHolidayWork: !!isHoliday
         });
 
-        res.status(201).json(log);
+        res.status(201).json({
+            message: `${type} successful`,
+            log,
+            shift_info: {
+                name: shift.name,
+                startTime: shift.startTime,
+                status: status,
+                isHoliday: !!isHoliday
+            }
+        });
+
     } catch (error) {
         next(error);
     }
@@ -1534,9 +1621,9 @@ app.get('/api/admin/audit-logs', authenticateToken, isAdmin, async (req, res, ne
 });
 
 
-// Admin Payroll Summary (Safe Mode: Sequential & No Attribute Filtering)
+
+// Admin Payroll Summary (Robust SQL Version)
 app.get('/api/admin/summary', authenticateToken, isAdmin, async (req, res, next) => {
-    console.log(`[Summary] Request received for ${req.query.month}/${req.query.year}`);
     try {
         const { month, year } = req.query;
         if (!month || !year) return res.status(400).json({ error: 'Month and Year required' });
@@ -1544,9 +1631,7 @@ app.get('/api/admin/summary', authenticateToken, isAdmin, async (req, res, next)
         const m = parseInt(month);
         const y = parseInt(year);
 
-        if (isNaN(m) || isNaN(y)) return res.status(400).json({ error: 'Invalid Month or Year' });
-
-        // --- 1. DATE LOGIC ---
+        // Date Logic
         let startMonthIndex = m - 2;
         let startYear = y;
 
@@ -1555,144 +1640,51 @@ app.get('/api/admin/summary', authenticateToken, isAdmin, async (req, res, next)
             startYear = y - 1;
         }
 
-        const startDate = new Date(startYear, startMonthIndex, 28);
-        startDate.setHours(0, 0, 0, 0);
+        const startDate = new Date(startYear, startMonthIndex, 28).toISOString().split('T')[0];
+        const endDate = new Date(y, m - 1, 27).toISOString().split('T')[0];
 
-        const endDate = new Date(y, m - 1, 27);
-        endDate.setHours(23, 59, 59, 999);
+        // robust SQL Aggregation
+        const sql = `
+            SELECT 
+                u.id, u.name, u.email, u.role, u."staffId",
+                COALESCE(SUM(CASE WHEN o.status = 'Approved' THEN o."payableAmount" ELSE 0 END), 0) as "overtimeTotal",
+                COALESCE(SUM(CASE WHEN o.status = 'Approved' THEN o.hours ELSE 0 END), 0) as "overtimeHours",
+                COALESCE(SUM(CASE WHEN c.status = 'Approved' THEN c.amount ELSE 0 END), 0) as "claimTotal",
+                (
+                    COALESCE(SUM(CASE WHEN o.status = 'Approved' THEN o."payableAmount" ELSE 0 END), 0) + 
+                    COALESCE(SUM(CASE WHEN c.status = 'Approved' THEN c.amount ELSE 0 END), 0)
+                ) as "totalPayable",
+                MAX(CASE WHEN o.status = 'Pending' OR c.status = 'Pending' THEN 1 ELSE 0 END) as "hasPending"
+            FROM "Users" u
+            LEFT JOIN "Overtimes" o ON u.id = o."UserId" AND o."createdAt" BETWEEN :startDate AND :endDate
+            LEFT JOIN "Claims" c ON u.id = c."UserId" AND c."createdAt" BETWEEN :startDate AND :endDate
+            GROUP BY u.id
+            HAVING (
+                COALESCE(SUM(CASE WHEN o.status = 'Approved' THEN o."payableAmount" ELSE 0 END), 0) + 
+                COALESCE(SUM(CASE WHEN c.status = 'Approved' THEN c.amount ELSE 0 END), 0)
+            ) > 0 OR MAX(CASE WHEN o.status = 'Pending' OR c.status = 'Pending' THEN 1 ELSE 0 END) = 1
+            ORDER BY "totalPayable" DESC
+        `;
 
-        console.log(`[Summary] Date Range: ${startDate.toISOString()} - ${endDate.toISOString()}`);
-
-        // --- 2. FETCH DATA SEQUENTIALLY (Debug Mode) ---
-        const whereDate = {
-            createdAt: {
-                [Op.gte]: startDate,
-                [Op.lte]: endDate
-            }
-        };
-
-        // Step A: Users
-        console.log('[Summary] Fetching Users...');
-        const users = await User.findAll();
-        console.log(`[Summary] Users fetched: ${users.length}`);
-
-        // Step B: Overtimes
-        console.log('[Summary] Fetching Overtimes...');
-        const overtimes = await Overtime.findAll({
-            where: {
-                ...whereDate,
-                status: { [Op.in]: ['Approved', 'Pending'] }
-            }
-            // Removed attributes to ensure no "column not found" errors
-        });
-        console.log(`[Summary] Overtimes fetched: ${overtimes.length}`);
-
-        // Step C: Claims
-        console.log('[Summary] Fetching Claims...');
-        const claims = await Claim.findAll({
-            where: {
-                ...whereDate,
-                status: { [Op.in]: ['Approved', 'Pending'] }
-            }
-        });
-        console.log(`[Summary] Claims fetched: ${claims.length}`);
-
-        // --- 3. AGGREGATE ---
-        const summaryMap = {};
-
-        // Initialize Map
-        users.forEach(u => {
-            summaryMap[u.id] = {
-                id: u.id,
-                userId: u.id,
-                name: u.name,
-                email: u.email,
-                role: u.role,
-                staffId: u.staffId,
-                overtimeTotal: 0,
-                overtimeHours: 0,
-                claimTotal: 0,
-                totalPayable: 0,
-                status: 'Active',
-                hasPending: false, // Track pending state
-                details: { overtimes: [], claims: [] }
-            };
+        const summaries = await sequelize.query(sql, {
+            replacements: { startDate, endDate },
+            type: Sequelize.QueryTypes.SELECT
         });
 
-        // Sum Overtimes
-        overtimes.forEach(ot => {
-            // Safety check for relationship integrity
-            if (ot.UserId && summaryMap[ot.UserId]) {
-                const amount = parseFloat(ot.payableAmount) || 0;
-                const hours = parseFloat(ot.hours) || 0;
+        // Format for Frontend
+        const result = summaries.map(s => ({
+            ...s,
+            overtimeTotal: parseFloat(s.overtimeTotal),
+            overtimeHours: parseFloat(s.overtimeHours),
+            claimTotal: parseFloat(s.claimTotal),
+            totalPayable: parseFloat(s.totalPayable),
+            status: (parseFloat(s.totalPayable) === 0 && s.hasPending) ? 'Processing' : 'Active',
+            details: { overtimes: [], claims: [] }
+        }));
 
-                // Only add to Total if Approved
-                if (ot.status === 'Approved') {
-                    summaryMap[ot.UserId].overtimeTotal += amount;
-                    summaryMap[ot.UserId].overtimeHours += hours;
-                } else if (ot.status === 'Pending') {
-                    summaryMap[ot.UserId].hasPending = true;
-                }
-
-                // Add detail
-                summaryMap[ot.UserId].details.overtimes.push({
-                    id: ot.id,
-                    activity: ot.activity,
-                    hours: ot.hours,
-                    amount: ot.payableAmount,
-                    date: ot.date,
-                    createdAt: ot.createdAt,
-                    status: ot.status
-                });
-            }
-        });
-
-        // Sum Claims
-        claims.forEach(cl => {
-            if (cl.UserId && summaryMap[cl.UserId]) {
-                const amount = parseFloat(cl.amount) || 0;
-
-                // Only add to Total if Approved
-                if (cl.status === 'Approved') {
-                    summaryMap[cl.UserId].claimTotal += amount;
-                } else if (cl.status === 'Pending') {
-                    summaryMap[cl.UserId].hasPending = true;
-                }
-
-                summaryMap[cl.UserId].details.claims.push({
-                    id: cl.id,
-                    title: cl.title,
-                    amount: cl.amount,
-                    date: cl.date,
-                    createdAt: cl.createdAt,
-                    status: cl.status
-                });
-            }
-        });
-
-        // Finalize
-        const summary = Object.values(summaryMap).map(u => {
-            u.totalPayable = u.overtimeTotal + u.claimTotal;
-
-            // Infer Status for UI
-            if (u.totalPayable === 0 && u.hasPending) {
-                u.status = 'Processing';
-            } else if (u.totalPayable > 0) {
-                // Check if *all* are paid? No, for summary listing 'Active' or 'Processing' is fine.
-                // If we want to show 'Paid', we need to check if specific items are paid.
-                // For now, let's keep 'Active' unless strictly pending.
-                u.status = 'Active';
-            }
-
-            return u;
-        }).filter(u => u.totalPayable > 0 || u.hasPending).sort((a, b) => b.totalPayable - a.totalPayable);
-
-        console.log('[Summary] Aggregation complete. Sending response.');
-        res.json(summary);
-
+        res.json(result);
     } catch (error) {
-        console.error("🚨 PAYROLL CRASH TRACE:", error);
-        res.status(500).json({ error: "Server Error", details: error.message });
+        next(error);
     }
 });
 
@@ -1896,10 +1888,162 @@ sequelize.sync({ alter: true }).then(async () => {
         }
     });
 
+    // --- HYBRID SHIFT SYSTEM API ---
+
+    // 1. Managing Shifts (Master)
+    app.get('/api/admin/shifts', authenticateToken, isAdmin, async (req, res) => {
+        try {
+            const shifts = await Shift.findAll();
+            res.json(shifts);
+        } catch (e) { res.status(500).json({ error: e.message }); }
+    });
+
+    app.post('/api/admin/shifts', authenticateToken, isAdmin, async (req, res) => {
+        try {
+            const shift = await Shift.create(req.body);
+            res.status(201).json(shift);
+        } catch (e) { res.status(400).json({ error: e.message }); }
+    });
+
+    // 2. Managing Holidays
+    app.get('/api/holidays', async (req, res) => { // Public for calendar
+        try {
+            const holidays = await Holiday.findAll({ order: [['date', 'ASC']] });
+            res.json(holidays);
+        } catch (e) { res.status(500).json({ error: e.message }); }
+    });
+
+    app.post('/api/admin/holidays', authenticateToken, isAdmin, async (req, res) => {
+        try {
+            const holiday = await Holiday.create(req.body);
+            res.json(holiday);
+        } catch (e) { res.status(400).json({ error: e.message }); }
+    });
+
+    app.delete('/api/admin/holidays/:id', authenticateToken, isAdmin, async (req, res) => {
+        try {
+            await Holiday.destroy({ where: { id: req.params.id } });
+            res.json({ message: 'Deleted' });
+        } catch (e) { res.status(500).json({ error: e.message }); }
+    });
+
+    // 3. Managing Roster (User Shifts)
+    app.post('/api/admin/roster', authenticateToken, isAdmin, async (req, res) => {
+        try {
+            const { userId, shiftId, startDate, endDate } = req.body;
+
+            // Remove existing overlaps (Simple strategy: Delete overlapping ranges for this user)
+            await UserShift.destroy({
+                where: {
+                    UserId: userId,
+                    [Op.or]: [
+                        { startDate: { [Op.between]: [startDate, endDate] } },
+                        { endDate: { [Op.between]: [startDate, endDate] } }
+                    ]
+                }
+            });
+
+            const roster = await UserShift.create({ UserId: userId, ShiftId: shiftId, startDate, endDate });
+            res.json(roster);
+        } catch (e) { res.status(500).json({ error: e.message }); }
+    });
+
+    app.get('/api/admin/roster', authenticateToken, isAdmin, async (req, res) => {
+        try {
+            const { month, year } = req.query;
+            // Fetch rosters for a specific month view
+            // Ideally filter by date range, but strict filtering might be complex with ranges.
+            // Fetching all for now or optimize later.
+            const rosters = await UserShift.findAll({ include: [Shift, User] });
+            res.json(rosters);
+        } catch (e) { res.status(500).json({ error: e.message }); }
+    });
+
+    // 4. Update User Default Shift
+    app.put('/api/admin/users/:id/shift', authenticateToken, isAdmin, async (req, res) => {
+        try {
+            await User.update({ defaultShiftId: req.body.shiftId }, { where: { id: req.params.id } });
+            res.json({ message: 'Default shift updated' });
+        } catch (e) { res.status(500).json({ error: e.message }); }
+    });
+
+    // --- PAYSLIP GENERATOR ---
+    app.post('/api/admin/payslip/preview', authenticateToken, isAdmin, async (req, res) => {
+        try {
+            const { userId, month, year, adjustments } = req.body;
+            const models = { User, Overtime, Claim, Payslip };
+
+            // Calculate
+            const data = await calculatePayroll(models, userId, month, year, adjustments);
+
+            // Generate HTML
+            const html = await generateHtml(data);
+
+            res.json({ html, calculations: data.calculations });
+        } catch (error) {
+            console.error('Payslip Preview Error:', error);
+            res.status(500).json({ error: error.message });
+        }
+    });
+
+    app.post('/api/admin/payslip/send', authenticateToken, isAdmin, async (req, res) => {
+        try {
+            const { userId, month, year, adjustments } = req.body;
+            const models = { User, Overtime, Claim, Payslip };
+
+            // Generate & Send (transporter is available in server.js scope)
+            await sendPayslipService(models, transporter, userId, month, year, adjustments);
+
+            await logAudit(req.user.id, 'Admin Sent Payslip', `Sent payslip to User ID: ${userId}`, req);
+            res.json({ message: 'Payslip sent successfully' });
+        } catch (error) {
+            console.error('Payslip Send Error:', error);
+            res.status(500).json({ error: error.message });
+        }
+    });
+
     // --- CRON JOBS ---
     initCronJobs({ User, Overtime, Claim, Leave, Quest, Setting }, transporter);
 
     // --- SERVER START ---
-    // Sync Database and Start Server
-    app.listen(PORT, () => console.log(`Server running on port ${PORT} `));
+    // --- SEED HOLIDAYS (Indonesian Common Holidays) ---
+    const holidayCount = await Holiday.count();
+    if (holidayCount === 0) {
+        console.log("Seeding Indonesian Holidays...");
+        await Holiday.bulkCreate([
+            { date: '2026-01-01', name: 'Tahun Baru Masehi', isRecurring: true },
+            { date: '2026-08-17', name: 'Hari Kemerdekaan RI', isRecurring: true },
+            { date: '2026-12-25', name: 'Hari Raya Natal', isRecurring: true },
+            { date: '2026-05-01', name: 'Hari Buruh Internasional', isRecurring: true },
+            { date: '2026-06-01', name: 'Hari Lahir Pancasila', isRecurring: true }
+        ]);
+    }
+
+    // --- SEED SHIFTS ---
+    const shiftCount = await Shift.count();
+    if (shiftCount === 0) {
+        console.log("Seeding Shifts...");
+        const officeShift = await Shift.create({ name: 'Office Hours', startTime: '09:00', endTime: '18:00', color: '#3B82F6' });
+        const morningShift = await Shift.create({ name: 'Morning Shift', startTime: '07:00', endTime: '16:00', color: '#FACC15' });
+
+        // Assign default shift to all existing users
+        await User.update({ defaultShiftId: officeShift.id }, { where: {} });
+    }
+
+    // --- SEED ADMIN IF NEEDED ---
+    const adminCount = await User.count({ where: { role: 'super_admin' } });
+    if (adminCount === 0) {
+        console.log("First launch! creating super_admin...");
+        const hashedPassword = await bcrypt.hash('admin123', 10);
+        await User.create({
+            name: 'Super Admin',
+            email: 'admin@werk.com',
+            password: hashedPassword,
+            role: 'super_admin',
+            staffId: 'SA-001',
+            can_attendance: true
+        });
+    }
+
+    app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
 });

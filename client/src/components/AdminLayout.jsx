@@ -1,7 +1,7 @@
 import { Outlet, NavLink, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import {
-    LayoutDashboard, Users, Palmtree, DollarSign, Clock,
+    LayoutDashboard, Users, Palmtree, DollarSign, Clock, Calendar,
     FileText, Zap, Sparkles, LogOut, Bell, Menu, ChevronLeft, ChevronRight, Briefcase, ShieldAlert, Settings, Search, MapPin
 } from 'lucide-react';
 import { useState, useEffect } from 'react';
@@ -124,6 +124,7 @@ const AdminLayout = () => {
                     <SectionHeader label="Teams" />
                     <NavItem to="/admin/users" icon={Users} label="People" />
                     <NavItem to="/admin/attendance" icon={MapPin} label="Presence" />
+                    <NavItem to="/admin/roster" icon={Calendar} label="Roster" />
                     <NavItem to="/admin/leaves" icon={Palmtree} label="Time Off" />
 
                     <SectionHeader label="Finance" />

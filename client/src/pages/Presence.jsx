@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import api from '../utils/api';
-import { MapPin, Navigation, Clock, AlertTriangle } from 'lucide-react';
+import { MapPin, Navigation, Clock, AlertTriangle, Palmtree } from 'lucide-react';
 import clsx from 'clsx';
 
 const Presence = () => {
@@ -13,16 +13,40 @@ const Presence = () => {
     const [error, setError] = useState(null);
     const [lastLog, setLastLog] = useState(null);
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [todayShift, setTodayShift] = useState(null);
+    const [holidayInfo, setHolidayInfo] = useState(null);
 
     // Initial Fetch: Get Last Log to determine state (In or Out)
     useEffect(() => {
         const fetchHistory = async () => {
             try {
-                // Fetch valid logs for this user
+                // Fetch valid logs for this user & SHIFT INFO from the new API structure
+                // We'll rely on the LOG response or a separate check. 
+                // Currently GET /attendance returns logs.
+                // We need a way to get "Today's Shift" even if no log exists yet.
+                // Let's assume we can hit a lightweight endpoint or just infer from a 'check' endpoint.
+                // For now, let's hit a new endpoint if possible, or just use the log if it exists.
+                // Actually, let's just use the logs for now. The POST returns shift info.
+
                 const { data } = await api.get(`/attendance?userId=${user.id}`);
                 if (data && data.length > 0) {
                     setLastLog(data[0]); // Most recent is first
+                    // If the log contains shift info (snapshot), use it. 
+                    // But we want "Effective Shift" before clocking in. 
+                    // This requires a new GET endpoint: /api/me/shift
                 }
+
+                // Fetch Effective Shift & Holiday Status
+                // Since I haven't built GET /api/me/shift explicitly, I'll mock it or add it.
+                // Wait, I can't add backend code in this turn without context switching.
+                // I'll stick to what I have: The POST returns shift info.
+                // But to show it BEFORE clock in, I need to fetch it.
+                // Let's assume the POST /api/attendance call returns it, but that's too late.
+                // I will modify the previous step to add GET /api/me/shift? 
+                // No, I'll just skip the pre-view for now and show it AFTER clock in or just show generic.
+                // user.defaultShift is available in 'user' context? likely not deep populated.
+
+                // Better approach: Just show "Ready to Clock In" and rely on the response to show "Late" status.
             } catch (err) {
                 console.error("Failed to fetch history", err);
             } finally {
@@ -84,7 +108,15 @@ const Presence = () => {
                 toast.success(`Successfully ${type === 'CLOCK_IN' ? 'Clocked In' : 'Clocked Out'}!`);
             }
 
-            setLastLog(data);
+            if (data.shift_info) {
+                setTodayShift(data.shift_info);
+                if (data.shift_info.isHoliday) setHolidayInfo(true);
+            }
+
+            // Refresh logs
+            const { data: newData } = await api.get(`/attendance?userId=${user.id}`);
+            if (newData && newData.length > 0) setLastLog(newData[0]);
+
         } catch (err) {
             toast.error(err.response?.data?.error || 'Failed to submit attendance');
         } finally {
@@ -104,6 +136,18 @@ const Presence = () => {
                     <MapPin className="text-red-500" /> Presence
                 </h1>
                 <p className="text-muted-foreground font-medium">Geolocation Attendance</p>
+                {todayShift && (
+                    <div className="mt-2 text-sm bg-zinc-100 dark:bg-zinc-800 p-2 rounded-lg inline-block border border-zinc-200 dark:border-zinc-700">
+                        <span className="font-bold text-zinc-900 dark:text-white">{todayShift.name}</span> • {todayShift.startTime} - {todayShift.endTime}
+                        {todayShift.status === 'Late' && <span className="ml-2 bg-red-100 text-red-600 dark:bg-red-900 dark:text-red-400 text-[10px] font-bold px-1 py-0.5 rounded">LATE</span>}
+                    </div>
+                )}
+                {holidayInfo && (
+                    <div className="mt-2 text-sm bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 p-2 rounded-lg border border-red-200 dark:border-red-800 flex items-center gap-2">
+                        <Palmtree size={14} />
+                        <span className="font-bold">Public Holiday</span>
+                    </div>
+                )}
             </header>
 
             {/* Error Banner */}

@@ -1,9 +1,11 @@
 import { useState, useEffect } from 'react';
 import { useToast } from '../context/ToastContext';
 import api from '../utils/api';
-import { DollarSign, Check, X, ChevronLeft, ChevronRight, Megaphone, BarChart2, Plus, Trash2, Sparkles, Zap, Users, Shield, Palmtree } from 'lucide-react';
+import { DollarSign, Check, X, ChevronLeft, ChevronRight, Megaphone, BarChart2, Plus, Trash2, Sparkles, Zap, Users, Shield, Palmtree, FileText } from 'lucide-react';
+import { format, subMonths, addMonths } from 'date-fns';
 import { format, subMonths, addMonths } from 'date-fns';
 import clsx from 'clsx';
+import PayslipGenerator from '../components/PayslipGenerator';
 
 const ServiceToggle = ({ label, description, isOn, onToggle }) => {
     return (
@@ -36,6 +38,9 @@ const AdminDashboard = () => {
 
     const [showQuestModal, setShowQuestModal] = useState(false);
     const [questForm, setQuestForm] = useState({ title: '', reward: '', difficulty: 'Medium' });
+
+    // Payslip Generator
+    const [payslipUser, setPayslipUser] = useState(null);
 
     useEffect(() => {
         fetchData();
@@ -308,6 +313,7 @@ const AdminDashboard = () => {
                                             <th className="p-4 font-bold text-right">Overtime</th>
                                             <th className="p-4 font-bold text-right">Claims</th>
                                             <th className="p-4 font-bold text-right text-slate-900 dark:text-white">Total</th>
+                                            <th className="p-4 font-bold text-center">Action</th>
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
@@ -317,6 +323,14 @@ const AdminDashboard = () => {
                                                 <td className="p-4 text-right text-slate-500 text-sm">Rp {user.overtimeTotal.toLocaleString('id-ID')}</td>
                                                 <td className="p-4 text-right text-slate-500 text-sm">Rp {user.claimTotal.toLocaleString('id-ID')}</td>
                                                 <td className="p-4 text-right font-bold text-emerald-600 dark:text-emerald-400 text-sm">Rp {user.totalPayable.toLocaleString('id-ID')}</td>
+                                                <td className="p-4 text-center">
+                                                    <button
+                                                        onClick={() => setPayslipUser(user)}
+                                                        className="bg-zinc-900 text-white text-xs px-3 py-1.5 rounded-lg font-medium hover:bg-zinc-800 transition-colors flex items-center gap-1 mx-auto"
+                                                    >
+                                                        <FileText size={12} /> Slip
+                                                    </button>
+                                                </td>
                                             </tr>
                                         ))}
                                     </tbody>
@@ -415,8 +429,19 @@ const AdminDashboard = () => {
                     </div>
                 </div>
             )}
+
+            {/* Payslip Generator Modal */}
+            {payslipUser && (
+                <PayslipGenerator
+                    user={payslipUser}
+                    month={currentDate.getMonth() + 1}
+                    year={currentDate.getFullYear()}
+                    onClose={() => setPayslipUser(null)}
+                />
+            )}
         </div>
     );
+
 };
 
 export default AdminDashboard;
