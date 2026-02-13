@@ -4,7 +4,7 @@ const handlebars = require('handlebars');
 const puppeteer = require('puppeteer');
 const { Op } = require('sequelize');
 const { format } = require('date-fns');
-const { PDFDocument } = require('pdf-lib');
+const { encrypt } = require('node-qpdf2');
 
 // Register Handlebars Helper
 handlebars.registerHelper('formatCurrency', function (value) {
@@ -155,29 +155,43 @@ const generatePdf = async (html) => {
     }
 };
 
-// Encrypt PDF with password
+// Encrypt PDF with password using qpdf
 const encryptPdf = async (pdfBuffer, password) => {
-    try {
-        // Load the PDF
-        const pdfDoc = await PDFDocument.load(pdfBuffer);
+    const tempInput = path.join(__dirname, `../uploads/temp_${Date.now()}.pdf`);
+    const tempOutput = path.join(__dirname, `../uploads/temp_encrypted_${Date.now()}.pdf`);
 
-        // Encrypt with password
-        const encryptedPdfBytes = await pdfDoc.save({
-            userPassword: password,
-            ownerPassword: password + '_owner', // Owner password for additional security
-            permissions: {
-                printing: 'highResolution',
-                modifying: false,
-                copying: false,
-                annotating: false,
-                fillingForms: false,
-                contentAccessibility: true,
-                documentAssembly: false
+    try {
+        // Write buffer to temporary file
+        fs.writeFileSync(tempInput, pdfBuffer);
+
+        // Encrypt using qpdf
+        await encrypt(tempInput, tempOutput, {
+            password: password,
+            keyLength: 128,
+            restrictions: {
+                print: 'full',
+                modify: 'none',
+                extract: 'n',
+                annotate: 'n',
+                fillForms: 'n',
+                accessibility: 'y',
+                assemble: 'n'
             }
         });
 
-        return Buffer.from(encryptedPdfBytes);
+        // Read encrypted file
+        const encryptedBuffer = fs.readFileSync(tempOutput);
+
+        // Clean up temp files
+        fs.unlinkSync(tempInput);
+        fs.unlinkSync(tempOutput);
+
+        return encryptedBuffer;
     } catch (error) {
+        // Clean up temp files on error
+        if (fs.existsSync(tempInput)) fs.unlinkSync(tempInput);
+        if (fs.existsSync(tempOutput)) fs.unlinkSync(tempOutput);
+
         console.error('[PDF Encryption] Error:', error);
         throw new Error('Failed to encrypt PDF: ' + error.message);
     }
@@ -287,7 +301,7 @@ const sendPayslip = async (models, transporter, userId, month, year, adjustments
                 <body>
                     <div class="container">
                         <div class="header">
-                            <h1>🧾 Monthly Payslip</h1>
+                            <h1>Monthly Payslip</h1>
                         </div>
                         <div class="content">
                             <p>Dear <strong>${userData.name}</strong>,</p>

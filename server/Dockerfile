@@ -2,7 +2,7 @@ FROM node:20-alpine
 
 WORKDIR /app
 
-# Install Chromium and dependencies for Puppeteer
+# Install Chromium and dependencies for Puppeteer, and qpdf for PDF encryption
 RUN apk add --no-cache \
     chromium \
     nss \
@@ -10,6 +10,7 @@ RUN apk add --no-cache \
     harfbuzz \
     ca-certificates \
     ttf-freefont \
+    qpdf \
     python3 \
     make \
     g++
