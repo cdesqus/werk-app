@@ -298,6 +298,26 @@ const Payslip = sequelize.define('Payslip', {
 });
 
 // Relationships
+const Shift = sequelize.define('Shift', {
+    name: { type: DataTypes.STRING, allowNull: false },
+    startTime: { type: DataTypes.STRING, allowNull: false }, // "09:00"
+    endTime: { type: DataTypes.STRING, allowNull: false }, // "18:00"
+    lateTolerance: { type: DataTypes.INTEGER, defaultValue: 15 },
+    color: { type: DataTypes.STRING, defaultValue: '#3B82F6' }
+});
+
+const UserShift = sequelize.define('UserShift', {
+    startDate: { type: DataTypes.DATEONLY, allowNull: false },
+    endDate: { type: DataTypes.DATEONLY, allowNull: false }
+});
+
+const Holiday = sequelize.define('Holiday', {
+    date: { type: DataTypes.DATEONLY, allowNull: false },
+    name: { type: DataTypes.STRING, allowNull: false },
+    type: { type: DataTypes.STRING, defaultValue: 'National' }, // National, Cuti Bersama
+    isRecurring: { type: DataTypes.BOOLEAN, defaultValue: false }
+});
+
 // Audit Log Model
 const AuditLog = sequelize.define('AuditLog', {
     action: { type: DataTypes.STRING, allowNull: false },
