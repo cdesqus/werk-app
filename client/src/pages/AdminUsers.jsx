@@ -303,12 +303,12 @@ const AdminUsers = () => {
                                                 <div className="space-y-2">
                                                     <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-2"><DollarSign size={14} /> Basic Salary</label>
                                                     <div className="relative">
-                                                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground font-bold">Rp</span>
+                                                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground font-bold bg-muted/50 px-2 py-0.5 rounded text-xs">Rp</span>
                                                         <input
                                                             type="number"
                                                             value={formData.baseSalary}
                                                             onChange={e => setFormData({ ...formData, baseSalary: parseInt(e.target.value) || 0 })}
-                                                            className="input-field w-full pl-10"
+                                                            className="input-field w-full pl-12"
                                                         />
                                                     </div>
                                                 </div>
@@ -464,12 +464,15 @@ const AdminUsers = () => {
                                 </div>
                                 <div className="space-y-2">
                                     <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-2"><DollarSign size={14} /> Basic Salary (IDR)</label>
-                                    <input
-                                        type="number"
-                                        value={formData.baseSalary}
-                                        onChange={e => setFormData({ ...formData, baseSalary: parseInt(e.target.value) || 0 })}
-                                        className="input-field w-full"
-                                    />
+                                    <div className="relative">
+                                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground font-bold bg-muted/50 px-2 py-0.5 rounded text-xs">Rp</span>
+                                        <input
+                                            type="number"
+                                            value={formData.baseSalary}
+                                            onChange={e => setFormData({ ...formData, baseSalary: parseInt(e.target.value) || 0 })}
+                                            className="input-field w-full pl-12"
+                                        />
+                                    </div>
                                 </div>
                                 <div className="space-y-2">
                                     <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-2"><CreditCard size={14} /> Bank Details</label>
