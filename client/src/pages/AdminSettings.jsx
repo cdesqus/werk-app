@@ -4,7 +4,7 @@ import { useToast } from '../context/ToastContext';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import clsx from 'clsx';
-import { Mail, Save, Server, Shield, Globe, Send, CheckCircle, AlertTriangle, Zap, Monitor, Moon, Sun, Clock, Palmtree, Trash2, Edit } from 'lucide-react';
+import { Mail, Save, Server, Shield, Globe, Send, CheckCircle, AlertTriangle, Zap, Monitor, Moon, Sun, Clock, Palmtree, Trash2, Edit, RefreshCw } from 'lucide-react';
 
 const ServiceToggle = ({ label, description, isOn, onToggle }) => {
     return (
@@ -123,6 +123,14 @@ const AdminSettings = () => {
             setHolidays(holidays.filter(h => h.id !== id));
             toast.success('Holiday removed');
         } catch (e) { toast.error('Failed to remove holiday'); }
+    };
+
+    const handleSyncIdHolidays = async () => {
+        try {
+            await api.post('/admin/holidays/sync');
+            fetchData(); // Refresh list
+            toast.success('Synced with Indonesian Calendar 2026');
+        } catch (e) { toast.error('Failed to sync holidays'); }
     };
 
     const toggleService = async (key) => {
@@ -534,6 +542,12 @@ const AdminSettings = () => {
                             <h2 className="text-xl font-bold text-white flex items-center gap-2">
                                 <Palmtree className="text-red-400" /> Public Holidays (Tanggal Merah)
                             </h2>
+                            <button
+                                onClick={handleSyncIdHolidays}
+                                className="px-3 py-1.5 bg-red-500/10 hover:bg-red-500/20 text-red-400 text-xs font-bold uppercase rounded-lg border border-red-500/20 flex items-center gap-2 transition-colors"
+                            >
+                                <RefreshCw size={14} /> Sync IND 2026
+                            </button>
                         </div>
 
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">

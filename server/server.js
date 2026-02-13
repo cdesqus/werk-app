@@ -1955,6 +1955,39 @@ sequelize.sync({ alter: true }).then(async () => {
         } catch (e) { res.status(500).json({ error: e.message }); }
     });
 
+    // Sync Default Indonesian Holidays (2026)
+    app.post('/api/admin/holidays/sync', authenticateToken, isAdmin, async (req, res) => {
+        try {
+            const holidays2026 = [
+                { name: 'New Year 2026', date: '2026-01-01', type: 'National', isRecurring: true },
+                { name: 'Isra Mi\'raj', date: '2026-01-16', type: 'National', isRecurring: false }, // Approx
+                { name: 'Chinese New Year 2577', date: '2026-02-17', type: 'National', isRecurring: false },
+                { name: 'Nyepi (Saka 1948)', date: '2026-03-19', type: 'National', isRecurring: false }, // Approx
+                { name: 'Eid al-Fitr 1447H', date: '2026-03-20', type: 'National', isRecurring: false }, // Approx
+                { name: 'Eid al-Fitr 1447H', date: '2026-03-21', type: 'National', isRecurring: false },
+                { name: 'Good Friday', date: '2026-04-03', type: 'National', isRecurring: true },
+                { name: 'Labor Day', date: '2026-05-01', type: 'National', isRecurring: true },
+                { name: 'Ascension Day', date: '2026-05-14', type: 'National', isRecurring: false },
+                { name: 'Waisak 2570', date: '2026-05-31', type: 'National', isRecurring: false },
+                { name: 'Pancasila Day', date: '2026-06-01', type: 'National', isRecurring: true },
+                { name: 'Eid al-Adha 1447H', date: '2026-05-27', type: 'National', isRecurring: false }, // Approx
+                { name: 'Islamic New Year 1448H', date: '2026-06-16', type: 'National', isRecurring: false }, // Approx
+                { name: 'Independence Day', date: '2026-08-17', type: 'National', isRecurring: true },
+                { name: 'Prophet Muhammad Birthday', date: '2026-08-25', type: 'National', isRecurring: false }, // Approx
+                { name: 'Christmas Day', date: '2026-12-25', type: 'National', isRecurring: true },
+            ];
+
+            // Upsert Logic (avoid duplicates)
+            for (const h of holidays2026) {
+                const existing = await Holiday.findOne({ where: { date: h.date } });
+                if (!existing) {
+                    await Holiday.create(h);
+                }
+            }
+            res.json({ message: 'Synced Indonesian holidays for 2026' });
+        } catch (e) { res.status(500).json({ error: e.message }); }
+    });
+
     // 3. Managing Roster (User Shifts)
     app.post('/api/admin/roster', authenticateToken, isAdmin, async (req, res) => {
         try {
