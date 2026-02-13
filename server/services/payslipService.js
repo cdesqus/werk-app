@@ -3,6 +3,7 @@ const path = require('path');
 const handlebars = require('handlebars');
 const puppeteer = require('puppeteer');
 const { Op } = require('sequelize');
+const { format } = require('date-fns');
 
 // Register Handlebars Helper
 handlebars.registerHelper('formatCurrency', function (value) {
@@ -207,13 +208,56 @@ const sendPayslip = async (models, transporter, userId, month, year, adjustments
         const emailResult = await transporter.sendMail({
             from: `"WERK Payroll" <${process.env.SMTP_USER}>`,
             to: userData.email,
-            subject: `Payslip for Period ${payrollData.period.start} - ${payrollData.period.end}`,
+            subject: `Your Payslip for ${format(new Date(payrollData.period.start), 'MMMM yyyy')}`,
             html: `
-                <h3>Dear ${userData.name},</h3>
-                <p>Please find attached your payslip for the period ${payrollData.period.start} to ${payrollData.period.end}.</p>
-                <p><strong>Net Pay: ${new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR' }).format(payrollData.calculations.netPay)}</strong></p>
-                <br>
-                <p>Best Regards,<br>WERK Finance Team</p>
+                <!DOCTYPE html>
+                <html>
+                <head>
+                    <style>
+                        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height: 1.6; color: #333; }
+                        .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+                        .header { background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white; padding: 30px; text-align: center; border-radius: 8px 8px 0 0; }
+                        .header h1 { margin: 0; font-size: 24px; font-weight: 700; }
+                        .content { background: #ffffff; padding: 30px; border: 1px solid #e5e7eb; border-top: none; }
+                        .content p { margin: 15px 0; color: #4b5563; }
+                        .period-box { background: #f9fafb; border-left: 4px solid #10b981; padding: 15px; margin: 20px 0; border-radius: 4px; }
+                        .period-box strong { color: #111827; }
+                        .footer { background: #f9fafb; padding: 20px; text-align: center; border-radius: 0 0 8px 8px; border: 1px solid #e5e7eb; border-top: none; }
+                        .footer p { margin: 5px 0; font-size: 12px; color: #6b7280; }
+                        .attachment-note { background: #eff6ff; border: 1px solid #bfdbfe; padding: 12px; border-radius: 6px; margin: 20px 0; }
+                        .attachment-note p { margin: 0; color: #1e40af; font-size: 14px; }
+                    </style>
+                </head>
+                <body>
+                    <div class="container">
+                        <div class="header">
+                            <h1>🧾 Monthly Payslip</h1>
+                        </div>
+                        <div class="content">
+                            <p>Dear <strong>${userData.name}</strong>,</p>
+                            
+                            <p>We hope this email finds you well. Please find attached your official payslip document for the following period:</p>
+                            
+                            <div class="period-box">
+                                <strong>Pay Period:</strong> ${format(new Date(payrollData.period.start), 'dd MMMM yyyy')} - ${format(new Date(payrollData.period.end), 'dd MMMM yyyy')}
+                            </div>
+                            
+                            <div class="attachment-note">
+                                <p>📎 Your detailed payslip is attached to this email as a PDF document.</p>
+                            </div>
+                            
+                            <p>Please review the attached document carefully. If you have any questions or notice any discrepancies, please don't hesitate to contact the Finance Team.</p>
+                            
+                            <p style="margin-top: 30px;">Thank you for your continued dedication and hard work.</p>
+                        </div>
+                        <div class="footer">
+                            <p><strong>WERK Finance Team</strong></p>
+                            <p>PT. IDE SOLUSI INTEGRASI</p>
+                            <p style="margin-top: 15px; font-size: 11px; color: #9ca3af;">This is an automated email. Please do not reply to this message.</p>
+                        </div>
+                    </div>
+                </body>
+                </html>
             `,
             attachments: [
                 {

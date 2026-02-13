@@ -1748,7 +1748,7 @@ app.get('/api/admin/summary', authenticateToken, isAdmin, async (req, res, next)
                     claims: claims
                 }
             };
-        }).filter(u => u.totalPayable > 0 || u.hasPending);
+        }).filter(u => u.role !== 'superadmin'); // Only exclude superadmins, show all other users
 
         res.json(result);
     } catch (error) {
