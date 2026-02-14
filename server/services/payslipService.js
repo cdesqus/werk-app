@@ -4,7 +4,7 @@ const handlebars = require('handlebars');
 const puppeteer = require('puppeteer');
 const { Op } = require('sequelize');
 const { format } = require('date-fns');
-const { encrypt } = require('node-qpdf2');
+const { execSync } = require('child_process');
 
 // Register Handlebars Helper
 handlebars.registerHelper('formatCurrency', function (value) {
@@ -155,7 +155,7 @@ const generatePdf = async (html) => {
     }
 };
 
-// Encrypt PDF with password using qpdf
+// Encrypt PDF with password using qpdf CLI
 const encryptPdf = async (pdfBuffer, password) => {
     const tempInput = path.join(__dirname, `../uploads/temp_${Date.now()}.pdf`);
     const tempOutput = path.join(__dirname, `../uploads/temp_encrypted_${Date.now()}.pdf`);
@@ -164,14 +164,15 @@ const encryptPdf = async (pdfBuffer, password) => {
         // Write buffer to temporary file
         fs.writeFileSync(tempInput, pdfBuffer);
 
-        console.log(`[PDF Encryption] Encrypting with password: ${password}`);
+        console.log(`[PDF Encryption] Encrypting PDF with password: ${password}`);
 
-        // Encrypt using qpdf with correct API
-        await encrypt(tempInput, {
-            outputFile: tempOutput,
-            password: password,
-            keyLength: 128
-        });
+        // Use qpdf CLI directly for reliable encryption
+        const ownerPassword = `WERK_ADMIN_${password}`;
+        const qpdfCommand = `qpdf --encrypt ${password} ${ownerPassword} 128 --print=full --modify=none --extract=n -- "${tempInput}" "${tempOutput}"`;
+
+        console.log(`[PDF Encryption] Executing: qpdf --encrypt [password] [owner] 128 --print=full --modify=none --extract=n`);
+
+        execSync(qpdfCommand, { stdio: 'pipe' });
 
         // Read encrypted file
         const encryptedBuffer = fs.readFileSync(tempOutput);
@@ -189,6 +190,7 @@ const encryptPdf = async (pdfBuffer, password) => {
         if (fs.existsSync(tempOutput)) fs.unlinkSync(tempOutput);
 
         console.error('[PDF Encryption] Error:', error);
+        console.error('[PDF Encryption] Command output:', error.stderr?.toString());
         throw new Error('Failed to encrypt PDF: ' + error.message);
     }
 };
