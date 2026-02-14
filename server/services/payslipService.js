@@ -164,23 +164,19 @@ const encryptPdf = async (pdfBuffer, password) => {
         // Write buffer to temporary file
         fs.writeFileSync(tempInput, pdfBuffer);
 
-        // Encrypt using qpdf
-        await encrypt(tempInput, tempOutput, {
+        console.log(`[PDF Encryption] Encrypting with password: ${password}`);
+
+        // Encrypt using qpdf with correct API
+        await encrypt(tempInput, {
+            outputFile: tempOutput,
             password: password,
-            keyLength: 128,
-            restrictions: {
-                print: 'full',
-                modify: 'none',
-                extract: 'n',
-                annotate: 'n',
-                fillForms: 'n',
-                accessibility: 'y',
-                assemble: 'n'
-            }
+            keyLength: 128
         });
 
         // Read encrypted file
         const encryptedBuffer = fs.readFileSync(tempOutput);
+
+        console.log(`[PDF Encryption] Successfully encrypted PDF (${encryptedBuffer.length} bytes)`);
 
         // Clean up temp files
         fs.unlinkSync(tempInput);
@@ -300,9 +296,6 @@ const sendPayslip = async (models, transporter, userId, month, year, adjustments
                 </head>
                 <body>
                     <div class="container">
-                        <div class="header">
-                            <h1>Monthly Payslip</h1>
-                        </div>
                         <div class="content">
                             <p>Dear <strong>${userData.name}</strong>,</p>
                             
