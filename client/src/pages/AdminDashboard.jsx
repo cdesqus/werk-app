@@ -306,35 +306,37 @@ const AdminDashboard = () => {
                         <div>
                             <h2 className="text-xl font-bold text-slate-900 dark:text-white flex items-center gap-2 mb-6"><DollarSign className="text-emerald-500" size={20} /> Payroll Estimate</h2>
                             <div className="saas-card overflow-hidden">
-                                <table className="w-full text-left">
-                                    <thead className="bg-slate-50 dark:bg-slate-900 border-b border-slate-100 dark:border-slate-800 text-slate-500 text-xs uppercase tracking-wider">
-                                        <tr>
-                                            <th className="p-4 font-bold">Staff</th>
-                                            <th className="p-4 font-bold text-right">Overtime</th>
-                                            <th className="p-4 font-bold text-right">Claims</th>
-                                            <th className="p-4 font-bold text-right text-slate-900 dark:text-white">Total</th>
-                                            <th className="p-4 font-bold text-center">Action</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-                                        {summary.map(user => (
-                                            <tr key={user.userId} className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
-                                                <td className="p-4 font-bold text-slate-900 dark:text-white text-sm">{user.name}</td>
-                                                <td className="p-4 text-right text-slate-500 text-sm">Rp {user.overtimeTotal.toLocaleString('id-ID')}</td>
-                                                <td className="p-4 text-right text-slate-500 text-sm">Rp {user.claimTotal.toLocaleString('id-ID')}</td>
-                                                <td className="p-4 text-right font-bold text-emerald-600 dark:text-emerald-400 text-sm">Rp {user.totalPayable.toLocaleString('id-ID')}</td>
-                                                <td className="p-4 text-center">
-                                                    <button
-                                                        onClick={() => setPayslipUser(user)}
-                                                        className="bg-zinc-900 text-white text-xs px-3 py-1.5 rounded-lg font-medium hover:bg-zinc-800 transition-colors flex items-center gap-1 mx-auto"
-                                                    >
-                                                        <FileText size={12} /> Slip
-                                                    </button>
-                                                </td>
+                                <div className="max-h-[400px] overflow-y-auto">
+                                    <table className="w-full text-left">
+                                        <thead className="bg-slate-50 dark:bg-slate-900 border-b border-slate-100 dark:border-slate-800 text-slate-500 text-xs uppercase tracking-wider sticky top-0 z-10">
+                                            <tr>
+                                                <th className="p-4 font-bold">Staff</th>
+                                                <th className="p-4 font-bold text-right">Overtime</th>
+                                                <th className="p-4 font-bold text-right">Claims</th>
+                                                <th className="p-4 font-bold text-right text-slate-900 dark:text-white">Total</th>
+                                                <th className="p-4 font-bold text-center">Action</th>
                                             </tr>
-                                        ))}
-                                    </tbody>
-                                </table>
+                                        </thead>
+                                        <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+                                            {summary.map(user => (
+                                                <tr key={user.userId} className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+                                                    <td className="p-4 font-bold text-slate-900 dark:text-white text-sm">{user.name}</td>
+                                                    <td className="p-4 text-right text-slate-500 text-sm">Rp {user.overtimeTotal.toLocaleString('id-ID')}</td>
+                                                    <td className="p-4 text-right text-slate-500 text-sm">Rp {user.claimTotal.toLocaleString('id-ID')}</td>
+                                                    <td className="p-4 text-right font-bold text-emerald-600 dark:text-emerald-400 text-sm">Rp {user.totalPayable.toLocaleString('id-ID')}</td>
+                                                    <td className="p-4 text-center">
+                                                        <button
+                                                            onClick={() => setPayslipUser(user)}
+                                                            className="bg-zinc-900 text-white text-xs px-3 py-1.5 rounded-lg font-medium hover:bg-zinc-800 transition-colors flex items-center gap-1 mx-auto"
+                                                        >
+                                                            <FileText size={12} /> Slip
+                                                        </button>
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
                             </div>
                         </div>
                     </div>
