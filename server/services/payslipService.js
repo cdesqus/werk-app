@@ -155,42 +155,48 @@ const generatePdf = async (html) => {
     }
 };
 
-// Encrypt PDF with password using qpdf CLI
+// Encrypt PDF with password using qpdf CLI - ROBUST PHYSICAL TEMP FILE STRATEGY
 const encryptPdf = async (pdfBuffer, password) => {
-    const tempInput = path.join(__dirname, `../uploads/temp_${Date.now()}.pdf`);
-    const tempOutput = path.join(__dirname, `../uploads/temp_encrypted_${Date.now()}.pdf`);
+    // Step A: Save Raw PDF to physical temp file
+    const inputPath = path.join(__dirname, `../uploads/temp_raw_${Date.now()}.pdf`);
+    const outputPath = path.join(__dirname, `../uploads/temp_encrypted_${Date.now()}.pdf`);
 
     try {
-        // Write buffer to temporary file
-        fs.writeFileSync(tempInput, pdfBuffer);
+        // Write raw PDF buffer to disk
+        fs.writeFileSync(inputPath, pdfBuffer);
+        console.log(`[Security] Raw PDF written to disk at: ${inputPath}`);
+        console.log(`[Security] Birthdate PIN generated: ${'*'.repeat(password.length)} (${password.length} chars)`);
 
-        console.log(`[PDF Encryption] Encrypting PDF with password: ${password}`);
+        // Step C: Execute qpdf CLI with 256-bit AES encryption
+        const ownerPassword = 'admin_werk_ide';
+        const command = `qpdf --encrypt "${password}" "${ownerPassword}" 256 -- "${inputPath}" "${outputPath}"`;
 
-        // Use qpdf CLI directly for reliable encryption
-        const ownerPassword = `WERK_ADMIN_${password}`;
-        const qpdfCommand = `qpdf --encrypt ${password} ${ownerPassword} 128 --print=full --modify=none --extract=n -- "${tempInput}" "${tempOutput}"`;
+        console.log(`[Security] Executing qpdf with 256-bit AES encryption...`);
+        execSync(command, { stdio: 'pipe' });
 
-        console.log(`[PDF Encryption] Executing: qpdf --encrypt [password] [owner] 128 --print=full --modify=none --extract=n`);
+        // Step D: Read encrypted file back into buffer
+        const encryptedBuffer = fs.readFileSync(outputPath);
+        console.log(`[Security] Encryption successful, buffer size: ${encryptedBuffer.length} bytes`);
 
-        execSync(qpdfCommand, { stdio: 'pipe' });
-
-        // Read encrypted file
-        const encryptedBuffer = fs.readFileSync(tempOutput);
-
-        console.log(`[PDF Encryption] Successfully encrypted PDF (${encryptedBuffer.length} bytes)`);
-
-        // Clean up temp files
-        fs.unlinkSync(tempInput);
-        fs.unlinkSync(tempOutput);
+        // IMMEDIATELY cleanup temp files
+        fs.unlinkSync(inputPath);
+        fs.unlinkSync(outputPath);
+        console.log(`[Security] Temporary files cleaned up successfully`);
 
         return encryptedBuffer;
     } catch (error) {
-        // Clean up temp files on error
-        if (fs.existsSync(tempInput)) fs.unlinkSync(tempInput);
-        if (fs.existsSync(tempOutput)) fs.unlinkSync(tempOutput);
+        // Emergency cleanup on error
+        if (fs.existsSync(inputPath)) {
+            fs.unlinkSync(inputPath);
+            console.log(`[Security] Cleaned up input file after error`);
+        }
+        if (fs.existsSync(outputPath)) {
+            fs.unlinkSync(outputPath);
+            console.log(`[Security] Cleaned up output file after error`);
+        }
 
-        console.error('[PDF Encryption] Error:', error);
-        console.error('[PDF Encryption] Command output:', error.stderr?.toString());
+        console.error('[Security] QPDF Encryption Error:', error.message);
+        console.error('[Security] QPDF Error Stderr:', error.stderr?.toString());
         throw new Error('Failed to encrypt PDF: ' + error.message);
     }
 };
@@ -223,10 +229,11 @@ const sendPayslip = async (models, transporter, userId, month, year, adjustments
         console.log(`[Payslip] Generating PDF...`);
         const pdfBuffer = await generatePdf(html);
 
-        // 3.5. Encrypt PDF with birthdate password
+        // 3.5. Encrypt PDF with birthdate password (ROBUST PIN STRATEGY)
         let encryptedPdfBuffer = pdfBuffer; // Default to unencrypted
         let passwordPin = null;
 
+        // PIN PREPARATION with fallback
         if (userData.birthDate) {
             try {
                 // Format birthDate to DDMMYYYY
@@ -236,15 +243,27 @@ const sendPayslip = async (models, transporter, userId, month, year, adjustments
                 const year = birthDate.getFullYear();
                 passwordPin = `${day}${month}${year}`;
 
+                console.log(`[Payslip] User: ${userData.name}, Birthdate PIN: ${'*'.repeat(8)}`);
                 console.log(`[Payslip] Encrypting PDF with birthdate PIN...`);
                 encryptedPdfBuffer = await encryptPdf(pdfBuffer, passwordPin);
-                console.log(`[Payslip] PDF encrypted successfully with PIN: ${passwordPin}`);
+                console.log(`[Payslip] ✓ PDF encrypted successfully`);
             } catch (encryptError) {
-                console.error(`[Payslip] Failed to encrypt PDF:`, encryptError);
+                console.error(`[Payslip] ✗ Failed to encrypt PDF:`, encryptError.message);
                 console.log(`[Payslip] Sending unencrypted PDF as fallback`);
+                passwordPin = null; // Reset to show no encryption in email
             }
         } else {
-            console.warn(`[Payslip] No birthDate found for user ${userData.name}. Sending unencrypted PDF.`);
+            // Fallback: Use default password if birthDate is missing
+            console.warn(`[Payslip] ⚠ No birthDate found for user ${userData.name}. Using fallback PIN.`);
+            try {
+                passwordPin = '12345678';
+                encryptedPdfBuffer = await encryptPdf(pdfBuffer, passwordPin);
+                console.log(`[Payslip] ✓ PDF encrypted with fallback PIN`);
+            } catch (encryptError) {
+                console.error(`[Payslip] ✗ Fallback encryption failed:`, encryptError.message);
+                console.log(`[Payslip] Sending unencrypted PDF`);
+                passwordPin = null;
+            }
         }
 
         // 4. Save to DB (Snapshot) - Save unencrypted version for admin access
