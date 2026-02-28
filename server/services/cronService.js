@@ -422,9 +422,14 @@ const sendMonthlyPayslips = async (models, transporter) => {
     console.log('[Cron] Running Monthly Payslip Distribution...');
 
     try {
-        const today = new Date();
-        const month = today.getMonth() + 1; // Current month (1-12)
-        const year = today.getFullYear();
+        // Since it runs on the 1st of the new month, calculate for the previous month
+        let month = today.getMonth(); // 0 is January, etc. So if March (2), previous month is February (2 is 1-indexed Feb)
+        let year = today.getFullYear();
+
+        if (month === 0) { // If January 1st
+            month = 12; // December
+            year -= 1;  // Previous year
+        }
 
         console.log(`[Cron] Generating payslips for period: ${month}/${year}`);
 
@@ -502,8 +507,8 @@ const initCronJobs = (models, transporter) => {
         timezone: "Asia/Jakarta"
     });
 
-    // 4. MONTHLY PAYSLIP DISTRIBUTION (28th at 4:30 PM)
-    cron.schedule('30 16 28 * *', () => sendMonthlyPayslips(models, transporter), {
+    // 4. MONTHLY PAYSLIP DISTRIBUTION (1st at 08:00 AM)
+    cron.schedule('0 8 1 * *', () => sendMonthlyPayslips(models, transporter), {
         scheduled: true,
         timezone: "Asia/Jakarta"
     });
@@ -512,7 +517,7 @@ const initCronJobs = (models, transporter) => {
     console.log('  - Daily Morning Brief: 08:00 AM');
     console.log('  - Monthly Payday Alert: 28th at 09:00 AM');
     console.log('  - Birthday Alert: 08:05 AM');
-    console.log('  - Monthly Payslip Distribution: 28th at 4:30 PM');
+    console.log('  - Monthly Payslip Distribution: 1st at 08:00 AM');
 };
 
 module.exports = { initCronJobs, sendMorningBrief, sendPaydayAlert, sendBirthdayAlert, sendMonthlyPayslips };

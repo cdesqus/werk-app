@@ -1726,7 +1726,7 @@ app.get('/api/admin/summary', authenticateToken, isAdmin, async (req, res, next)
                 .filter(c => c.status === 'Approved')
                 .reduce((sum, c) => sum + (parseFloat(c.amount || 0)), 0);
 
-            const totalPayable = overtimeTotal + claimTotal;
+            const totalPayable = (user.baseSalary || 0) + overtimeTotal + claimTotal;
 
             const hasPending = overtimes.some(o => o.status === 'Pending') ||
                 claims.some(c => c.status === 'Pending');
@@ -1737,12 +1737,13 @@ app.get('/api/admin/summary', authenticateToken, isAdmin, async (req, res, next)
                 email: user.email,
                 role: user.role,
                 staffId: user.staffId,
+                baseSalary: user.baseSalary || 0,
                 overtimeTotal: overtimeTotal,
                 overtimeHours: overtimeHours,
                 claimTotal: claimTotal,
                 totalPayable: totalPayable,
                 hasPending: hasPending,
-                status: ((overtimeTotal + claimTotal) === 0 && hasPending) ? 'Processing' : 'Active',
+                status: (((user.baseSalary || 0) + overtimeTotal + claimTotal) === 0 && hasPending) ? 'Processing' : 'Active',
                 details: {
                     overtimes: overtimes,
                     claims: claims

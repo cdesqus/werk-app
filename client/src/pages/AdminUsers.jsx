@@ -305,10 +305,14 @@ const AdminUsers = () => {
                                                     <div className="relative">
                                                         <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground font-bold bg-muted/50 px-2 py-0.5 rounded text-xs pointer-events-none">Rp</span>
                                                         <input
-                                                            type="number"
-                                                            value={formData.baseSalary}
-                                                            onChange={e => setFormData({ ...formData, baseSalary: parseInt(e.target.value) || 0 })}
-                                                            className="input-field w-full pl-16"
+                                                            type="text"
+                                                            value={formData.baseSalary === 0 ? '' : formData.baseSalary}
+                                                            onChange={e => {
+                                                                const val = e.target.value.replace(/\D/g, '');
+                                                                setFormData({ ...formData, baseSalary: val ? parseInt(val) : '' });
+                                                            }}
+                                                            className="input-field w-full pl-16 font-mono"
+                                                            placeholder="0"
                                                         />
                                                     </div>
                                                 </div>
@@ -467,10 +471,14 @@ const AdminUsers = () => {
                                     <div className="relative">
                                         <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground font-bold bg-muted/50 px-2 py-0.5 rounded text-xs pointer-events-none">Rp</span>
                                         <input
-                                            type="number"
-                                            value={formData.baseSalary}
-                                            onChange={e => setFormData({ ...formData, baseSalary: parseInt(e.target.value) || 0 })}
-                                            className="input-field w-full pl-16"
+                                            type="text"
+                                            value={formData.baseSalary === 0 ? '' : formData.baseSalary}
+                                            onChange={e => {
+                                                const val = e.target.value.replace(/\D/g, '');
+                                                setFormData({ ...formData, baseSalary: val ? parseInt(val) : '' });
+                                            }}
+                                            className="input-field w-full pl-16 font-mono"
+                                            placeholder="0"
                                         />
                                     </div>
                                 </div>

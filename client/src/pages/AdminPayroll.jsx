@@ -245,6 +245,7 @@ const AdminPayroll = () => {
                                 </th>
                                 <th className="p-4 text-left">Staff Member</th>
                                 <th className="p-4 text-center">Overtime (Hrs)</th>
+                                <th className="p-4 text-right">Basic Salary</th>
                                 <th className="p-4 text-right">Overtime Pay</th>
                                 <th className="p-4 text-right">Claims</th>
                                 <th className="p-4 text-right">Total Payable</th>
@@ -285,6 +286,9 @@ const AdminPayroll = () => {
                                         </td>
                                         <td className="p-4 text-center font-mono text-muted-foreground">
                                             {user.overtimeHours > 0 ? <span className="text-foreground font-bold">{user.overtimeHours}h</span> : <span className="opacity-30">0h</span>}
+                                        </td>
+                                        <td className="p-4 text-right font-mono text-muted-foreground">
+                                            <span className="text-foreground font-bold">Rp {(user.baseSalary || 0).toLocaleString('id-ID')}</span>
                                         </td>
                                         <td className="p-4 text-right font-mono text-muted-foreground">
                                             {user.overtimeTotal > 0 ? <span className="text-foreground font-bold">Rp {user.overtimeTotal.toLocaleString('id-ID')}</span> : <span className="opacity-30">Rp 0</span>}
