@@ -311,7 +311,7 @@ const AdminUsers = () => {
                                                                 const val = e.target.value.replace(/\D/g, '');
                                                                 setFormData({ ...formData, baseSalary: val ? parseInt(val) : '' });
                                                             }}
-                                                            className="input-field w-full pl-16 font-mono"
+                                                            className="input-field w-full !pl-12 font-mono"
                                                             placeholder="0"
                                                         />
                                                     </div>
@@ -477,7 +477,7 @@ const AdminUsers = () => {
                                                 const val = e.target.value.replace(/\D/g, '');
                                                 setFormData({ ...formData, baseSalary: val ? parseInt(val) : '' });
                                             }}
-                                            className="input-field w-full pl-16 font-mono"
+                                            className="input-field w-full !pl-12 font-mono"
                                             placeholder="0"
                                         />
                                     </div>
