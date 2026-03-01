@@ -507,8 +507,8 @@ const initCronJobs = (models, transporter) => {
         timezone: "Asia/Jakarta"
     });
 
-    // 4. MONTHLY PAYSLIP DISTRIBUTION (1st at 08:00 AM)
-    cron.schedule('0 8 1 * *', () => sendMonthlyPayslips(models, transporter), {
+    // 4. MONTHLY PAYSLIP DISTRIBUTION (1st at 09:00 AM)
+    cron.schedule('0 9 1 * *', () => sendMonthlyPayslips(models, transporter), {
         scheduled: true,
         timezone: "Asia/Jakarta"
     });
@@ -517,7 +517,7 @@ const initCronJobs = (models, transporter) => {
     console.log('  - Daily Morning Brief: 08:00 AM');
     console.log('  - Monthly Payday Alert: 28th at 09:00 AM');
     console.log('  - Birthday Alert: 08:05 AM');
-    console.log('  - Monthly Payslip Distribution: 1st at 08:00 AM');
+    console.log('  - Monthly Payslip Distribution: 1st at 09:00 AM');
 };
 
 module.exports = { initCronJobs, sendMorningBrief, sendPaydayAlert, sendBirthdayAlert, sendMonthlyPayslips };
