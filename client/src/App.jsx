@@ -11,6 +11,7 @@ import StaffDashboard from './pages/StaffDashboard';
 
 import AdminLayout from './components/AdminLayout';
 import AdminDashboard from './pages/AdminDashboard';
+import AdminSalaryMaster from './pages/AdminSalaryMaster';
 import AdminUsers from './pages/AdminUsers';
 import AdminOvertimes from './pages/AdminOvertimes';
 import AdminClaims from './pages/AdminClaims';
@@ -66,6 +67,7 @@ function App() {
                 <Route path="/admin" element={<AdminDashboard />} />
                 <Route path="/admin/users" element={<AdminUsers />} />
                 <Route path="/admin/leaves" element={<AdminLeaves />} />
+                <Route path="/admin/salary" element={<AdminSalaryMaster />} />
                 <Route path="/admin/payroll" element={<AdminPayroll />} />
                 <Route path="/admin/overtimes" element={<AdminOvertimes />} />
                 <Route path="/admin/claims" element={<AdminClaims />} />

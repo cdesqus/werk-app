@@ -67,9 +67,21 @@ const calculatePayroll = async (models, userId, month, year, adjustments = []) =
     const earningAdjustments = adjustments.filter(a => a.type === 'earning');
     const deductionAdjustments = adjustments.filter(a => a.type === 'deduction');
 
-    // Add fixed allowances from Master User settings if present
+    // Add fixed allowances from Master User settings if present (Legacy support)
     if (user.fixedAllowance && user.fixedAllowance > 0) {
-        earningAdjustments.unshift({ label: 'Monthly Allowance', amount: user.fixedAllowance, type: 'earning' });
+        earningAdjustments.unshift({ label: 'Monthly Allowance (Legacy)', amount: user.fixedAllowance, type: 'earning' });
+    }
+
+    // Add Dynamic Allowances based on type
+    if (user.allowances && Array.isArray(user.allowances)) {
+        user.allowances.forEach(allowance => {
+            // By default, system automation always automatically includes Monthly allowances.
+            // Yearly allowances (like THR) are usually pushed selectively (or via custom run), 
+            // so we skip them here by default to prevent overpaying every month.
+            if (allowance.type === 'monthly') {
+                earningAdjustments.unshift({ label: allowance.name, amount: allowance.amount, type: 'earning' });
+            }
+        });
     }
 
     const totalEarningsAdj = earningAdjustments.reduce((sum, a) => sum + (parseFloat(a.amount) || 0), 0);

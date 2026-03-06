@@ -209,6 +209,7 @@ const User = sequelize.define('User', {
     mustChangePassword: { type: DataTypes.BOOLEAN, defaultValue: true },
     baseSalary: { type: DataTypes.INTEGER, defaultValue: 0 },
     fixedAllowance: { type: DataTypes.INTEGER, defaultValue: 0 },
+    allowances: { type: DataTypes.JSON, defaultValue: [] },
     bankDetails: { type: DataTypes.JSON }
 });
 
@@ -1408,6 +1409,38 @@ app.delete('/api/admin/users/:id', authenticateToken, isAdmin, async (req, res, 
         await logAudit(req.user.id, 'Admin Deleted User', `Deleted user ID: ${req.params.id} (${user.email})`, req);
 
         res.json({ message: 'User deleted successfully' });
+    } catch (error) {
+        next(error);
+    }
+});
+
+// --- SALARY MASTER API ---
+app.get('/api/admin/salary', authenticateToken, isAdmin, async (req, res, next) => {
+    try {
+        const users = await User.findAll({
+            attributes: ['id', 'name', 'email', 'role', 'staffId', 'baseSalary', 'allowances', 'fixedAllowance', 'bankDetails']
+        });
+        res.json(users);
+    } catch (error) {
+        next(error);
+    }
+});
+
+app.put('/api/admin/salary/:id', authenticateToken, isAdmin, async (req, res, next) => {
+    try {
+        const { baseSalary, allowances, bankDetails } = req.body;
+        const user = await User.findByPk(req.params.id);
+
+        if (!user) return res.status(404).json({ error: 'User not found' });
+
+        if (baseSalary !== undefined) user.baseSalary = baseSalary;
+        if (allowances !== undefined && Array.isArray(allowances)) user.allowances = allowances;
+        if (bankDetails !== undefined) user.bankDetails = bankDetails;
+
+        await user.save();
+        await logAudit(req.user.id, 'Admin Updated Salary Details', `Updated salary for user ID: ${user.id}`, req);
+
+        res.json({ message: 'Salary details updated successfully', allowances: user.allowances });
     } catch (error) {
         next(error);
     }

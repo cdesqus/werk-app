@@ -128,7 +128,8 @@ const AdminLayout = () => {
                     <NavItem to="/admin/leaves" icon={Palmtree} label="Time Off" />
 
                     <SectionHeader label="Finance" />
-                    <NavItem to="/admin/payroll" icon={DollarSign} label="Payroll" />
+                    <NavItem to="/admin/salary" icon={DollarSign} label="Salary Master" />
+                    <NavItem to="/admin/payroll" icon={FileText} label="Payroll" />
                     <NavItem to="/admin/overtimes" icon={Clock} label="Overtime" />
                     <NavItem to="/admin/claims" icon={FileText} label="Claims" />
 
