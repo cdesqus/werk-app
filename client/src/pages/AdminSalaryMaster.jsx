@@ -3,7 +3,6 @@ import { useToast } from '../context/ToastContext';
 import api from '../utils/api';
 import { Search, Edit, DollarSign, Plus, Trash2, Save, X, CreditCard } from 'lucide-react';
 import clsx from 'clsx';
-import SectionHeader from '../components/ui/SectionHeader';
 
 export default function AdminSalaryMaster() {
     const toast = useToast();
@@ -189,7 +188,7 @@ export default function AdminSalaryMaster() {
 
                                 {/* Base Rate */}
                                 <div className="space-y-4">
-                                    <SectionHeader label="Base Compensation" />
+                                    <div className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-2">Base Compensation</div>
 
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                         <div className="space-y-2">
@@ -228,7 +227,7 @@ export default function AdminSalaryMaster() {
                                 {/* Custom Allowances */}
                                 <div className="space-y-4 pt-4 border-t border-border">
                                     <div className="flex items-center justify-between">
-                                        <SectionHeader label="Custom Allowances" />
+                                        <div className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Custom Allowances</div>
                                         <button
                                             type="button"
                                             onClick={handleAddAllowance}
