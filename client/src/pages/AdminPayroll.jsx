@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useToast } from '../context/ToastContext';
 import api from '../utils/api';
 import ConfirmModal from '../components/ui/ConfirmModal';
-import { DollarSign, Calendar, ChevronLeft, ChevronRight, Download, CheckCircle, Loader, CheckCircle2, ChevronDown, ChevronUp, Clock, FileText, AlertTriangle, Filter, Search, Image, X } from 'lucide-react';
+import { Search, ChevronDown, ChevronUp, Download, CheckCircle2, ChevronLeft, ChevronRight, Calendar, Clock, Loader, FileText } from 'lucide-react';
 import { format, subMonths, addMonths, differenceInDays } from 'date-fns';
 import * as XLSX from 'xlsx';
 import clsx from 'clsx';
@@ -101,6 +101,27 @@ const AdminPayroll = () => {
         } finally {
             setIsProcessing(false);
             setConfirmModal({ isOpen: false });
+        }
+    };
+
+    const handleBulkSendPayslips = async () => {
+        if (!confirm(`Are you sure you want to generate and send payslips for ${selectedUserIds.length} staff members? This action might take a while.`)) return;
+
+        setIsProcessing(true);
+        try {
+            const currentMonth = currentDate.getMonth() + 1;
+            const currentYear = currentDate.getFullYear();
+            await api.post('/admin/payslip/bulk-send', {
+                userIds: selectedUserIds,
+                month: currentMonth,
+                year: currentYear
+            });
+            toast.success(`Payslips processed for ${selectedUserIds.length} users! Check their emails shortly.`);
+        } catch (error) {
+            toast.error('Failed to send bulk payslips');
+            console.error(error);
+        } finally {
+            setIsProcessing(false);
         }
     };
 
@@ -219,14 +240,24 @@ const AdminPayroll = () => {
                         </div>
                         <span className="text-primary font-bold text-sm">Staff Selected</span>
                     </div>
-                    <button
-                        onClick={handleMarkAsPaid}
-                        disabled={isProcessing}
-                        className="px-6 py-2 bg-primary text-primary-foreground font-bold rounded-xl hover:bg-primary/90 transition-colors flex items-center gap-2 shadow-lg shadow-primary/20 disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                        {isProcessing ? <Loader className="animate-spin" size={18} /> : <CheckCircle2 size={18} />}
-                        Mark as Paid
-                    </button>
+                    <div className="flex gap-3">
+                        <button
+                            onClick={handleBulkSendPayslips}
+                            disabled={isProcessing}
+                            className="px-6 py-2 bg-slate-900 border border-slate-700 text-white font-bold rounded-xl hover:bg-slate-800 transition-colors flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                            {isProcessing ? <Loader className="animate-spin" size={18} /> : <FileText size={18} />}
+                            Bulk Send Payslips
+                        </button>
+                        <button
+                            onClick={handleMarkAsPaid}
+                            disabled={isProcessing}
+                            className="px-6 py-2 bg-primary text-primary-foreground font-bold rounded-xl hover:bg-primary/90 transition-colors flex items-center gap-2 shadow-lg shadow-primary/20 disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                            {isProcessing ? <Loader className="animate-spin" size={18} /> : <CheckCircle2 size={18} />}
+                            Mark as Paid
+                        </button>
+                    </div>
                 </div>
             )}
 

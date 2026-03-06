@@ -67,6 +67,11 @@ const calculatePayroll = async (models, userId, month, year, adjustments = []) =
     const earningAdjustments = adjustments.filter(a => a.type === 'earning');
     const deductionAdjustments = adjustments.filter(a => a.type === 'deduction');
 
+    // Add fixed allowances from Master User settings if present
+    if (user.fixedAllowance && user.fixedAllowance > 0) {
+        earningAdjustments.unshift({ label: 'Monthly Allowance', amount: user.fixedAllowance, type: 'earning' });
+    }
+
     const totalEarningsAdj = earningAdjustments.reduce((sum, a) => sum + (parseFloat(a.amount) || 0), 0);
     const totalDeductionsAdj = deductionAdjustments.reduce((sum, a) => sum + (parseFloat(a.amount) || 0), 0);
 

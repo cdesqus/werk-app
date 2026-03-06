@@ -12,7 +12,7 @@ const AdminUsers = () => {
     const [users, setUsers] = useState([]);
     const [editingUser, setEditingUser] = useState(null);
     const [showAddModal, setShowAddModal] = useState(false);
-    const [formData, setFormData] = useState({ name: '', email: '', phone: '', staffId: '', birthDate: '', password: '', role: 'staff', leaveQuota: 12, can_attendance: false, baseSalary: 0, bankDetails: '' });
+    const [formData, setFormData] = useState({ name: '', email: '', phone: '', staffId: '', birthDate: '', password: '', role: 'staff', leaveQuota: 12, can_attendance: false, baseSalary: 0, fixedAllowance: 0, bankDetails: '' });
     const [searchTerm, setSearchTerm] = useState('');
     const [confirmModal, setConfirmModal] = useState({ isOpen: false, id: null });
 
@@ -42,12 +42,13 @@ const AdminUsers = () => {
             leaveQuota: user.leaveQuota !== undefined ? user.leaveQuota : 12,
             can_attendance: user.can_attendance || false,
             baseSalary: user.baseSalary || 0,
+            fixedAllowance: user.fixedAllowance || 0,
             bankDetails: user.bankDetails || ''
         });
     };
 
     const handleAddClick = () => {
-        setFormData({ name: '', email: '', phone: '', birthDate: '', password: '', role: 'staff', leaveQuota: 12, baseSalary: 0, bankDetails: '' });
+        setFormData({ name: '', email: '', phone: '', birthDate: '', password: '', role: 'staff', leaveQuota: 12, baseSalary: 0, fixedAllowance: 0, bankDetails: '' });
         setShowAddModal(true);
     };
 
@@ -64,6 +65,7 @@ const AdminUsers = () => {
                 leaveQuota: formData.leaveQuota,
                 can_attendance: formData.can_attendance,
                 baseSalary: formData.baseSalary,
+                fixedAllowance: formData.fixedAllowance,
                 bankDetails: formData.bankDetails
             });
             setEditingUser(null);
@@ -328,6 +330,25 @@ const AdminUsers = () => {
                                                 </div>
                                             </div>
 
+                                            <div className="grid grid-cols-1 gap-4 pt-4 border-t border-border mt-4">
+                                                <div className="space-y-2">
+                                                    <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-2"><DollarSign size={14} /> Monthly Allowance</label>
+                                                    <div className="relative">
+                                                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground font-bold bg-muted/50 px-2 py-0.5 rounded text-xs pointer-events-none">Rp</span>
+                                                        <input
+                                                            type="text"
+                                                            value={formData.fixedAllowance === 0 ? '' : formData.fixedAllowance}
+                                                            onChange={e => {
+                                                                const val = e.target.value.replace(/\D/g, '');
+                                                                setFormData({ ...formData, fixedAllowance: val ? parseInt(val) : '' });
+                                                            }}
+                                                            className="input-field w-full !pl-12 font-mono"
+                                                            placeholder="0"
+                                                        />
+                                                    </div>
+                                                </div>
+                                            </div>
+
                                             <div className="space-y-2 pt-6 border-t border-border">
                                                 <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-2 mb-3"><MapPin size={14} /> GPS Presence Feature</label>
                                                 <div className="flex items-center gap-3 p-3 bg-muted/50 rounded-xl border border-border">
@@ -476,6 +497,22 @@ const AdminUsers = () => {
                                             onChange={e => {
                                                 const val = e.target.value.replace(/\D/g, '');
                                                 setFormData({ ...formData, baseSalary: val ? parseInt(val) : '' });
+                                            }}
+                                            className="input-field w-full !pl-12 font-mono"
+                                            placeholder="0"
+                                        />
+                                    </div>
+                                </div>
+                                <div className="space-y-2">
+                                    <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-2"><DollarSign size={14} /> Monthly Allowance (IDR)</label>
+                                    <div className="relative">
+                                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground font-bold bg-muted/50 px-2 py-0.5 rounded text-xs pointer-events-none">Rp</span>
+                                        <input
+                                            type="text"
+                                            value={formData.fixedAllowance === 0 ? '' : formData.fixedAllowance}
+                                            onChange={e => {
+                                                const val = e.target.value.replace(/\D/g, '');
+                                                setFormData({ ...formData, fixedAllowance: val ? parseInt(val) : '' });
                                             }}
                                             className="input-field w-full !pl-12 font-mono"
                                             placeholder="0"

@@ -208,6 +208,7 @@ const User = sequelize.define('User', {
     can_attendance: { type: DataTypes.BOOLEAN, defaultValue: false },
     mustChangePassword: { type: DataTypes.BOOLEAN, defaultValue: true },
     baseSalary: { type: DataTypes.INTEGER, defaultValue: 0 },
+    fixedAllowance: { type: DataTypes.INTEGER, defaultValue: 0 },
     bankDetails: { type: DataTypes.JSON }
 });
 
@@ -1325,8 +1326,6 @@ app.post('/api/admin/users', authenticateToken, isAdmin, registerValidation, val
 
         const staffId = `IDE-${year}-${String(nextSequence).padStart(4, '0')}`;
 
-        const { baseSalary, bankDetails, leaveQuota } = req.body;
-
         const user = await User.create({
             name,
             email,
@@ -1336,8 +1335,10 @@ app.post('/api/admin/users', authenticateToken, isAdmin, registerValidation, val
             role: role || 'staff',
             staffId,
             baseSalary: baseSalary || 0,
+            fixedAllowance: fixedAllowance || 0,
             bankDetails: bankDetails || '',
-            leaveQuota: leaveQuota || 12
+            leaveQuota: leaveQuota || 12,
+            can_attendance: can_attendance || false
         });
 
         // Security: don't return password
@@ -1355,7 +1356,7 @@ app.post('/api/admin/users', authenticateToken, isAdmin, registerValidation, val
 app.get('/api/admin/users', authenticateToken, isAdmin, async (req, res, next) => {
     try {
         const users = await User.findAll({
-            attributes: ['id', 'name', 'email', 'phone', 'role', 'leaveQuota', 'birthDate', 'can_attendance', 'baseSalary', 'bankDetails', 'staffId']
+            attributes: ['id', 'name', 'email', 'phone', 'role', 'leaveQuota', 'birthDate', 'can_attendance', 'baseSalary', 'fixedAllowance', 'bankDetails', 'staffId']
         });
         res.json(users);
     } catch (error) {
@@ -1365,7 +1366,7 @@ app.get('/api/admin/users', authenticateToken, isAdmin, async (req, res, next) =
 
 app.put('/api/admin/users/:id', authenticateToken, isAdmin, async (req, res, next) => {
     try {
-        const { name, phone, newPassword, baseSalary, bankDetails } = req.body;
+        const { name, phone, newPassword, baseSalary, fixedAllowance, bankDetails } = req.body;
         const user = await User.findByPk(req.params.id);
 
         if (!user) return res.status(404).json({ error: 'User not found' });
@@ -1378,6 +1379,7 @@ app.put('/api/admin/users/:id', authenticateToken, isAdmin, async (req, res, nex
         if (req.body.leaveQuota !== undefined) user.leaveQuota = req.body.leaveQuota;
         if (req.body.can_attendance !== undefined) user.can_attendance = req.body.can_attendance;
         if (baseSalary !== undefined) user.baseSalary = baseSalary;
+        if (fixedAllowance !== undefined) user.fixedAllowance = fixedAllowance;
         if (bankDetails !== undefined) user.bankDetails = bankDetails; // Expecting string or JSON
 
         if (newPassword) {
@@ -2149,6 +2151,30 @@ sequelize.sync({ alter: true }).then(async () => {
             res.json({ message: 'Payslip sent successfully' });
         } catch (error) {
             console.error('Payslip Send Error:', error);
+            res.status(500).json({ error: error.message });
+        }
+    });
+
+    app.post('/api/admin/payslip/bulk-send', authenticateToken, isAdmin, async (req, res) => {
+        try {
+            const { userIds, month, year } = req.body;
+            if (!userIds || !userIds.length) return res.status(400).json({ error: 'No user IDs provided' });
+
+            const models = { User, Overtime, Claim, Payslip };
+
+            // Send in sequence to avoid memory overload with puppeteer
+            for (const uid of userIds) {
+                try {
+                    await sendPayslipService(models, transporter, uid, month, year, []);
+                } catch (e) {
+                    console.error(`Failed to send payslip for user ${uid}:`, e.message);
+                }
+            }
+
+            await logAudit(req.user.id, 'Admin Bulk Sent Payslips', `Sent payslips to ${userIds.length} users`, req);
+            res.json({ message: `Payslips processing completed for ${userIds.length} users` });
+        } catch (error) {
+            console.error('Bulk Payslip Send Error:', error);
             res.status(500).json({ error: error.message });
         }
     });
