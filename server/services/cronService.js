@@ -422,6 +422,7 @@ const sendMonthlyPayslips = async (models, transporter) => {
     console.log('[Cron] Running Monthly Payslip Distribution...');
 
     try {
+        const today = new Date();
         // Since it runs on the 1st of the new month, calculate for the previous month
         let month = today.getMonth(); // 0 is January, etc. So if March (2), previous month is February (2 is 1-indexed Feb)
         let year = today.getFullYear();
