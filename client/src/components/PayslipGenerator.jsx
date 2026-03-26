@@ -157,13 +157,16 @@ const PayslipGenerator = ({ user, month, year, onClose }) => {
                                 onChange={e => setNewAdj({ ...newAdj, label: e.target.value })}
                             />
 
-                            <input
-                                type="number"
-                                placeholder="Amount (IDR)"
-                                className="input-field w-full text-sm font-mono"
-                                value={newAdj.amount}
-                                onChange={e => setNewAdj({ ...newAdj, amount: e.target.value })}
-                            />
+                            <div className="relative">
+                                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground font-bold bg-slate-100 dark:bg-zinc-800 px-2 py-0.5 rounded text-xs pointer-events-none">Rp</span>
+                                <input
+                                    type="number"
+                                    placeholder="0"
+                                    className="input-field w-full text-sm font-mono !pl-12"
+                                    value={newAdj.amount}
+                                    onChange={e => setNewAdj({ ...newAdj, amount: e.target.value })}
+                                />
+                            </div>
 
                             <button
                                 onClick={handleAddAdjustment}

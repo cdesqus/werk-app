@@ -365,7 +365,12 @@ const AdminPayroll = () => {
                                         <tr className="bg-muted/20">
                                             <td colSpan="8" className="p-0">
                                                 <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-8 border-y border-border shadow-inner">
-
+                                                    {(!user.details?.overtimes?.length && !user.details?.claims?.length) ? (
+                                                        <div className="col-span-1 md:col-span-2 p-8 text-center text-muted-foreground italic font-medium">
+                                                            No records found for this period
+                                                        </div>
+                                                    ) : (
+                                                        <>
                                                     {/* Overtime Detail */}
                                                     <div className="space-y-3">
                                                         <h4 className="text-xs font-bold text-muted-foreground uppercase tracking-widest flex items-center gap-2">
@@ -404,7 +409,7 @@ const AdminPayroll = () => {
                                                                                     </td>
                                                                                     <td className="p-2">{ot.activity}</td>
                                                                                     <td className="p-2 text-right font-mono text-muted-foreground">{ot.hours}</td>
-                                                                                    <td className="p-2 text-right font-mono text-emerald-600 dark:text-emerald-400">Rp {ot.amount.toLocaleString('id-ID')}</td>
+                                                                                    <td className="p-2 text-right font-mono text-emerald-600 dark:text-emerald-400">Rp {(ot.payableAmount || ot.amount || 0).toLocaleString('id-ID')}</td>
                                                                                 </tr>
                                                                             );
                                                                         })}
@@ -479,7 +484,7 @@ const AdminPayroll = () => {
                                                                                                 claim.status === 'Approved' ? "text-lime-500" : "text-amber-500"
                                                                                         )}>{claim.status}</span>
                                                                                     </td>
-                                                                                    <td className="p-2 text-right font-mono text-emerald-600 dark:text-emerald-400">Rp {claim.amount.toLocaleString('id-ID')}</td>
+                                                                                    <td className="p-2 text-right font-mono text-emerald-600 dark:text-emerald-400">Rp {(claim.amount || 0).toLocaleString('id-ID')}</td>
                                                                                 </tr>
                                                                             );
                                                                         })}
@@ -490,7 +495,8 @@ const AdminPayroll = () => {
                                                             <div className="text-sm text-muted-foreground italic px-2">No claims filed.</div>
                                                         )}
                                                     </div>
-
+                                                        </>
+                                                    )}
                                                 </div>
                                             </td>
                                         </tr>
