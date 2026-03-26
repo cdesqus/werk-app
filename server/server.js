@@ -1292,7 +1292,7 @@ app.post('/api/admin/payout', authenticateToken, isAdmin, async (req, res) => {
 // Admin User Management
 app.post('/api/admin/users', authenticateToken, isAdmin, registerValidation, validate, async (req, res, next) => {
     try {
-        const { name, email, phone, password, birthDate, role } = req.body;
+        const { name, email, phone, password, birthDate, role, baseSalary, fixedAllowance, bankDetails, leaveQuota, can_attendance } = req.body;
 
         // RBAC: Role Hierarchy Check
         const hierarchy = { 'staff': 1, 'admin': 2, 'super_admin': 3 };
