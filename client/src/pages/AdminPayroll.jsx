@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useToast } from '../context/ToastContext';
 import api from '../utils/api';
 import ConfirmModal from '../components/ui/ConfirmModal';
-import { Search, ChevronDown, ChevronUp, Download, CheckCircle2, ChevronLeft, ChevronRight, Calendar, Clock, Loader, FileText } from 'lucide-react';
+import { Search, ChevronDown, ChevronUp, Download, CheckCircle2, ChevronLeft, ChevronRight, Calendar, Clock, Loader, FileText, Image, X, AlertTriangle } from 'lucide-react';
 import { format, subMonths, addMonths, differenceInDays } from 'date-fns';
 import * as XLSX from 'xlsx';
 import clsx from 'clsx';
