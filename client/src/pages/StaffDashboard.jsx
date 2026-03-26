@@ -132,7 +132,12 @@ const StaffDashboard = () => {
             const end = parse(otForm.endTime, 'HH:mm', new Date());
 
             // Calculate difference in minutes
-            const diff = differenceInMinutes(end, start);
+            let diff = differenceInMinutes(end, start);
+
+            // Handle cross-midnight overtime (e.g. 15:00 to 00:00)
+            if (diff < 0) {
+                diff += 24 * 60;
+            }
 
             // Update duration if valid (positive), otherwise 0
             if (diff > 0) {
