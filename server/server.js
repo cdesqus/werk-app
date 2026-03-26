@@ -1309,7 +1309,7 @@ app.post('/api/admin/users', authenticateToken, isAdmin, registerValidation, val
         const year = new Date().getFullYear();
         const lastUser = await User.findOne({
             where: {
-                staffId: { [Op.like]: `IDE - ${year} -% ` }
+                staffId: { [Op.like]: `IDE-${year}-%` }
             },
             order: [['staffId', 'DESC']]
         });
