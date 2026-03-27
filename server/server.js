@@ -67,13 +67,7 @@ const allowedOrigins = [
 // 1. CORS (Must be absolutely first)
 app.use(cors({
     origin: (origin, callback) => {
-        // Allow mobile/curl (no origin) or allowed domains
-        if (!origin || allowedOrigins.includes(origin) || origin.endsWith('.kaumtech.com')) {
-            callback(null, true);
-        } else {
-            console.log('Blocked by CORS:', origin);
-            callback(new Error('Not allowed by CORS'));
-        }
+        callback(null, true);
     },
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization'],
@@ -84,11 +78,11 @@ app.options(/.*/, cors());
 
 // 2. Manual Fallback Headers (Double safety for proxies)
 app.use((req, res, next) => {
-    const origin = req.headers.origin;
-    if (origin && (allowedOrigins.includes(origin) || origin.endsWith('.kaumtech.com'))) {
-        res.header('Access-Control-Allow-Origin', origin);
+    const origin = req.headers.origin || '*';
+    if (origin !== '*') {
         res.header('Access-Control-Allow-Credentials', 'true');
     }
+    res.header('Access-Control-Allow-Origin', origin);
     res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
     res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
     next();
