@@ -76,17 +76,7 @@ app.use(cors({
 }));
 app.options(/.*/, cors());
 
-// 2. Manual Fallback Headers (Double safety for proxies)
-app.use((req, res, next) => {
-    const origin = req.headers.origin || '*';
-    if (origin !== '*') {
-        res.header('Access-Control-Allow-Credentials', 'true');
-    }
-    res.header('Access-Control-Allow-Origin', origin);
-    res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-    res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-    next();
-});
+// 2. Manual Fallback Headers (removed to prevent duplicate CORS headers issue)
 
 // 3. Security: Helmet (Secure Headers)
 app.use(helmet({
