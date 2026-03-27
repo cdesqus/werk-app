@@ -4,7 +4,7 @@ const sharp = require('sharp');
 const { Sequelize, DataTypes, Op } = require('sequelize');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
-const cors = require('cors');
+// cors removed — same-origin via nginx proxy, no cross-origin needed
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
@@ -50,33 +50,9 @@ const authLimiter = rateLimit({
     message: 'Too many login attempts, please try again later.'
 });
 
-const allowedOrigins = [
-    'https://werk.kaumtech.com',
-    'https://www.werk.kaumtech.com',
-    'https://api-werk.kaumtech.com',
-    'http://werk.kaumtech.com',
-    'http://api-werk.kaumtech.com',
-    'http://localhost:5173',
-    'http://localhost:3000',
-    'http://localhost:80',
-    'http://localhost:81'
-];
+// allowedOrigins removed — same-origin architecture, no CORS needed
 
-// --- MIDDLEWARE PIPELINE (Order is Critical) ---
-
-// 1. CORS (Must be absolutely first)
-app.use(cors({
-    origin: (origin, callback) => {
-        callback(null, true);
-    },
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization'],
-    credentials: true,
-    optionsSuccessStatus: 200
-}));
-app.options(/.*/, cors());
-
-// 2. Manual Fallback Headers (removed to prevent duplicate CORS headers issue)
+// --- MIDDLEWARE PIPELINE ---
 
 // 3. Security: Helmet (Secure Headers)
 app.use(helmet({
@@ -87,10 +63,7 @@ app.use(helmet({
 // 4. Rate Limiter
 app.use(generalLimiter);
 
-// Middleware (Order is Critical: CORS first, then Security/Body Parsing)
-
-
-// app.use(cors({...})) removed from here
+// Body Parsing & Static Files
 app.use(express.json({ limit: '10kb' })); // Security: Limit body size
 app.use('/uploads', express.static('uploads'));
 app.use('/api/uploads', express.static('uploads')); // Alias for proxy compatibility

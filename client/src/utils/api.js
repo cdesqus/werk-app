@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-const apiUrl = import.meta.env.VITE_API_URL || (isLocal ? 'http://localhost:5000/api' : 'https://api-werk.kaumtech.com/api');
+const apiUrl = import.meta.env.VITE_API_URL || (isLocal ? 'http://localhost:5000/api' : '/api');
 
 console.log('Werk App API Config:', {
     hostname: window.location.hostname,
